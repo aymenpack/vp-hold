@@ -1,25 +1,38 @@
-// netlify/functions/vision-llm.js
 export async function handler(event) {
   try {
-    const { imageBase64 } = JSON.parse(event.body);
+    const { imageBase64 } = JSON.parse(event.body || "{}");
 
-    const response = await fetch(
-      "https://api.roboflow.com/v1/vision-llm",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.ROBOFLOW_API_KEY}`
-        },
-        body: JSON.stringify({
-          prompt: `
-This is a screenshot of a video poker machine.
+    if (!imageBase64) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "No image provided" })
+      };
+    }
 
-Identify the 5 playing cards in the bottom row (the active hand).
-Ignore all UI, paytables, and other cards.
+    const response = await fetch("https://api.roboflow.com/v1/vision-llm", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.ROBOFLOW_API_KEY}`
+      },
+      body: JSON.stringify({
+        prompt: `
+You are a vision system.
 
-Return JSON ONLY in this format, left to right:
+TASK:
+Read a screenshot of a VIDEO POKER machine.
 
+RULES:
+- Identify EXACTLY 5 playing cards.
+- Use the BOTTOM ROW only.
+- Order cards LEFT TO RIGHT.
+- Ignore all UI text, paytables, buttons, and other cards.
+- Do NOT explain anything.
+
+OUTPUT:
+Return STRICT JSON ONLY, with NO extra text, NO markdown, NO comments.
+
+FORMAT:
 {
   "cards": [
     {"rank":"A","suit":"S"},
@@ -30,22 +43,38 @@ Return JSON ONLY in this format, left to right:
   ]
 }
 
-Suit letters:
-S=spades, H=hearts, D=diamonds, C=clubs.
-          `,
-          image: imageBase64
-        })
-      }
-    );
+SUITS:
+S = spades
+H = hearts
+D = diamonds
+C = clubs
+        `,
+        image: imageBase64
+      })
+    });
 
-    const data = await response.json();
+    const raw = await response.text();
+    console.log("Raw LLM response:", raw);
+
+    // --- Extract JSON safely ---
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) {
+      throw new Error("No JSON found in Vision LLM response");
+    }
+
+    const parsed = JSON.parse(match[0]);
+
+    if (!parsed.cards || parsed.cards.length !== 5) {
+      throw new Error("JSON parsed but does not contain 5 cards");
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data)
+      body: JSON.stringify(parsed)
     };
 
   } catch (err) {
+    console.error("Vision LLM error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message })
