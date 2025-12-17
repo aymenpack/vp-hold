@@ -9,64 +9,56 @@ export async function handler(event) {
       };
     }
 
-    // Base64 → Buffer → Blob
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    const buffer = Buffer.from(base64Data, "base64");
-    const blob = new Blob([buffer], { type: "image/jpeg" });
-
-    const form = new FormData();
-    form.append("file", blob, "snapshot.jpg"); // <-- MUST be 'file'
-    form.append(
-      "prompt",
-      `
-You are a vision system reading a VIDEO POKER machine.
-
-Identify EXACTLY 5 playing cards in the BOTTOM ROW only.
-Order cards LEFT TO RIGHT.
-Ignore UI, paytables, buttons, and all other cards.
-
-Return STRICT JSON ONLY.
-
-FORMAT:
-{
-  "cards": [
-    {"rank":"A","suit":"S"},
-    {"rank":"9","suit":"D"},
-    {"rank":"9","suit":"C"},
-    {"rank":"K","suit":"S"},
-    {"rank":"2","suit":"H"}
-  ]
-}
-
-Suit letters:
-S=spades, H=hearts, D=diamonds, C=clubs.
-      `
-    );
+    // Roboflow detect API expects RAW base64 (no data:image prefix)
+    const rawBase64 = imageBase64.split(",")[1];
 
     const response = await fetch(
-      `https://infer.roboflow.com/vision-llm/run?api_key=${process.env.ROBOFLOW_API_KEY}`,
+      `https://detect.roboflow.com/playing-cards/1?api_key=${process.env.ROBOFLOW_API_KEY}`,
       {
         method: "POST",
-        body: form
+        headers: {
+          "Content-Type": "application/x-octet-stream"
+        },
+        body: rawBase64
       }
     );
 
-    const raw = await response.text();
-    console.log("Raw Vision LLM response:", raw);
+    const data = await response.json();
+    console.log("Roboflow raw response:", JSON.stringify(data));
 
-    const parsed = JSON.parse(raw);
-
-    if (!parsed.cards || parsed.cards.length !== 5) {
-      throw new Error("Vision LLM response did not return 5 cards");
+    if (!data.predictions || data.predictions.length === 0) {
+      throw new Error("No cards detected");
     }
+
+    // Keep only bottom-row cards (largest Y values)
+    const sortedByY = [...data.predictions].sort((a, b) => b.y - a.y);
+    const bottomRowY = sortedByY[0].y;
+
+    const bottomRow = data.predictions.filter(p => Math.abs(p.y - bottomRowY) < 40);
+
+    if (bottomRow.length < 5) {
+      throw new Error("Less than 5 cards detected in bottom row");
+    }
+
+    // Sort left → right
+    bottomRow.sort((a, b) => a.x - b.x);
+
+    // Take first 5 cards
+    const cards = bottomRow.slice(0, 5).map(p => {
+      const cls = p.class; // e.g. "9H", "AS"
+      return {
+        rank: cls.slice(0, -1),
+        suit: cls.slice(-1)
+      };
+    });
 
     return {
       statusCode: 200,
-      body: JSON.stringify(parsed)
+      body: JSON.stringify({ cards })
     };
 
   } catch (err) {
-    console.error("Vision LLM error:", err);
+    console.error("Roboflow detect error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message })
