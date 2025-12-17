@@ -1,26 +1,31 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
 export default {
   async fetch(request, env) {
 
-    // Handle CORS preflight (Safari NEEDS this)
+    // Handle CORS preflight
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
-      });
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    // Only allow POST after preflight
+    // Allow GET so Safari doesn't scream
+    if (request.method === "GET") {
+      return new Response(
+        JSON.stringify({ status: "Worker alive" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Only POST does recognition
     if (request.method !== "POST") {
-      return new Response("Method Not Allowed", {
-        status: 405,
-        headers: corsHeaders,
-      });
+      return new Response(
+        JSON.stringify({ error: "Unsupported method" }),
+        { status: 405, headers: corsHeaders }
+      );
     }
 
     try {
@@ -43,10 +48,7 @@ export default {
           model: "gpt-4.1-mini",
           temperature: 0,
           messages: [
-            {
-              role: "system",
-              content: "Return STRICT JSON only."
-            },
+            { role: "system", content: "Return STRICT JSON only." },
             {
               role: "user",
               content: [
@@ -88,10 +90,7 @@ Return JSON ONLY:
 
       return new Response(raw, {
         status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
 
     } catch (err) {
