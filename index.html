@@ -8,7 +8,7 @@
 <style>
 :root{
   --bg:#0b0f14; --panel:#121a24; --border:#223043; --text:#e9eef6; --muted:#b7c3d7;
-  --accent:#2f6bff; --ok:#22c55e; --warn:#f59e0b; --danger:#ff5b5b;
+  --accent:#2f6bff; --ok:#22c55e; --warn:#f59e0b;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui}
@@ -25,70 +25,49 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
 
 .hand{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .card{
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:12px 6px;
-  text-align:center;
-  position:relative;
-  transition:transform .15s ease, box-shadow .15s ease;
+  border:1px solid var(--border);border-radius:14px;padding:12px 6px;
+  text-align:center;position:relative;cursor:pointer;
+  transition:.15s ease;
 }
 .card.hold{
   outline:3px solid var(--ok);
-  box-shadow:0 0 16px rgba(34,197,94,.7);
+  box-shadow:0 0 14px rgba(34,197,94,.6);
   transform:translateY(-2px);
 }
-.card.warn{
-  outline:3px solid var(--warn);
-}
+.card.warn{outline:3px solid var(--warn)}
 .holdBadge{
   position:absolute;top:6px;right:6px;
-  background:var(--ok);color:#000;
-  font-size:10px;font-weight:800;
-  padding:2px 6px;border-radius:999px;
+  background:var(--ok);color:#000;font-size:10px;
+  padding:2px 6px;border-radius:999px;font-weight:800;
 }
 .face{font-size:22px;font-weight:800}
-
 .status{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
 
 .snapBtn{
-  position:fixed;
-  bottom:18px; left:50%;
+  position:fixed;bottom:18px;left:50%;
   transform:translateX(-50%);
-  width:72px; height:72px;
-  border-radius:50%;
-  background:var(--accent);
-  border:none;
+  width:74px;height:74px;border-radius:50%;
+  background:var(--accent);border:none;
   box-shadow:0 10px 30px rgba(47,107,255,.6);
-  font-size:0;
+}
+.snapBtn::after{
+  content:"";display:block;width:52px;height:52px;
+  background:#fff;border-radius:50%;margin:auto;
 }
 .snapBtn:disabled{opacity:.5}
-.snapBtn::after{
-  content:"";
-  display:block;
-  width:52px;height:52px;
-  margin:auto;
-  border-radius:50%;
-  background:#fff;
-}
 
 .footer{
   position:fixed;bottom:0;left:0;right:0;
-  background:linear-gradient(transparent, var(--bg) 50%);
+  background:linear-gradient(transparent,var(--bg) 60%);
   padding:10px;
 }
 .footerInner{max-width:900px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.pill{
-  padding:6px 10px;
-  border:1px solid var(--border);
-  border-radius:999px;
-  font-size:12px;
-  color:var(--muted);
-}
-.pill strong{color:#fff}
-.multPill{
-  background:rgba(47,107,255,.15);
-  border-color:var(--accent);
-  color:#cfe0ff;
+
+.toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:#22c55e;color:#000;
+  padding:10px 16px;border-radius:999px;
+  font-weight:700;display:none;
 }
 </style>
 </head>
@@ -121,29 +100,21 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
 <!-- CAMERA -->
 <div class="panel">
   <h2>Camera</h2>
-  <video id="video" playsinline autoplay muted style="display:none"></video>
+  <video id="video" playsinline autoplay muted></video>
   <canvas id="canvas" style="display:none"></canvas>
-  <div class="status" id="status">Ready. Press Snap.</div>
+  <div class="status" id="status">Ready. Tap Snap.</div>
 </div>
 
 <!-- HAND -->
 <div class="panel">
-  <div class="row">
-    <div class="pill" id="evPill">EV: <strong>—</strong></div>
-    <div class="pill multPill" id="uxPill" style="display:none">Multiplier: <strong id="uxMultText">1x</strong></div>
-  </div>
-
   <div class="hand" id="hand"></div>
-
   <div class="status" id="confidenceMsg"></div>
 </div>
 
 </div>
 
-<!-- SNAP BUTTON -->
-<button class="snapBtn" id="snapBtn" disabled></button>
+<button class="snapBtn" id="snapBtn"></button>
 
-<!-- FOOTER -->
 <div class="footer">
   <div class="footerInner">
     <button id="retry">Retry</button>
@@ -151,64 +122,54 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
   </div>
 </div>
 
+<div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
+
 <script>
-/* ================= CONFIG ================= */
+/* ===== CONFIG ===== */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ================= STATE ================= */
+/* ===== STATE ===== */
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-let cards=[], hold=[], multiplier=1, confidence=1, lastImage=null;
-let busy=false;
+let cards=[], hold=[], confidence=1, lastImage=null;
 
-/* ================= ELEMENTS ================= */
+/* ===== ELEMENTS ===== */
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const handDiv=document.getElementById("hand");
 const statusEl=document.getElementById("status");
-const snapBtn=document.getElementById("snapBtn");
-const uxPill=document.getElementById("uxPill");
-const uxMultText=document.getElementById("uxMultText");
 const confMsg=document.getElementById("confidenceMsg");
+const toast=document.getElementById("toast");
 
-/* ================= CAMERA ================= */
+/* ===== CAMERA INIT ===== */
 (async()=>{
   const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject=s; video.style.display="";
-  snapBtn.disabled=false;
+  video.srcObject=s;
 })();
 
+/* ===== SNAP ===== */
 snapBtn.onclick=async()=>{
-  if(busy) return;
-  busy=true;
   navigator.vibrate?.(30);
-  statusEl.textContent="Capturing…";
-  snapBtn.disabled=true;
-
   canvas.width=video.videoWidth;
   canvas.height=video.videoHeight;
   canvas.getContext("2d").drawImage(video,0,0);
 
-  const maxW=800, sc=Math.min(maxW/canvas.width,1);
   const t=document.createElement("canvas");
+  const sc=Math.min(800/canvas.width,1);
   t.width=canvas.width*sc; t.height=canvas.height*sc;
   t.getContext("2d").drawImage(canvas,0,0,t.width,t.height);
   lastImage=t.toDataURL("image/jpeg",0.7);
 
   await recognize(lastImage);
-  snapBtn.disabled=false;
-  busy=false;
 };
 
-retry.onclick=async()=>{ if(lastImage) await recognize(lastImage); };
-reset.onclick=()=>{ cards=[]; hold=[]; multiplier=1; render(); statusEl.textContent="Reset."; };
+retry.onclick=()=>lastImage&&recognize(lastImage);
+reset.onclick=()=>{cards=[];hold=[];render();};
 
+/* ===== RECOGNIZE ===== */
 async function recognize(img){
   statusEl.textContent="Analyzing strategy…";
-  confMsg.textContent="";
-
   const res=await fetch(WORKER_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
+    method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       imageBase64:img,
       game:game.value,
@@ -216,26 +177,29 @@ async function recognize(img){
     })
   });
 
-  const data=await res.json();
-  cards=data.cards||[];
-  hold=data.hold||[false,false,false,false,false];
-  multiplier=data.multiplier||1;
-  confidence=data.confidence||1;
+  const d=await res.json();
+  cards=d.cards||[];
+  hold=d.hold||[false,false,false,false,false];
+  confidence=d.confidence||1;
 
   render();
+  statusEl.textContent="Done";
 
   if(confidence<0.7){
     confMsg.textContent="⚠️ Low confidence — verify holds";
+  }else{
+    confMsg.textContent="";
   }
-  statusEl.textContent="Done";
+
+  if(isWinningHand(cards)){
+    toast.style.display="block";
+    setTimeout(()=>toast.style.display="none",2500);
+  }
 }
 
-/* ================= RENDER ================= */
+/* ===== RENDER ===== */
 function render(){
   handDiv.innerHTML="";
-  uxPill.style.display=game.value.startsWith("ux")?"":"none";
-  uxMultText.textContent=multiplier+"x";
-
   cards.forEach((c,i)=>{
     const d=document.createElement("div");
     d.className="card"+(hold[i]?" hold":"")+(confidence<0.7?" warn":"");
@@ -243,9 +207,17 @@ function render(){
       ${hold[i]?'<div class="holdBadge">HOLD</div>':''}
       <div class="face">${c.rank}${SUIT[c.suit]}</div>
     `;
-    d.onclick=()=>{hold[i]=!hold[i]; render();};
+    d.onclick=()=>{hold[i]=!hold[i];render();};
     handDiv.appendChild(d);
   });
+}
+
+/* ===== WIN DETECTION (simple) ===== */
+function isWinningHand(cards){
+  if(cards.length!==5) return false;
+  const counts={};
+  cards.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
+  return Object.values(counts).some(v=>v>=2);
 }
 </script>
 </body>
