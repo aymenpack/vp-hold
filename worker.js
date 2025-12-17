@@ -1,160 +1,183 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
 function gameRules(game, paytable) {
-  // These are instruction “profiles” (not paytables themselves).
-  // They tell the model which strategy chart family to follow.
+
   switch (game) {
+
+    /* =========================
+       JACKS OR BETTER
+    ========================= */
     case "job":
       return `
-STRATEGY PROFILE: Jacks or Better.
-Paytable: ${paytable}.
-Use optimal Jacks-or-Better strategy for the specified paytable (9/6 vs 8/5).
-Priority examples: made hands > 4 to a royal > 4 to a straight flush > high pairs > 3 to a royal, etc.
+STRATEGY PROFILE: JACKS OR BETTER (${paytable})
+
+ABSOLUTE RULES:
+- Always HOLD made hands: straight, flush, full house, four of a kind.
+- Always HOLD a high pair (J, Q, K, A).
+- NEVER break a made hand for a draw.
+
+PRIORITY ORDER (highest to lowest):
+1. Royal flush, straight flush
+2. Four of a kind (hold all 5)
+3. Full house
+4. Flush
+5. Straight
+6. Three of a kind
+7. Two pair
+8. High pair (Jacks or better)
+9. 4 to a Royal Flush
+10. 4 to a Straight Flush
+11. Low pair
+12. 4 to a Flush
+13. 3 to a Royal Flush
+14. 4 to an open straight
+15. 2 high cards
+
+IMPORTANT:
+- Low pairs are weaker than 4-card premium draws.
+- NEVER discard a high pair.
 `;
+
+    /* =========================
+       BONUS POKER
+    ========================= */
     case "bonus":
       return `
-STRATEGY PROFILE: Bonus Poker.
-Paytable: ${paytable}.
-Use optimal Bonus Poker strategy (quads and bonus structure differ from Jacks or Better).
-Do NOT use generic Jacks-or-Better charts when choices differ.
+STRATEGY PROFILE: BONUS POKER (${paytable})
+
+DIFFERENCE FROM JOB:
+- Four of a kind payouts are higher.
+- Strategy is similar to JOB but quads are more valuable.
+
+ABSOLUTE RULES:
+- Always HOLD any four of a kind (HOLD ALL 5).
+- Always HOLD made hands (straight or better).
+- Always HOLD high pairs.
+
+IMPORTANT:
+- Quad aces do NOT have kicker dependence here.
+- Do NOT apply DDB kicker logic.
+
+PRIORITY:
+Same as Jacks or Better except:
+- Quads outrank everything below straight flush.
 `;
+
+    /* =========================
+       DOUBLE BONUS
+    ========================= */
     case "double_bonus":
       return `
-STRATEGY PROFILE: Double Bonus Poker.
-Paytable: ${paytable}.
-Use optimal Double Bonus strategy; treat quad categories and kicker incentives appropriately.
+STRATEGY PROFILE: DOUBLE BONUS (${paytable})
+
+KEY DIFFERENCE:
+- Quad aces pay significantly more.
+- Low quads (2–4) are also enhanced.
+
+ABSOLUTE RULES:
+- Always HOLD all 5 cards on ANY four of a kind.
+- NEVER discard the kicker with quads.
+- Always HOLD high pairs.
+
+IMPORTANT:
+- Do not break quads for draws.
+- Do not apply JOB logic when quads exist.
 `;
+
+    /* =========================
+       DOUBLE DOUBLE BONUS
+    ========================= */
     case "ddb":
       return `
-STRATEGY PROFILE: Double Double Bonus Poker.
-Paytable: ${paytable}.
-Use optimal DDB strategy (kicker-dependent quad bonuses change correct holds).
+STRATEGY PROFILE: DOUBLE DOUBLE BONUS (DDB)
+
+THIS GAME HAS CRITICAL KICKER RULES.
+
+ABSOLUTE, NON-NEGOTIABLE RULES:
+
+FOUR ACES:
+- If the 5th card is ANY rank (2 through K), HOLD ALL 5 CARDS.
+- NEVER discard the kicker.
+
+FOUR 2s, 3s, or 4s:
+- If the kicker is A, 2, 3, or 4 → HOLD ALL 5.
+- If the kicker is 5–K → HOLD ALL 5.
+- NEVER discard the kicker.
+
+ALL OTHER QUADS (5–K):
+- HOLD ALL 5 CARDS.
+
+IMPORTANT:
+- In DDB, YOU NEVER DISCARD THE KICKER ON QUADS.
+- Do NOT use Bonus Poker or JOB quad logic.
+- This rule overrides all draw considerations.
+
+OTHER RULES:
+- Always HOLD made hands (straight or better).
+- Always HOLD high pairs.
 `;
+
+    /* =========================
+       DEUCES WILD
+    ========================= */
     case "deuces":
       return `
-STRATEGY PROFILE: Deuces Wild.
-Paytable: ${paytable}.
-Deuces are wild (2s). Use optimal Deuces Wild strategy.
-Always consider number of deuces first; prioritize made hands with deuces and strong draws.
+STRATEGY PROFILE: DEUCES WILD (${paytable})
+
+CORE PRINCIPLE:
+- Deuces (2s) are WILD.
+- Number of deuces dominates strategy.
+
+ABSOLUTE RULES:
+- 4 Deuces → HOLD ALL 5.
+- 3 Deuces → HOLD ALL 5.
+- 2 Deuces → HOLD BOTH DEUCES.
+- 1 Deuce → HOLD THE DEUCE.
+
+MADE HANDS:
+- Natural Royal (no deuce) → HOLD ALL 5.
+- Wild Royal → HOLD ALL 5.
+- Five of a Kind → HOLD ALL 5.
+- Straight flush or better → HOLD ALL 5.
+
+IMPORTANT:
+- NEVER discard a deuce.
+- Do not apply Jacks-or-Better logic.
+- Wild value dominates kicker value.
 `;
+
+    /* =========================
+       ULTIMATE X
+    ========================= */
     case "ux":
     case "uxp":
       return `
-STRATEGY PROFILE: Ultimate X.
-Paytable base: ${paytable}.
-Use strategy appropriate for Ultimate X. Factor the SINGLE multiplier for the whole row strongly.
-If multiplier is high, prioritize lines that maximize expected value under multiplier.
-(You are deciding what to hold NOW for this hand with the given multiplier.)
+STRATEGY PROFILE: ULTIMATE X
+
+CORE DIFFERENCE:
+- There is ONE MULTIPLIER for the entire bottom row.
+- Multiplier dramatically changes correct holds.
+
+ABSOLUTE RULES:
+- Always HOLD made hands (straight or better).
+- Always HOLD all 5 cards on any four of a kind.
+- NEVER discard quads or full houses.
+
+MULTIPLIER LOGIC:
+- High multiplier (≥8x):
+  - Favor high-EV future hands.
+  - Prefer premium draws over marginal made hands.
+- Low multiplier (1x–2x):
+  - Use base Jacks-or-Better strategy.
+
+IMPORTANT:
+- Apply Jacks-or-Better base rules PLUS multiplier weighting.
+- Multiplier overrides marginal EV differences.
+- Do NOT ignore multiplier.
 `;
+
     default:
-      return `STRATEGY PROFILE: Unknown. Use best effort.`;
-  }
-}
-
-function buildPrompt(game, paytable) {
-  return `
-You are a video poker PERFECT STRATEGY engine.
-
-You MUST follow these rules:
-- Output STRICT JSON only.
-- No explanations, no markdown, no extra text.
-- Identify exactly 5 cards in the BOTTOM ROW, left-to-right.
-- Determine which cards to HOLD for the selected game and paytable.
-- Return hold as a boolean array of length 5.
-- Also return a confidence number 0-1. Use <0.7 if uncertain.
-
-${gameRules(game, paytable)}
-
-ULTIMATE X MULTIPLIER:
-- If this is Ultimate X, read the SINGLE multiplier shown on the LEFT of the bottom row (e.g., 2x, 4x, 10x).
-- Return it as an integer in field "multiplier".
-- If not present or not Ultimate X, return null.
-
-OUTPUT FORMAT (STRICT JSON):
-{
-  "cards": [
-    {"rank":"A","suit":"S"},
-    {"rank":"9","suit":"D"},
-    {"rank":"9","suit":"C"},
-    {"rank":"K","suit":"S"},
-    {"rank":"2","suit":"H"}
-  ],
-  "multiplier": 10,
-  "hold": [false, true, true, false, false],
-  "confidence": 0.85
-}
-
-Suit letters: S=spades, H=hearts, D=diamonds, C=clubs.
-Ranks: A,K,Q,J,T,9..2.
+      return `
+STRATEGY PROFILE: UNKNOWN.
+Use best judgment.
 `;
-}
-
-export default {
-  async fetch(request, env) {
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
-    if (request.method === "GET") {
-      return new Response(JSON.stringify({ status: "Worker alive" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-    if (request.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Unsupported method" }), { status: 405, headers: corsHeaders });
-    }
-
-    try {
-      const { imageBase64, game, paytable } = await request.json();
-      if (!imageBase64 || !game || !paytable) {
-        return new Response(JSON.stringify({ error: "Missing image/game/paytable" }), { status: 400, headers: corsHeaders });
-      }
-
-      const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4.1-mini",
-          temperature: 0,
-          messages: [
-            { role: "system", content: "Return STRICT JSON only." },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: buildPrompt(game, paytable) },
-                { type: "image_url", image_url: { url: imageBase64 } }
-              ]
-            }
-          ]
-        })
-      });
-
-      const raw = await openaiRes.json();
-      const content = raw.choices?.[0]?.message?.content || "";
-      const match = content.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error("No JSON returned");
-
-      const parsed = JSON.parse(match[0]);
-
-      // Hard validation
-      if (!parsed.cards || parsed.cards.length !== 5) throw new Error("cards must be length 5");
-      if (!parsed.hold || parsed.hold.length !== 5) throw new Error("hold must be length 5");
-
-      return new Response(JSON.stringify(parsed), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: corsHeaders
-      });
-    }
   }
-};
+}
