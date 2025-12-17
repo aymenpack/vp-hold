@@ -1,183 +1,247 @@
-function gameRules(game, paytable) {
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 
+/* =========================
+   STRATEGY PROMPTS
+========================= */
+
+function gameRules(game, paytable) {
   switch (game) {
 
-    /* =========================
-       JACKS OR BETTER
-    ========================= */
     case "job":
       return `
-STRATEGY PROFILE: JACKS OR BETTER (${paytable})
+STRATEGY: JACKS OR BETTER (${paytable})
 
-ABSOLUTE RULES:
-- Always HOLD made hands: straight, flush, full house, four of a kind.
-- Always HOLD a high pair (J, Q, K, A).
-- NEVER break a made hand for a draw.
-
-PRIORITY ORDER (highest to lowest):
-1. Royal flush, straight flush
-2. Four of a kind (hold all 5)
-3. Full house
-4. Flush
-5. Straight
-6. Three of a kind
-7. Two pair
-8. High pair (Jacks or better)
-9. 4 to a Royal Flush
-10. 4 to a Straight Flush
-11. Low pair
-12. 4 to a Flush
-13. 3 to a Royal Flush
-14. 4 to an open straight
-15. 2 high cards
-
-IMPORTANT:
-- Low pairs are weaker than 4-card premium draws.
-- NEVER discard a high pair.
+RULES:
+- Always hold made hands (straight or better).
+- Always hold high pairs (J, Q, K, A).
+- Never break a made hand for a draw.
+- Use standard 9/6 or 8/5 strategy hierarchy.
 `;
 
-    /* =========================
-       BONUS POKER
-    ========================= */
     case "bonus":
       return `
-STRATEGY PROFILE: BONUS POKER (${paytable})
+STRATEGY: BONUS POKER (${paytable})
 
-DIFFERENCE FROM JOB:
-- Four of a kind payouts are higher.
-- Strategy is similar to JOB but quads are more valuable.
-
-ABSOLUTE RULES:
-- Always HOLD any four of a kind (HOLD ALL 5).
-- Always HOLD made hands (straight or better).
-- Always HOLD high pairs.
-
-IMPORTANT:
-- Quad aces do NOT have kicker dependence here.
-- Do NOT apply DDB kicker logic.
-
-PRIORITY:
-Same as Jacks or Better except:
-- Quads outrank everything below straight flush.
+RULES:
+- Strategy similar to Jacks or Better.
+- Quads are more valuable, but kicker does NOT matter.
+- Always hold all 5 cards on quads.
 `;
 
-    /* =========================
-       DOUBLE BONUS
-    ========================= */
     case "double_bonus":
       return `
-STRATEGY PROFILE: DOUBLE BONUS (${paytable})
+STRATEGY: DOUBLE BONUS (${paytable})
 
-KEY DIFFERENCE:
-- Quad aces pay significantly more.
-- Low quads (2–4) are also enhanced.
-
-ABSOLUTE RULES:
-- Always HOLD all 5 cards on ANY four of a kind.
-- NEVER discard the kicker with quads.
-- Always HOLD high pairs.
-
-IMPORTANT:
-- Do not break quads for draws.
-- Do not apply JOB logic when quads exist.
+RULES:
+- Quad aces and low quads are enhanced.
+- NEVER discard the kicker on any four of a kind.
+- Always hold all 5 cards on quads.
 `;
 
-    /* =========================
-       DOUBLE DOUBLE BONUS
-    ========================= */
     case "ddb":
       return `
-STRATEGY PROFILE: DOUBLE DOUBLE BONUS (DDB)
+STRATEGY: DOUBLE DOUBLE BONUS (DDB)
 
-THIS GAME HAS CRITICAL KICKER RULES.
-
-ABSOLUTE, NON-NEGOTIABLE RULES:
-
-FOUR ACES:
-- If the 5th card is ANY rank (2 through K), HOLD ALL 5 CARDS.
-- NEVER discard the kicker.
-
-FOUR 2s, 3s, or 4s:
-- If the kicker is A, 2, 3, or 4 → HOLD ALL 5.
-- If the kicker is 5–K → HOLD ALL 5.
-- NEVER discard the kicker.
-
-ALL OTHER QUADS (5–K):
-- HOLD ALL 5 CARDS.
-
-IMPORTANT:
-- In DDB, YOU NEVER DISCARD THE KICKER ON QUADS.
-- Do NOT use Bonus Poker or JOB quad logic.
-- This rule overrides all draw considerations.
+CRITICAL RULE:
+- In DDB, YOU NEVER DISCARD THE KICKER ON ANY FOUR OF A KIND.
+- If the hand contains four cards of the same rank, HOLD ALL FIVE CARDS.
+- This rule overrides ALL other considerations.
 
 OTHER RULES:
-- Always HOLD made hands (straight or better).
-- Always HOLD high pairs.
+- Always hold made hands (straight or better).
+- Always hold high pairs.
 `;
 
-    /* =========================
-       DEUCES WILD
-    ========================= */
     case "deuces":
       return `
-STRATEGY PROFILE: DEUCES WILD (${paytable})
+STRATEGY: DEUCES WILD (${paytable})
 
-CORE PRINCIPLE:
-- Deuces (2s) are WILD.
-- Number of deuces dominates strategy.
-
-ABSOLUTE RULES:
-- 4 Deuces → HOLD ALL 5.
-- 3 Deuces → HOLD ALL 5.
-- 2 Deuces → HOLD BOTH DEUCES.
-- 1 Deuce → HOLD THE DEUCE.
-
-MADE HANDS:
-- Natural Royal (no deuce) → HOLD ALL 5.
-- Wild Royal → HOLD ALL 5.
-- Five of a Kind → HOLD ALL 5.
-- Straight flush or better → HOLD ALL 5.
-
-IMPORTANT:
+RULES:
+- Deuces (2s) are wild.
 - NEVER discard a deuce.
-- Do not apply Jacks-or-Better logic.
-- Wild value dominates kicker value.
+- 4, 3, or 2 deuces → hold all deuces.
+- 4 or 3 deuces → hold all 5 cards.
+- Made hands (straight flush or better) → hold all 5.
 `;
 
-    /* =========================
-       ULTIMATE X
-    ========================= */
     case "ux":
     case "uxp":
       return `
-STRATEGY PROFILE: ULTIMATE X
+STRATEGY: ULTIMATE X (${paytable})
 
-CORE DIFFERENCE:
-- There is ONE MULTIPLIER for the entire bottom row.
-- Multiplier dramatically changes correct holds.
-
-ABSOLUTE RULES:
-- Always HOLD made hands (straight or better).
-- Always HOLD all 5 cards on any four of a kind.
-- NEVER discard quads or full houses.
-
-MULTIPLIER LOGIC:
-- High multiplier (≥8x):
-  - Favor high-EV future hands.
-  - Prefer premium draws over marginal made hands.
-- Low multiplier (1x–2x):
-  - Use base Jacks-or-Better strategy.
-
-IMPORTANT:
-- Apply Jacks-or-Better base rules PLUS multiplier weighting.
-- Multiplier overrides marginal EV differences.
-- Do NOT ignore multiplier.
+RULES:
+- Use Jacks or Better as base strategy.
+- ONE multiplier applies to the entire row.
+- If multiplier >= 4x, prioritize keeping made hands and premium draws.
+- Never break quads or full houses.
 `;
 
     default:
-      return `
-STRATEGY PROFILE: UNKNOWN.
-Use best judgment.
-`;
+      return `Use best possible video poker strategy.`;
   }
 }
+
+function buildPrompt(game, paytable) {
+  return `
+You are a VIDEO POKER PERFECT STRATEGY engine.
+
+TASKS:
+1. Identify EXACTLY 5 cards in the BOTTOM ROW (left to right).
+2. If Ultimate X, read the SINGLE multiplier shown on the LEFT.
+3. Decide which cards to HOLD using PERFECT STRATEGY.
+
+${gameRules(game, paytable)}
+
+OUTPUT STRICT JSON ONLY (NO TEXT):
+
+{
+  "cards": [
+    {"rank":"A","suit":"S"},
+    {"rank":"9","suit":"D"},
+    {"rank":"9","suit":"C"},
+    {"rank":"K","suit":"S"},
+    {"rank":"2","suit":"H"}
+  ],
+  "multiplier": 10,
+  "hold": [false,true,true,false,false],
+  "confidence": 0.9
+}
+
+Suit letters: S,H,D,C.
+Ranks: A,K,Q,J,T,9..2.
+`;
+}
+
+/* =========================
+   HARD RULE GUARDRAILS
+========================= */
+
+function isFourOfKind(cards) {
+  const counts = {};
+  for (const c of cards) counts[c.rank] = (counts[c.rank] || 0) + 1;
+  return Object.values(counts).some(v => v === 4);
+}
+
+function countDeuces(cards) {
+  return cards.filter(c => c.rank === "2").length;
+}
+
+function normalizeHold(hold) {
+  if (!Array.isArray(hold) || hold.length !== 5) {
+    return [false,false,false,false,false];
+  }
+  return hold.map(Boolean);
+}
+
+/* =========================
+   WORKER
+========================= */
+
+export default {
+  async fetch(request, env) {
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    if (request.method === "GET") {
+      return new Response(
+        JSON.stringify({ status: "Worker alive" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (request.method !== "POST") {
+      return new Response(
+        JSON.stringify({ error: "Unsupported method" }),
+        { status: 405, headers: corsHeaders }
+      );
+    }
+
+    try {
+      const { imageBase64, game, paytable } = await request.json();
+
+      if (!imageBase64 || !game || !paytable) {
+        return new Response(
+          JSON.stringify({ error: "Missing image, game, or paytable" }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1-mini",
+          temperature: 0,
+          messages: [
+            { role: "system", content: "Return STRICT JSON only." },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: buildPrompt(game, paytable) },
+                { type: "image_url", image_url: { url: imageBase64 } }
+              ]
+            }
+          ]
+        })
+      });
+
+      const raw = await openaiRes.json();
+      const content = raw.choices?.[0]?.message?.content || "";
+      const match = content.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("No JSON returned");
+
+      const parsed = JSON.parse(match[0]);
+
+      parsed.hold = normalizeHold(parsed.hold);
+
+      /* ===== HARD GUARDRAILS ===== */
+
+      // Double Double Bonus: never discard kicker on quads
+      if (game === "ddb" && parsed.cards && isFourOfKind(parsed.cards)) {
+        parsed.hold = [true,true,true,true,true];
+      }
+
+      // Double Bonus: same rule for safety
+      if (game === "double_bonus" && parsed.cards && isFourOfKind(parsed.cards)) {
+        parsed.hold = [true,true,true,true,true];
+      }
+
+      // Bonus Poker: same
+      if (game === "bonus" && parsed.cards && isFourOfKind(parsed.cards)) {
+        parsed.hold = [true,true,true,true,true];
+      }
+
+      // Deuces Wild: never discard a deuce
+      if (game === "deuces" && parsed.cards) {
+        parsed.cards.forEach((c, i) => {
+          if (c.rank === "2") parsed.hold[i] = true;
+        });
+      }
+
+      // Ultimate X: never break quads
+      if ((game === "ux" || game === "uxp") && parsed.cards && isFourOfKind(parsed.cards)) {
+        parsed.hold = [true,true,true,true,true];
+      }
+
+      return new Response(
+        JSON.stringify(parsed),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+  }
+};
