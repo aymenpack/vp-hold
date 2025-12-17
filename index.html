@@ -2,63 +2,44 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Video Poker Assistant</title>
 
 <style>
-:root{
-  --bg:#0b0f14; --panel:#121a24; --border:#223043; --text:#e9eef6; --muted:#b7c3d7;
-  --accent:#2f6bff; --ok:#22c55e;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui}
-.app{max-width:980px;margin:auto;padding:12px 12px 120px}
-.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}
+body{margin:0;background:#0b0f14;color:#e9eef6;font-family:-apple-system,system-ui}
+.app{max-width:900px;margin:auto;padding:12px}
+.panel{background:#121a24;border:1px solid #223043;border-radius:16px;padding:12px;margin-bottom:12px}
 h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(min-width:900px){.row{grid-template-columns:1.2fr 1fr 1fr 1fr}}
-select,button,input{
-  width:100%;background:#0f1621;color:var(--text);
-  border:1px solid var(--border);border-radius:12px;padding:10px;font-size:14px;
-}
-button.primary{background:var(--accent);border-color:var(--accent)}
-video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);background:#000}
-.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
-.card{
-  border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center;position:relative;
-  min-height:74px;display:flex;flex-direction:column;justify-content:center;
-}
-.card.hold{outline:2px solid var(--ok)}
-.card .idx{position:absolute;top:6px;left:8px;font-size:11px;color:var(--muted)}
-.card .face{font-size:22px;font-weight:800}
-.status{font-size:12px;color:var(--muted)}
-.pill{padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted)}
-.pill strong{color:#fff}
-.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+select,button{background:#0f1621;color:#fff;border:1px solid #223043;border-radius:12px;padding:10px}
+button.primary{background:#2f6bff}
+video,canvas{width:100%;border-radius:12px;border:1px solid #223043;background:#000}
+.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.card{border:1px solid #223043;border-radius:12px;padding:10px;text-align:center}
+.card.hold{outline:3px solid #22c55e}
+.face{font-size:22px;font-weight:800}
+.status{font-size:12px;color:#b7c3d7;margin-top:6px}
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<!-- CONFIG -->
 <div class="panel">
   <h2>Game</h2>
-  <div class="row">
-    <select id="game"></select>
-    <select id="paytable"></select>
-    <select id="speed">
-      <option value="fast">Fast</option>
-      <option value="med" selected>Medium</option>
-      <option value="high">High</option>
-    </select>
-  </div>
+  <select id="game">
+    <option value="job">Jacks or Better</option>
+    <option value="bonus">Bonus Poker</option>
+    <option value="double_bonus">Double Bonus</option>
+    <option value="ddb">Double Double Bonus</option>
+    <option value="deuces">Deuces Wild</option>
+    <option value="ux">Ultimate X</option>
+  </select>
 </div>
 
-<!-- CAMERA -->
 <div class="panel">
   <h2>Camera</h2>
-  <video id="video" playsinline autoplay muted style="display:none"></video>
+  <video id="video" autoplay playsinline muted style="display:none"></video>
   <canvas id="canvas" style="display:none"></canvas>
   <div class="row">
     <button class="primary" id="startCam">Start Camera</button>
@@ -67,186 +48,64 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
   <div class="status" id="status">Waiting…</div>
 </div>
 
-<!-- HAND -->
 <div class="panel">
   <h2>Hand</h2>
   <div class="hand" id="hand"></div>
-
-  <div id="uxBox" style="display:none;margin-top:10px">
-    <div class="status"><strong>Ultimate X multiplier</strong></div>
-    <input id="uxMult" type="number" min="1" step="1" value="1"/>
-  </div>
-
-  <div class="kpis">
-    <span class="pill">EV: <strong id="ev">—</strong></span>
-    <span class="pill">Hold: <strong id="holdText">—</strong></span>
-  </div>
-
-  <div class="row" style="margin-top:10px">
-    <button id="clear">Clear</button>
-  </div>
 </div>
 
 </div>
 
 <script>
-/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
+let hand=[], hold=[];
 
-/* ================= DATA ================= */
-const GAMES = {
-  job:{name:"Jacks or Better", pt:{RF:800,SF:50,K4:25,FH:9,FL:6,ST:4,K3:3,TP:2,JOB:1}},
-  bonus:{name:"Bonus Poker", pt:{RF:800,SF:50,K4_A:80,K4:40,FH:8,FL:5,ST:4,K3:3,TP:2,JOB:1}},
-  double_bonus:{name:"Double Bonus", pt:{RF:800,SF:50,K4_A:80,K4_234:40,K4:25,FH:8,FL:5,ST:4,K3:3,TP:2,JOB:1}},
-  ddb:{name:"Double Double Bonus", pt:{RF:800,SF:50,K4_A:80,K4_234:40,K4:25,FH:9,FL:6,ST:4,K3:3,TP:2,JOB:1}},
-  deuces:{name:"Deuces Wild", pt:{NRF:800,WRF:25,SF:50,K5:15,K4:4,FH:4,FL:3,ST:2,K3:1}},
-  ux:{name:"Ultimate X", ptRef:"job"},
-  uxp:{name:"Ultimate X Progressive", ptRef:"job"}
-};
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const handDiv=document.getElementById("hand");
+const statusEl=document.getElementById("status");
 
-const RANKS = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
-const SUITS = ["S","H","D","C"];
-const SUIT_CHAR = {S:"♠",H:"♥",D:"♦",C:"♣"};
-
-/* ================= STATE ================= */
-let hand = [null,null,null,null,null];
-let holdMask = [false,false,false,false,false];
-let uxMultiplier = 1;
-
-/* ================= ELEMENTS ================= */
-const elGame = game, elPay = paytable, elHand = document.getElementById("hand");
-const elEV = ev, elHold = holdText, elStatus = status, elUxBox = uxBox, elUxMult = uxMult;
-
-/* ================= INIT ================= */
-for (const k in GAMES){
-  const o=document.createElement("option");
-  o.value=k; o.textContent=GAMES[k].name; elGame.appendChild(o);
-}
-elGame.value="job";
-elPay.innerHTML="<option>Default</option>";
-
-elGame.onchange = () => solveIfReady();
-elPay.onchange = () => solveIfReady();
-elUxMult.onchange = () => {uxMultiplier=parseInt(elUxMult.value)||1; solveIfReady();};
-
-/* ================= CAMERA ================= */
 startCam.onclick=async()=>{
   const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
   video.srcObject=s; video.style.display=""; snap.disabled=false;
 };
 
 snap.onclick=async()=>{
-  elStatus.textContent="Recognizing…";
+  statusEl.textContent="Recognizing…";
   canvas.width=video.videoWidth; canvas.height=video.videoHeight;
   canvas.getContext("2d").drawImage(video,0,0);
+
   const maxW=800, sc=Math.min(maxW/canvas.width,1);
   const t=document.createElement("canvas");
   t.width=canvas.width*sc; t.height=canvas.height*sc;
   t.getContext("2d").drawImage(canvas,0,0,t.width,t.height);
-  const dataUrl=t.toDataURL("image/jpeg",0.7);
+  const img=t.toDataURL("image/jpeg",0.7);
 
-  const r=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({imageBase64:dataUrl})});
-  const d=await r.json();
+  const res=await fetch(WORKER_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      imageBase64:img,
+      game:document.getElementById("game").value
+    })
+  });
 
-  if(d.cards){
-    hand=d.cards.map(c=>({rank:c.rank,suit:c.suit}));
-    if(d.multiplier!=null) uxMultiplier=d.multiplier;
-    render();
-    solve();
-    elStatus.textContent="Done";
-  }else elStatus.textContent="Could not read cards.";
+  const data=await res.json();
+  hand=data.cards||[];
+  hold=data.hold||[false,false,false,false,false];
+  render();
+  statusEl.textContent="Done";
 };
 
-/* ================= RENDER ================= */
 function render(){
-  elHand.innerHTML="";
-  elUxBox.style.display=(elGame.value==="ux"||elGame.value==="uxp")?"":"none";
-  elUxMult.value=uxMultiplier;
-
+  handDiv.innerHTML="";
   hand.forEach((c,i)=>{
     const d=document.createElement("div");
-    d.className="card"+(holdMask[i]?" hold":"");
-    d.innerHTML=`<div class="idx">${i+1}</div><div class="face">${c?c.rank+SUIT_CHAR[c.suit]:"—"}</div>`;
-    d.onclick=()=>{
-      const v=prompt("AS, 9D, KC:");
-      if(v){hand[i]={rank:v[0],suit:v[1]}; solve();}
-    };
-    elHand.appendChild(d);
+    d.className="card"+(hold[i]?" hold":"");
+    d.innerHTML=`<div class="face">${c.rank}${SUIT[c.suit]}</div>`;
+    handDiv.appendChild(d);
   });
 }
-
-/* ================= SOLVER ================= */
-function solveIfReady(){ if(hand.every(Boolean)) solve(); }
-
-function solve(){
-  const game=elGame.value;
-  const baseGame=GAMES[game].pt?game:GAMES[game].ptRef;
-  const pt=GAMES[baseGame].pt;
-
-  const deck=[];
-  for(const r of RANKS)for(const s of SUITS){
-    if(!hand.find(c=>c.rank===r&&c.suit===s)) deck.push({rank:r,suit:s});
-  }
-
-  let bestEV=-1e9, best=null;
-  const sims=elSpeed.value==="fast"?12000:elSpeed.value==="high"?80000:30000;
-
-  for(let mask=0;mask<32;mask++){
-    const held=hand.filter((_,i)=>mask&(1<<i));
-    const need=5-held.length;
-    let sum=0;
-
-    for(let t=0;t<sims;t++){
-      for(let i=0;i<need;i++){
-        const j=i+(Math.random()*(deck.length-i)|0);
-        [deck[i],deck[j]]=[deck[j],deck[i]];
-      }
-      const final=held.concat(deck.slice(0,need));
-      sum+=payout(final,pt);
-    }
-
-    let ev=sum/sims;
-    if(game==="ux"||game==="uxp") ev*=uxMultiplier;
-    if(ev>bestEV){bestEV=ev; best=mask;}
-  }
-
-  holdMask=[0,1,2,3,4].map(i=>!!(best&(1<<i)));
-  elEV.textContent=bestEV.toFixed(4);
-  elHold.textContent=holdMask.map((h,i)=>h?i+1:null).filter(Boolean).join(",")||"none";
-  render();
-}
-
-/* ================= PAYOUT ================= */
-function payout(cards,pt){
-  const vals=cards.map(c=>rankVal(c.rank));
-  const cnt={}; cards.forEach(c=>cnt[c.rank]=(cnt[c.rank]||0)+1);
-  const counts=Object.values(cnt).sort((a,b)=>b-a);
-  const flush=cards.every(c=>c.suit===cards[0].suit);
-  const straight=isStraight(vals);
-
-  if(straight&&flush&&isRoyal(vals)) return pt.RF||0;
-  if(straight&&flush) return pt.SF||0;
-  if(counts[0]===4) return pt.K4||0;
-  if(counts[0]===3&&counts[1]===2) return pt.FH||0;
-  if(flush) return pt.FL||0;
-  if(straight) return pt.ST||0;
-  if(counts[0]===3) return pt.K3||0;
-  if(counts[0]===2&&counts[1]===2) return pt.TP||0;
-  if(counts[0]===2){
-    const r=Object.keys(cnt).find(k=>cnt[k]===2);
-    if(rankVal(r)>=11||r==="A") return pt.JOB||0;
-  }
-  return 0;
-}
-
-function rankVal(r){return r==="A"?14:r==="K"?13:r==="Q"?12:r==="J"?11:r==="T"?10:parseInt(r);}
-function isStraight(v){
-  const s=[...new Set(v)].sort((a,b)=>a-b);
-  if(s.length!==5) return false;
-  if(s.join(",")==="2,3,4,5,14") return true;
-  return s[4]-s[0]===4;
-}
-function isRoyal(v){return v.slice().sort((a,b)=>a-b).join(",")==="10,11,12,13,14";}
 </script>
 </body>
 </html>
