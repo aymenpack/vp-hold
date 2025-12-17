@@ -8,11 +8,11 @@
 <style>
 :root{
   --bg:#0b0f14; --panel:#121a24; --border:#223043; --text:#e9eef6; --muted:#b7c3d7;
-  --accent:#2f6bff; --ok:#22c55e; --warn:#f59e0b;
+  --accent:#2f6bff; --ok:#22c55e; --warn:#f59e0b; --danger:#ff5b5b;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui}
-.app{max-width:900px;margin:auto;padding:12px 12px 140px}
+.app{max-width:900px;margin:auto;padding:12px 12px 160px}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}
 h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -21,30 +21,75 @@ select,button,input{
   border-radius:12px;padding:10px;font-size:14px;
 }
 button.primary{background:var(--accent)}
-button.ghost{background:#182236}
 video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);background:#000}
+
 .hand{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .card{
-  border:1px solid var(--border);border-radius:14px;padding:10px;
-  text-align:center;position:relative;cursor:pointer;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 6px;
+  text-align:center;
+  position:relative;
+  transition:transform .15s ease, box-shadow .15s ease;
 }
 .card.hold{
   outline:3px solid var(--ok);
-  box-shadow:0 0 12px rgba(34,197,94,.6);
+  box-shadow:0 0 16px rgba(34,197,94,.7);
+  transform:translateY(-2px);
 }
-.card .holdBadge{
+.card.warn{
+  outline:3px solid var(--warn);
+}
+.holdBadge{
   position:absolute;top:6px;right:6px;
-  font-size:10px;background:var(--ok);color:#000;
-  padding:2px 6px;border-radius:999px;font-weight:700;
+  background:var(--ok);color:#000;
+  font-size:10px;font-weight:800;
+  padding:2px 6px;border-radius:999px;
 }
 .face{font-size:22px;font-weight:800}
+
 .status{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+
+.snapBtn{
+  position:fixed;
+  bottom:18px; left:50%;
+  transform:translateX(-50%);
+  width:72px; height:72px;
+  border-radius:50%;
+  background:var(--accent);
+  border:none;
+  box-shadow:0 10px 30px rgba(47,107,255,.6);
+  font-size:0;
+}
+.snapBtn:disabled{opacity:.5}
+.snapBtn::after{
+  content:"";
+  display:block;
+  width:52px;height:52px;
+  margin:auto;
+  border-radius:50%;
+  background:#fff;
+}
+
 .footer{
   position:fixed;bottom:0;left:0;right:0;
-  background:linear-gradient(transparent, #0b0f14 40%);
+  background:linear-gradient(transparent, var(--bg) 50%);
   padding:10px;
 }
 .footerInner{max-width:900px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pill{
+  padding:6px 10px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  font-size:12px;
+  color:var(--muted);
+}
+.pill strong{color:#fff}
+.multPill{
+  background:rgba(47,107,255,.15);
+  border-color:var(--accent);
+  color:#cfe0ff;
+}
 </style>
 </head>
 
@@ -78,76 +123,88 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
   <h2>Camera</h2>
   <video id="video" playsinline autoplay muted style="display:none"></video>
   <canvas id="canvas" style="display:none"></canvas>
-  <div class="row">
-    <button class="primary" id="startCam">Start Camera</button>
-    <button id="snap" disabled>Snap</button>
-  </div>
-  <div class="status" id="status">Ready.</div>
+  <div class="status" id="status">Ready. Press Snap.</div>
 </div>
 
 <!-- HAND -->
 <div class="panel">
-  <h2>Hand</h2>
+  <div class="row">
+    <div class="pill" id="evPill">EV: <strong>—</strong></div>
+    <div class="pill multPill" id="uxPill" style="display:none">Multiplier: <strong id="uxMultText">1x</strong></div>
+  </div>
+
   <div class="hand" id="hand"></div>
 
-  <div id="uxBox" style="display:none;margin-top:10px">
-    <div class="status"><strong>Ultimate X multiplier</strong></div>
-    <input id="uxMult" type="number" min="1" step="1" value="1"/>
-  </div>
+  <div class="status" id="confidenceMsg"></div>
 </div>
 
 </div>
+
+<!-- SNAP BUTTON -->
+<button class="snapBtn" id="snapBtn" disabled></button>
 
 <!-- FOOTER -->
 <div class="footer">
   <div class="footerInner">
-    <button class="ghost" id="retry">Retry Recognition</button>
-    <button class="ghost" id="reset">Reset Hand</button>
+    <button id="retry">Retry</button>
+    <button id="reset">Reset</button>
   </div>
 </div>
 
 <script>
-/* ========= CONFIG ========= */
+/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ========= STATE ========= */
+/* ================= STATE ================= */
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-let cards=[], hold=[], multiplier=1, lastImage=null;
+let cards=[], hold=[], multiplier=1, confidence=1, lastImage=null;
+let busy=false;
 
-/* ========= ELEMENTS ========= */
-const video=videoEl=document.getElementById("video");
+/* ================= ELEMENTS ================= */
+const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const handDiv=document.getElementById("hand");
 const statusEl=document.getElementById("status");
-const uxBox=document.getElementById("uxBox");
-const uxMult=document.getElementById("uxMult");
+const snapBtn=document.getElementById("snapBtn");
+const uxPill=document.getElementById("uxPill");
+const uxMultText=document.getElementById("uxMultText");
+const confMsg=document.getElementById("confidenceMsg");
 
-/* ========= CAMERA ========= */
-startCam.onclick=async()=>{
+/* ================= CAMERA ================= */
+(async()=>{
   const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject=s;video.style.display="";snap.disabled=false;
-};
+  video.srcObject=s; video.style.display="";
+  snapBtn.disabled=false;
+})();
 
-snap.onclick=async()=>{
+snapBtn.onclick=async()=>{
+  if(busy) return;
+  busy=true;
+  navigator.vibrate?.(30);
+  statusEl.textContent="Capturing…";
+  snapBtn.disabled=true;
+
   canvas.width=video.videoWidth;
   canvas.height=video.videoHeight;
   canvas.getContext("2d").drawImage(video,0,0);
 
-  const maxW=800,sc=Math.min(maxW/canvas.width,1);
+  const maxW=800, sc=Math.min(maxW/canvas.width,1);
   const t=document.createElement("canvas");
   t.width=canvas.width*sc; t.height=canvas.height*sc;
   t.getContext("2d").drawImage(canvas,0,0,t.width,t.height);
   lastImage=t.toDataURL("image/jpeg",0.7);
 
   await recognize(lastImage);
+  snapBtn.disabled=false;
+  busy=false;
 };
 
-retry.onclick=async()=>{
-  if(lastImage) await recognize(lastImage);
-};
+retry.onclick=async()=>{ if(lastImage) await recognize(lastImage); };
+reset.onclick=()=>{ cards=[]; hold=[]; multiplier=1; render(); statusEl.textContent="Reset."; };
 
 async function recognize(img){
-  statusEl.textContent="Recognizing & analyzing…";
+  statusEl.textContent="Analyzing strategy…";
+  confMsg.textContent="";
 
   const res=await fetch(WORKER_URL,{
     method:"POST",
@@ -160,41 +217,36 @@ async function recognize(img){
   });
 
   const data=await res.json();
-
   cards=data.cards||[];
   hold=data.hold||[false,false,false,false,false];
   multiplier=data.multiplier||1;
+  confidence=data.confidence||1;
 
   render();
-  statusEl.textContent="Done.";
+
+  if(confidence<0.7){
+    confMsg.textContent="⚠️ Low confidence — verify holds";
+  }
+  statusEl.textContent="Done";
 }
 
-/* ========= RENDER ========= */
+/* ================= RENDER ================= */
 function render(){
   handDiv.innerHTML="";
-  const isUX=game.value.startsWith("ux");
-  uxBox.style.display=isUX?"":"none";
-  uxMult.value=multiplier;
+  uxPill.style.display=game.value.startsWith("ux")?"":"none";
+  uxMultText.textContent=multiplier+"x";
 
   cards.forEach((c,i)=>{
     const d=document.createElement("div");
-    d.className="card"+(hold[i]?" hold":"");
+    d.className="card"+(hold[i]?" hold":"")+(confidence<0.7?" warn":"");
     d.innerHTML=`
       ${hold[i]?'<div class="holdBadge">HOLD</div>':''}
       <div class="face">${c.rank}${SUIT[c.suit]}</div>
     `;
-    d.onclick=()=>{hold[i]=!hold[i];render();};
+    d.onclick=()=>{hold[i]=!hold[i]; render();};
     handDiv.appendChild(d);
   });
 }
-
-/* ========= UX ========= */
-uxMult.onchange=()=>{multiplier=parseInt(uxMult.value)||1;};
-reset.onclick=()=>{
-  cards=[];hold=[];multiplier=1;
-  handDiv.innerHTML="";
-  statusEl.textContent="Reset.";
-};
 </script>
 </body>
 </html>
