@@ -9,17 +9,15 @@ export async function handler(event) {
       };
     }
 
-    // Convert base64 to binary buffer
+    // Convert base64 → Buffer
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
 
-    // Build multipart/form-data
-    const form = new FormData();
-    form.append("image", buffer, {
-      filename: "snapshot.jpg",
-      contentType: "image/jpeg"
-    });
+    // Wrap buffer in a Blob (REQUIRED for Node 18 FormData)
+    const blob = new Blob([buffer], { type: "image/jpeg" });
 
+    const form = new FormData();
+    form.append("image", blob, "snapshot.jpg");
     form.append(
       "prompt",
       `
@@ -62,10 +60,10 @@ S=spades, H=hearts, D=diamonds, C=clubs.
       }
     );
 
-    const text = await response.text();
-    console.log("Raw Vision LLM response:", text);
+    const raw = await response.text();
+    console.log("Raw Vision LLM response:", raw);
 
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(raw);
 
     if (!parsed.cards || parsed.cards.length !== 5) {
       throw new Error("Vision LLM response did not return 5 cards");
