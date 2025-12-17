@@ -7,12 +7,10 @@ const corsHeaders = {
 export default {
   async fetch(request, env) {
 
-    // Handle CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    // Allow GET so Safari doesn't scream
     if (request.method === "GET") {
       return new Response(
         JSON.stringify({ status: "Worker alive" }),
@@ -20,7 +18,6 @@ export default {
       );
     }
 
-    // Only POST does recognition
     if (request.method !== "POST") {
       return new Response(
         JSON.stringify({ error: "Unsupported method" }),
@@ -86,12 +83,26 @@ Return JSON ONLY:
         })
       });
 
-      const raw = await openaiRes.text();
+      const raw = await openaiRes.json();
 
-      return new Response(raw, {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      // 🔑 Extract JSON string from model output
+      const content = raw.choices?.[0]?.message?.content || "";
+
+      const match = content.match(/\{[\s\S]*\}/);
+      if (!match) {
+        throw new Error("No JSON found in OpenAI response");
+      }
+
+      const parsed = JSON.parse(match[0]);
+
+      if (!parsed.cards || parsed.cards.length !== 5) {
+        throw new Error("Did not return 5 cards");
+      }
+
+      return new Response(
+        JSON.stringify({ cards: parsed.cards }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
 
     } catch (err) {
       return new Response(
