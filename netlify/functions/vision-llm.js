@@ -9,32 +9,23 @@ export async function handler(event) {
       };
     }
 
-    // Convert base64 → Buffer
+    // Base64 → Buffer → Blob
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
-
-    // Wrap buffer in a Blob (REQUIRED for Node 18 FormData)
     const blob = new Blob([buffer], { type: "image/jpeg" });
 
     const form = new FormData();
-    form.append("image", blob, "snapshot.jpg");
+    form.append("file", blob, "snapshot.jpg"); // <-- MUST be 'file'
     form.append(
       "prompt",
       `
-You are a vision system.
+You are a vision system reading a VIDEO POKER machine.
 
-TASK:
-Read a screenshot of a VIDEO POKER machine.
+Identify EXACTLY 5 playing cards in the BOTTOM ROW only.
+Order cards LEFT TO RIGHT.
+Ignore UI, paytables, buttons, and all other cards.
 
-RULES:
-- Identify EXACTLY 5 playing cards.
-- Use the BOTTOM ROW only.
-- Order cards LEFT TO RIGHT.
-- Ignore all UI text, paytables, buttons, and other cards.
-- Do NOT explain anything.
-
-OUTPUT:
-Return STRICT JSON ONLY, with NO extra text.
+Return STRICT JSON ONLY.
 
 FORMAT:
 {
@@ -47,13 +38,13 @@ FORMAT:
   ]
 }
 
-SUITS:
+Suit letters:
 S=spades, H=hearts, D=diamonds, C=clubs.
       `
     );
 
     const response = await fetch(
-      `https://infer.roboflow.com/vision-llm?api_key=${process.env.ROBOFLOW_API_KEY}`,
+      `https://infer.roboflow.com/vision-llm/run?api_key=${process.env.ROBOFLOW_API_KEY}`,
       {
         method: "POST",
         body: form
