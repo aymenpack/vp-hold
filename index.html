@@ -170,20 +170,31 @@ document.getElementById("snap").onclick=async()=>{
   const res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({imageBase64:dataUrl})});
   const data=await res.json();
 
-  if(data.cards){
-    hand=data.cards.map(c=>({rank:c.rank,suit:c.suit}));
-    if(data.multiplier!=null) uxMultiplier=data.multiplier;
-    render();
-    if(autoSolve) solve();
-    elStatus.textContent="Done";
-  }else elStatus.textContent="Could not read cards. Tap to correct.";
-};
+  if (data.cards && data.cards.length === 5) {
+  hand = data.cards.map(c => ({ rank: c.rank.toUpperCase(), suit: c.suit.toUpperCase() }));
+
+  if (data.multiplier != null) uxMultiplier = parseInt(data.multiplier, 10) || 1;
+
+  // render first so you see the recognized cards immediately
+  render();
+
+  // ALWAYS solve after recognition (prevents “no highlight”)
+  solve();
+
+  elStatus.textContent = "Done";
+} else {
+  elStatus.textContent = "Could not read cards. Tap to correct.";
+}
 
 /* ========= RENDER ========= */
 function render(){
   elHand.innerHTML="";
   elUxBox.style.display=(elGame.value==="ux"||elGame.value==="uxp")?"":"none";
   elUxMult.value=uxMultiplier;
+  elUxMult.onchange = () => {
+  uxMultiplier = Math.max(1, parseInt(elUxMult.value, 10) || 1);
+  if (hand.every(Boolean)) solve();
+};
 
   hand.forEach((c,i)=>{
     const d=document.createElement("div");
@@ -215,7 +226,13 @@ function buildPaytables(){
   PAYTABLES[elGame.value].forEach(p=>{const o=document.createElement("option");o.value=p.key;o.textContent=p.label;elPay.appendChild(o);});
 }
 elGame.onchange=()=>{buildPaytables();render();};
-document.getElementById("toggleAuto").onclick=()=>{autoSolve=!autoSolve;};
+const btnAuto = document.getElementById("toggleAuto");
+btnAuto.onclick = () => {
+  autoSolve = !autoSolve;
+  btnAuto.textContent = autoSolve ? "Auto Solve: ON" : "Auto Solve: OFF";
+  if (autoSolve && hand.every(Boolean)) solve();
+};
+btnAuto.textContent = "Auto Solve: ON";
 document.getElementById("solve").onclick=solve;
 document.getElementById("clear").onclick=()=>{hand=[null,null,null,null,null];holdMask=[false,false,false,false,false];render();};
 </script>
