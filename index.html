@@ -7,28 +7,68 @@
 
 <style>
 :root{
-  --bg:#0b0f14; --panel:#121a24; --border:#223043; --text:#e9eef6; --muted:#b7c3d7;
-  --accent:#2f6bff; --ok:#22c55e; --warn:#f59e0b;
+  --felt:#0a1b12;
+  --panel:#10261b;
+  --border:#1e3a2a;
+  --text:#e9f6ef;
+  --muted:#9fc7b2;
+  --accent:#1aff8c;
+  --hold:#22c55e;
+  --warn:#f59e0b;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui}
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#0f3b26,#07140e 60%);
+  color:var(--text);
+  font-family:-apple-system,system-ui;
+}
 .app{max-width:900px;margin:auto;padding:12px 12px 160px}
-.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}
-h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
+
+/* ---------- GAME SELECTOR ---------- */
+.gameBar{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:8px;
+}
+.gameBtn{
+  flex:0 0 auto;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:#0c1f15;
+  color:var(--muted);
+  font-size:13px;
+  white-space:nowrap;
+}
+.gameBtn.active{
+  background:rgba(26,255,140,.15);
+  color:#eafff4;
+  border-color:var(--accent);
+  box-shadow:0 0 12px rgba(26,255,140,.4);
+}
+
+/* ---------- SCANNER ---------- */
+.panel{
+  background:linear-gradient(180deg,#0e2418,#08140f);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:12px;
+  margin-bottom:12px;
+}
+h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
 
 .scanWrap{
   position:relative;
-  width:100%;
-  height:140px;              /* 🔹 thin scanner strip */
-  overflow:hidden;
+  height:140px;
   border-radius:12px;
+  overflow:hidden;
   border:1px solid var(--border);
-  background:#000;
 }
 .scanWrap video{
   position:absolute;
   width:100%;
-  height:auto;
   top:50%;
   transform:translateY(-50%);
 }
@@ -37,47 +77,91 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
   inset:0;
   border-top:2px dashed rgba(255,255,255,.25);
   border-bottom:2px dashed rgba(255,255,255,.25);
-  pointer-events:none;
 }
 .scanLabel{
   position:absolute;
   bottom:6px;left:50%;
   transform:translateX(-50%);
-  font-size:11px;color:var(--muted);
+  font-size:11px;
   background:rgba(0,0,0,.6);
-  padding:3px 8px;border-radius:999px;
+  padding:3px 10px;
+  border-radius:999px;
+  color:var(--muted);
 }
 
-.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+/* ---------- CARDS ---------- */
+.hand{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+}
 .card{
-  border:1px solid var(--border);border-radius:14px;padding:12px 6px;
-  text-align:center;position:relative;cursor:pointer;
+  background:linear-gradient(180deg,#1b2f25,#0f1e17);
+  border-radius:14px;
+  padding:12px 6px;
+  text-align:center;
+  position:relative;
+  border:1px solid var(--border);
+  transition:.15s ease;
 }
 .card.hold{
-  outline:3px solid var(--ok);
-  box-shadow:0 0 14px rgba(34,197,94,.6);
-  transform:translateY(-2px);
+  outline:3px solid var(--hold);
+  box-shadow:0 0 18px rgba(34,197,94,.6);
+  transform:translateY(-4px);
 }
+.card.red{color:#ff6b6b}
+.card.black{color:#ffffff}
+.rank{font-size:22px;font-weight:800}
+.suit{font-size:18px}
 .holdBadge{
-  position:absolute;top:6px;right:6px;
-  background:var(--ok);color:#000;font-size:10px;
-  padding:2px 6px;border-radius:999px;font-weight:800;
+  position:absolute;
+  top:6px;right:6px;
+  background:var(--hold);
+  color:#00140a;
+  font-size:10px;
+  font-weight:900;
+  padding:2px 6px;
+  border-radius:999px;
 }
-.face{font-size:22px;font-weight:800}
-.status{font-size:12px;color:var(--muted);margin-top:6px}
 
+/* ---------- SNAP ---------- */
 .snapBtn{
   position:fixed;
   bottom:72px;
   left:50%;
   transform:translateX(-50%);
-  width:74px;height:74px;border-radius:50%;
-  background:var(--accent);border:none;
-  box-shadow:0 10px 30px rgba(47,107,255,.6);
+  width:76px;height:76px;
+  border-radius:50%;
+  background:radial-gradient(circle,#ffffff,#d1fff0);
+  border:none;
+  box-shadow:0 12px 40px rgba(26,255,140,.7);
 }
 .snapBtn::after{
-  content:"";display:block;width:52px;height:52px;
-  background:#fff;border-radius:50%;margin:auto;
+  content:"";
+  display:block;
+  width:56px;height:56px;
+  background:#0a1b12;
+  border-radius:50%;
+  margin:auto;
+}
+
+/* ---------- TOAST ---------- */
+.toast{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#22c55e;
+  color:#00140a;
+  font-weight:900;
+  padding:10px 18px;
+  border-radius:999px;
+  display:none;
+}
+.status{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
 }
 </style>
 </head>
@@ -85,21 +169,12 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
 <body>
 <div class="app">
 
-<!-- GAME -->
+<!-- GAME SELECT -->
 <div class="panel">
-  <h2>Game</h2>
-  <select id="game">
-    <option value="job">Jacks or Better</option>
-    <option value="bonus">Bonus Poker</option>
-    <option value="double_bonus">Double Bonus</option>
-    <option value="ddb">Double Double Bonus</option>
-    <option value="deuces">Deuces Wild</option>
-    <option value="ux">Ultimate X</option>
-    <option value="uxp">Ultimate X Progressive</option>
-  </select>
+  <div class="gameBar" id="gameBar"></div>
 </div>
 
-<!-- CAMERA SCANNER -->
+<!-- SCANNER -->
 <div class="panel">
   <h2>Scan cards</h2>
   <div class="scanWrap">
@@ -107,7 +182,7 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
     <div class="scanGuide"></div>
     <div class="scanLabel">Align card row here</div>
   </div>
-  <div class="status" id="status">Align cards and tap Snap</div>
+  <div class="status" id="status">Ready</div>
 </div>
 
 <!-- HAND -->
@@ -118,90 +193,97 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
 </div>
 
 <button class="snapBtn" id="snapBtn"></button>
-
 <canvas id="canvas" style="display:none"></canvas>
+<div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
 
 <script>
-/* ===== CONFIG ===== */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ===== STATE ===== */
-const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
+const GAMES = [
+  ["job","Jacks or Better"],
+  ["bonus","Bonus"],
+  ["double_bonus","Double Bonus"],
+  ["ddb","Double Double Bonus"],
+  ["deuces","Deuces Wild"],
+  ["ux","Ultimate X"],
+  ["uxp","Ultimate X Prog"]
+];
+
+let currentGame="job";
 let cards=[], hold=[];
 
-/* ===== ELEMENTS ===== */
-const video=document.getElementById("video");
-const canvas=document.getElementById("canvas");
+const gameBar=document.getElementById("gameBar");
 const handDiv=document.getElementById("hand");
 const statusEl=document.getElementById("status");
+const toast=document.getElementById("toast");
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
 
-/* ===== AUTO-START CAMERA (NO BUTTON) ===== */
+GAMES.forEach(([k,name])=>{
+  const b=document.createElement("button");
+  b.className="gameBtn"+(k===currentGame?" active":"");
+  b.textContent=name;
+  b.onclick=()=>{
+    currentGame=k;
+    document.querySelectorAll(".gameBtn").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+  };
+  gameBar.appendChild(b);
+});
+
 (async()=>{
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:"environment"}
-  });
-  video.srcObject = stream;
+  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject=s;
 })();
 
-/* ===== SNAP ===== */
-snapBtn.onclick = async () => {
-  navigator.vibrate?.(30);
-  statusEl.textContent = "Scanning…";
+snapBtn.onclick=async()=>{
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  canvas.getContext("2d").drawImage(video,0,0);
 
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
+  const vh=canvas.height, vw=canvas.width;
+  const bandH=vh*0.35, bandY=(vh-bandH)/2;
+  const out=document.createElement("canvas");
+  out.width=vw; out.height=bandH;
+  out.getContext("2d").drawImage(canvas,0,bandY,vw,bandH,0,0,vw,bandH);
 
-  const bandH = vh * 0.35;
-  const bandY = (vh - bandH) / 2;
+  const img=out.toDataURL("image/jpeg",0.7);
 
-  canvas.width = vw;
-  canvas.height = bandH;
-
-  canvas.getContext("2d").drawImage(
-    video,
-    0, bandY, vw, bandH,
-    0, 0, vw, bandH
-  );
-
-  const scale = Math.min(800 / vw, 1);
-  const out = document.createElement("canvas");
-  out.width = vw * scale;
-  out.height = bandH * scale;
-  out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
-
-  const img = out.toDataURL("image/jpeg",0.7);
-
-  const res = await fetch(WORKER_URL,{
+  const res=await fetch(WORKER_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      imageBase64: img,
-      game: game.value,
-      paytable: "standard"
-    })
+    body:JSON.stringify({imageBase64:img,game:currentGame,paytable:"standard"})
   });
-
-  const d = await res.json();
-  cards = d.cards || [];
-  hold = d.hold || [];
-
+  const d=await res.json();
+  cards=d.cards||[];
+  hold=d.hold||[];
   render();
-  statusEl.textContent = "Done";
+
+  if(isWin(cards)){
+    toast.style.display="block";
+    setTimeout(()=>toast.style.display="none",2500);
+  }
 };
 
-/* ===== RENDER ===== */
 function render(){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
-    const d=document.createElement("div");
-    d.className="card"+(hold[i]?" hold":"");
-    d.innerHTML=`
+    const div=document.createElement("div");
+    const red=(c.suit==="H"||c.suit==="D");
+    div.className=`card ${hold[i]?"hold":""} ${red?"red":"black"}`;
+    div.innerHTML=`
       ${hold[i]?'<div class="holdBadge">HOLD</div>':''}
-      <div class="face">${c.rank}${SUIT[c.suit]}</div>
+      <div class="rank">${c.rank}</div>
+      <div class="suit">${c.suit==="H"?"♥":c.suit==="D"?"♦":c.suit==="S"?"♠":"♣"}</div>
     `;
-    d.onclick=()=>{hold[i]=!hold[i];render();};
-    handDiv.appendChild(d);
+    handDiv.appendChild(div);
   });
+}
+
+function isWin(cards){
+  if(cards.length!==5) return false;
+  const m={}; cards.forEach(c=>m[c.rank]=(m[c.rank]||0)+1);
+  return Object.values(m).some(v=>v>=2);
 }
 </script>
 </body>
