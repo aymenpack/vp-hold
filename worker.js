@@ -4,6 +4,55 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
+function buildPrompt(game, paytable) {
+  return `
+You are an expert VIDEO POKER STRATEGY engine.
+
+You will be given:
+- A screenshot of a video poker machine
+- The GAME TYPE
+- The PAYTABLE
+- Possibly an Ultimate X multiplier
+
+Your job:
+1. Identify the EXACT 5 cards in the BOTTOM ROW (left to right).
+2. If this is an Ultimate X game, read the SINGLE multiplier shown on the LEFT of the row.
+3. Based on PERFECT STRATEGY for the specified game and paytable,
+   decide which cards to HOLD.
+
+GAME:
+${game}
+
+PAYTABLE:
+${paytable}
+
+IMPORTANT RULES:
+- Use correct optimal strategy for THIS game & paytable.
+- For Ultimate X, factor the multiplier heavily.
+- If the multiplier is high, prioritize high-EV future hands.
+- Return EXACTLY 5 hold decisions.
+- Do NOT explain reasoning.
+- Do NOT include extra text.
+
+OUTPUT FORMAT (STRICT JSON ONLY):
+
+{
+  "cards": [
+    {"rank":"A","suit":"S"},
+    {"rank":"9","suit":"D"},
+    {"rank":"9","suit":"C"},
+    {"rank":"K","suit":"S"},
+    {"rank":"2","suit":"H"}
+  ],
+  "multiplier": 10,
+  "hold": [false, true, true, false, false]
+}
+
+If no multiplier is visible, return:
+"multiplier": null
+`;
+}
+
 export default {
   async fetch(request, env) {
 
@@ -26,11 +75,11 @@ export default {
     }
 
     try {
-      const { imageBase64 } = await request.json();
+      const { imageBase64, game, paytable } = await request.json();
 
-      if (!imageBase64) {
+      if (!imageBase64 || !game || !paytable) {
         return new Response(
-          JSON.stringify({ error: "No image provided" }),
+          JSON.stringify({ error: "Missing image, game, or paytable" }),
           { status: 400, headers: corsHeaders }
         );
       }
@@ -49,30 +98,7 @@ export default {
             {
               role: "user",
               content: [
-                {
-                  type: "text",
-                  text: `
-Read this image of a VIDEO POKER machine.
-
-Rules:
-- Identify EXACTLY 5 playing cards
-- Use the BOTTOM ROW
-- Order LEFT TO RIGHT
-- Ignore UI text
-
-Return JSON ONLY:
-
-{
-  "cards": [
-    {"rank":"A","suit":"S"},
-    {"rank":"9","suit":"D"},
-    {"rank":"9","suit":"C"},
-    {"rank":"K","suit":"S"},
-    {"rank":"2","suit":"H"}
-  ]
-}
-                  `
-                },
+                { type: "text", text: buildPrompt(game, paytable) },
                 {
                   type: "image_url",
                   image_url: { url: imageBase64 }
@@ -84,23 +110,19 @@ Return JSON ONLY:
       });
 
       const raw = await openaiRes.json();
-
-      // 🔑 Extract JSON string from model output
       const content = raw.choices?.[0]?.message?.content || "";
 
       const match = content.match(/\{[\s\S]*\}/);
-      if (!match) {
-        throw new Error("No JSON found in OpenAI response");
-      }
+      if (!match) throw new Error("No JSON returned");
 
       const parsed = JSON.parse(match[0]);
 
-      if (!parsed.cards || parsed.cards.length !== 5) {
-        throw new Error("Did not return 5 cards");
+      if (!parsed.cards || !parsed.hold || parsed.hold.length !== 5) {
+        throw new Error("Invalid response format");
       }
 
       return new Response(
-        JSON.stringify({ cards: parsed.cards }),
+        JSON.stringify(parsed),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
 
