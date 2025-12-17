@@ -15,38 +15,60 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
 .app{max-width:900px;margin:auto;padding:12px 12px 160px}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px}
 h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-select,button,input{
-  background:#0f1621;color:#fff;border:1px solid var(--border);
-  border-radius:12px;padding:10px;font-size:14px;
+
+.scanWrap{
+  position:relative;
+  width:100%;
+  height:140px; /* 🔹 thin horizontal camera */
+  overflow:hidden;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#000;
 }
-button.primary{background:var(--accent)}
-video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);background:#000}
+.scanWrap video{
+  position:absolute;
+  width:100%;
+  height:auto;
+  top:50%;
+  transform:translateY(-50%);
+}
+.scanGuide{
+  position:absolute;
+  inset:0;
+  border-top:2px dashed rgba(255,255,255,.25);
+  border-bottom:2px dashed rgba(255,255,255,.25);
+  pointer-events:none;
+}
+.scanLabel{
+  position:absolute;
+  bottom:6px;left:50%;
+  transform:translateX(-50%);
+  font-size:11px;color:var(--muted);
+  background:rgba(0,0,0,.5);
+  padding:3px 8px;border-radius:999px;
+}
 
 .hand{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .card{
   border:1px solid var(--border);border-radius:14px;padding:12px 6px;
   text-align:center;position:relative;cursor:pointer;
-  transition:.15s ease;
 }
 .card.hold{
   outline:3px solid var(--ok);
   box-shadow:0 0 14px rgba(34,197,94,.6);
   transform:translateY(-2px);
 }
-.card.warn{outline:3px solid var(--warn)}
 .holdBadge{
   position:absolute;top:6px;right:6px;
   background:var(--ok);color:#000;font-size:10px;
   padding:2px 6px;border-radius:999px;font-weight:800;
 }
 .face{font-size:22px;font-weight:800}
-.status{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+.status{font-size:12px;color:var(--muted);margin-top:6px}
 
 .snapBtn{
   position:fixed;
-  bottom:72px; /* ⬅ moved higher */
-  left:50%;
+  bottom:72px;left:50%;
   transform:translateX(-50%);
   width:74px;height:74px;border-radius:50%;
   background:var(--accent);border:none;
@@ -57,20 +79,6 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
   background:#fff;border-radius:50%;margin:auto;
 }
 .snapBtn:disabled{opacity:.5}
-
-.footer{
-  position:fixed;bottom:0;left:0;right:0;
-  background:linear-gradient(transparent,var(--bg) 60%);
-  padding:10px;
-}
-.footerInner{max-width:900px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-.toast{
-  position:fixed;top:20px;left:50%;transform:translateX(-50%);
-  background:#22c55e;color:#000;
-  padding:10px 16px;border-radius:999px;
-  font-weight:700;display:none;
-}
 </style>
 </head>
 
@@ -80,51 +88,38 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
 <!-- GAME -->
 <div class="panel">
   <h2>Game</h2>
-  <div class="row">
-    <select id="game">
-      <option value="job">Jacks or Better</option>
-      <option value="bonus">Bonus Poker</option>
-      <option value="double_bonus">Double Bonus</option>
-      <option value="ddb">Double Double Bonus</option>
-      <option value="deuces">Deuces Wild</option>
-      <option value="ux">Ultimate X</option>
-      <option value="uxp">Ultimate X Progressive</option>
-    </select>
-
-    <select id="paytable">
-      <option value="9/6">9/6</option>
-      <option value="8/5">8/5</option>
-      <option value="standard">Standard</option>
-    </select>
-  </div>
+  <select id="game">
+    <option value="job">Jacks or Better</option>
+    <option value="bonus">Bonus Poker</option>
+    <option value="double_bonus">Double Bonus</option>
+    <option value="ddb">Double Double Bonus</option>
+    <option value="deuces">Deuces Wild</option>
+    <option value="ux">Ultimate X</option>
+    <option value="uxp">Ultimate X Progressive</option>
+  </select>
 </div>
 
-<!-- CAMERA -->
+<!-- CAMERA STRIP -->
 <div class="panel">
-  <h2>Camera</h2>
-  <video id="video" playsinline autoplay muted></video>
-  <canvas id="canvas" style="display:none"></canvas>
-  <div class="status" id="status">Ready. Tap Snap.</div>
+  <h2>Scan cards</h2>
+  <div class="scanWrap">
+    <video id="video" playsinline autoplay muted></video>
+    <div class="scanGuide"></div>
+    <div class="scanLabel">Align card row here</div>
+  </div>
+  <div class="status" id="status">Ready</div>
 </div>
 
 <!-- HAND -->
 <div class="panel">
   <div class="hand" id="hand"></div>
-  <div class="status" id="confidenceMsg"></div>
 </div>
 
 </div>
 
 <button class="snapBtn" id="snapBtn"></button>
 
-<div class="footer">
-  <div class="footerInner">
-    <button id="retry">Retry</button>
-    <button id="reset">Reset</button>
-  </div>
-</div>
-
-<div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
+<canvas id="canvas" style="display:none"></canvas>
 
 <script>
 /* ===== CONFIG ===== */
@@ -132,95 +127,76 @@ const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
 /* ===== STATE ===== */
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-let cards=[], hold=[], confidence=1, lastImage=null;
+let cards=[], hold=[], confidence=1;
 
 /* ===== ELEMENTS ===== */
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const handDiv=document.getElementById("hand");
 const statusEl=document.getElementById("status");
-const confMsg=document.getElementById("confidenceMsg");
-const toast=document.getElementById("toast");
 
 /* ===== CAMERA INIT ===== */
 (async()=>{
-  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject=s;
+  const stream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:"environment"}
+  });
+  video.srcObject=stream;
 })();
 
 /* ===== SNAP ===== */
 snapBtn.onclick=async()=>{
   navigator.vibrate?.(30);
+  statusEl.textContent="Scanning…";
 
-  // Full frame
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
-  const ctx=canvas.getContext("2d");
-  ctx.drawImage(video,0,0);
+  // Capture ONLY the horizontal band
+  const vw=video.videoWidth;
+  const vh=video.videoHeight;
 
-  // 🔹 Crop horizontal band (cards area)
-  const bandHeight = canvas.height * 0.4;
-  const bandY = (canvas.height - bandHeight) / 2;
+  const bandH=vh*0.35;
+  const bandY=(vh-bandH)/2;
 
-  const crop=document.createElement("canvas");
-  crop.width=canvas.width;
-  crop.height=bandHeight;
-  crop.getContext("2d").drawImage(
-    canvas,
-    0, bandY, canvas.width, bandHeight,
-    0, 0, canvas.width, bandHeight
+  canvas.width=vw;
+  canvas.height=bandH;
+
+  canvas.getContext("2d").drawImage(
+    video,
+    0,bandY,vw,bandH,
+    0,0,vw,bandH
   );
 
   // Resize to max width 800
-  const sc=Math.min(800/crop.width,1);
+  const scale=Math.min(800/vw,1);
   const out=document.createElement("canvas");
-  out.width=crop.width*sc;
-  out.height=crop.height*sc;
-  out.getContext("2d").drawImage(crop,0,0,out.width,out.height);
+  out.width=vw*scale;
+  out.height=bandH*scale;
+  out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
 
-  lastImage=out.toDataURL("image/jpeg",0.7);
-  await recognize(lastImage);
-};
+  const img=out.toDataURL("image/jpeg",0.7);
 
-retry.onclick=()=>lastImage&&recognize(lastImage);
-reset.onclick=()=>{cards=[];hold=[];render();statusEl.textContent="Reset.";};
-
-/* ===== RECOGNIZE ===== */
-async function recognize(img){
-  statusEl.textContent="Analyzing strategy…";
   const res=await fetch(WORKER_URL,{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       imageBase64:img,
       game:game.value,
-      paytable:paytable.value
+      paytable:"standard"
     })
   });
 
   const d=await res.json();
   cards=d.cards||[];
-  hold=d.hold||[false,false,false,false,false];
-  confidence=d.confidence||1;
+  hold=d.hold||[];
 
   render();
   statusEl.textContent="Done";
-
-  if(confidence<0.7){
-    confMsg.textContent="⚠️ Low confidence — verify holds";
-  }else confMsg.textContent="";
-
-  if(isWinningHand(cards)){
-    toast.style.display="block";
-    setTimeout(()=>toast.style.display="none",2500);
-  }
-}
+};
 
 /* ===== RENDER ===== */
 function render(){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
     const d=document.createElement("div");
-    d.className="card"+(hold[i]?" hold":"")+(confidence<0.7?" warn":"");
+    d.className="card"+(hold[i]?" hold":"");
     d.innerHTML=`
       ${hold[i]?'<div class="holdBadge">HOLD</div>':''}
       <div class="face">${c.rank}${SUIT[c.suit]}</div>
@@ -228,14 +204,6 @@ function render(){
     d.onclick=()=>{hold[i]=!hold[i];render();};
     handDiv.appendChild(d);
   });
-}
-
-/* ===== WIN DETECTION ===== */
-function isWinningHand(cards){
-  if(cards.length!==5) return false;
-  const counts={};
-  cards.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
-  return Object.values(counts).some(v=>v>=2);
 }
 </script>
 </body>
