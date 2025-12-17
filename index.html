@@ -19,7 +19,7 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
 .scanWrap{
   position:relative;
   width:100%;
-  height:140px; /* 🔹 thin horizontal camera */
+  height:140px;              /* 🔹 thin scanner strip */
   overflow:hidden;
   border-radius:12px;
   border:1px solid var(--border);
@@ -44,7 +44,7 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
   bottom:6px;left:50%;
   transform:translateX(-50%);
   font-size:11px;color:var(--muted);
-  background:rgba(0,0,0,.5);
+  background:rgba(0,0,0,.6);
   padding:3px 8px;border-radius:999px;
 }
 
@@ -68,7 +68,8 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
 
 .snapBtn{
   position:fixed;
-  bottom:72px;left:50%;
+  bottom:72px;
+  left:50%;
   transform:translateX(-50%);
   width:74px;height:74px;border-radius:50%;
   background:var(--accent);border:none;
@@ -78,7 +79,6 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
   content:"";display:block;width:52px;height:52px;
   background:#fff;border-radius:50%;margin:auto;
 }
-.snapBtn:disabled{opacity:.5}
 </style>
 </head>
 
@@ -99,7 +99,7 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
   </select>
 </div>
 
-<!-- CAMERA STRIP -->
+<!-- CAMERA SCANNER -->
 <div class="panel">
   <h2>Scan cards</h2>
   <div class="scanWrap">
@@ -107,7 +107,7 @@ h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
     <div class="scanGuide"></div>
     <div class="scanLabel">Align card row here</div>
   </div>
-  <div class="status" id="status">Ready</div>
+  <div class="status" id="status">Align cards and tap Snap</div>
 </div>
 
 <!-- HAND -->
@@ -127,7 +127,7 @@ const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
 /* ===== STATE ===== */
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-let cards=[], hold=[], confidence=1;
+let cards=[], hold=[];
 
 /* ===== ELEMENTS ===== */
 const video=document.getElementById("video");
@@ -135,60 +135,58 @@ const canvas=document.getElementById("canvas");
 const handDiv=document.getElementById("hand");
 const statusEl=document.getElementById("status");
 
-/* ===== CAMERA INIT ===== */
+/* ===== AUTO-START CAMERA (NO BUTTON) ===== */
 (async()=>{
-  const stream=await navigator.mediaDevices.getUserMedia({
+  const stream = await navigator.mediaDevices.getUserMedia({
     video:{facingMode:"environment"}
   });
-  video.srcObject=stream;
+  video.srcObject = stream;
 })();
 
 /* ===== SNAP ===== */
-snapBtn.onclick=async()=>{
+snapBtn.onclick = async () => {
   navigator.vibrate?.(30);
-  statusEl.textContent="Scanning…";
+  statusEl.textContent = "Scanning…";
 
-  // Capture ONLY the horizontal band
-  const vw=video.videoWidth;
-  const vh=video.videoHeight;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
 
-  const bandH=vh*0.35;
-  const bandY=(vh-bandH)/2;
+  const bandH = vh * 0.35;
+  const bandY = (vh - bandH) / 2;
 
-  canvas.width=vw;
-  canvas.height=bandH;
+  canvas.width = vw;
+  canvas.height = bandH;
 
   canvas.getContext("2d").drawImage(
     video,
-    0,bandY,vw,bandH,
-    0,0,vw,bandH
+    0, bandY, vw, bandH,
+    0, 0, vw, bandH
   );
 
-  // Resize to max width 800
-  const scale=Math.min(800/vw,1);
-  const out=document.createElement("canvas");
-  out.width=vw*scale;
-  out.height=bandH*scale;
+  const scale = Math.min(800 / vw, 1);
+  const out = document.createElement("canvas");
+  out.width = vw * scale;
+  out.height = bandH * scale;
   out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
 
-  const img=out.toDataURL("image/jpeg",0.7);
+  const img = out.toDataURL("image/jpeg",0.7);
 
-  const res=await fetch(WORKER_URL,{
+  const res = await fetch(WORKER_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
-      imageBase64:img,
-      game:game.value,
-      paytable:"standard"
+      imageBase64: img,
+      game: game.value,
+      paytable: "standard"
     })
   });
 
-  const d=await res.json();
-  cards=d.cards||[];
-  hold=d.hold||[];
+  const d = await res.json();
+  cards = d.cards || [];
+  hold = d.hold || [];
 
   render();
-  statusEl.textContent="Done";
+  statusEl.textContent = "Done";
 };
 
 /* ===== RENDER ===== */
