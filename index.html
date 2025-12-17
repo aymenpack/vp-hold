@@ -2,20 +2,43 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Video Poker Assistant</title>
 
 <style>
-body{margin:0;background:#0b0f14;color:#e9eef6;font-family:-apple-system,system-ui}
+body{
+  margin:0;
+  background:#0b0f14;
+  color:#e9eef6;
+  font-family:-apple-system,system-ui;
+}
 .app{max-width:900px;margin:auto;padding:12px}
-.panel{background:#121a24;border:1px solid #223043;border-radius:16px;padding:12px;margin-bottom:12px}
+.panel{
+  background:#121a24;
+  border:1px solid #223043;
+  border-radius:16px;
+  padding:12px;
+  margin-bottom:12px;
+}
 h2{margin:0 0 8px;font-size:14px;color:#cfe0ff}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-select,button{background:#0f1621;color:#fff;border:1px solid #223043;border-radius:12px;padding:10px}
+select,button,input{
+  background:#0f1621;
+  color:#fff;
+  border:1px solid #223043;
+  border-radius:12px;
+  padding:10px;
+  font-size:14px;
+}
 button.primary{background:#2f6bff}
 video,canvas{width:100%;border-radius:12px;border:1px solid #223043;background:#000}
 .hand{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.card{border:1px solid #223043;border-radius:12px;padding:10px;text-align:center}
+.card{
+  border:1px solid #223043;
+  border-radius:12px;
+  padding:10px;
+  text-align:center;
+}
 .card.hold{outline:3px solid #22c55e}
 .face{font-size:22px;font-weight:800}
 .status{font-size:12px;color:#b7c3d7;margin-top:6px}
@@ -25,18 +48,29 @@ video,canvas{width:100%;border-radius:12px;border:1px solid #223043;background:#
 <body>
 <div class="app">
 
+<!-- GAME / PAYTABLE -->
 <div class="panel">
   <h2>Game</h2>
-  <select id="game">
-    <option value="job">Jacks or Better</option>
-    <option value="bonus">Bonus Poker</option>
-    <option value="double_bonus">Double Bonus</option>
-    <option value="ddb">Double Double Bonus</option>
-    <option value="deuces">Deuces Wild</option>
-    <option value="ux">Ultimate X</option>
-  </select>
+  <div class="row">
+    <select id="game">
+      <option value="job">Jacks or Better</option>
+      <option value="bonus">Bonus Poker</option>
+      <option value="double_bonus">Double Bonus</option>
+      <option value="ddb">Double Double Bonus</option>
+      <option value="deuces">Deuces Wild</option>
+      <option value="ux">Ultimate X</option>
+      <option value="uxp">Ultimate X Progressive</option>
+    </select>
+
+    <select id="paytable">
+      <option value="9/6">9/6</option>
+      <option value="8/5">8/5</option>
+      <option value="standard">Standard</option>
+    </select>
+  </div>
 </div>
 
+<!-- CAMERA -->
 <div class="panel">
   <h2>Camera</h2>
   <video id="video" autoplay playsinline muted style="display:none"></video>
@@ -48,61 +82,92 @@ video,canvas{width:100%;border-radius:12px;border:1px solid #223043;background:#
   <div class="status" id="status">Waiting…</div>
 </div>
 
+<!-- HAND -->
 <div class="panel">
   <h2>Hand</h2>
   <div class="hand" id="hand"></div>
+
+  <div id="uxBox" style="display:none;margin-top:10px">
+    <div class="status"><strong>Ultimate X multiplier</strong></div>
+    <input id="uxMult" type="number" min="1" step="1" value="1"/>
+  </div>
 </div>
 
 </div>
 
 <script>
+/* ========= CONFIG ========= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+
+/* ========= STATE ========= */
 const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
-let hand=[], hold=[];
+let cards = [];
+let hold = [false,false,false,false,false];
+let multiplier = 1;
 
-const video=document.getElementById("video");
-const canvas=document.getElementById("canvas");
-const handDiv=document.getElementById("hand");
-const statusEl=document.getElementById("status");
+/* ========= ELEMENTS ========= */
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const handDiv = document.getElementById("hand");
+const statusEl = document.getElementById("status");
+const uxBox = document.getElementById("uxBox");
+const uxMult = document.getElementById("uxMult");
 
-startCam.onclick=async()=>{
-  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject=s; video.style.display=""; snap.disabled=false;
+/* ========= CAMERA ========= */
+startCam.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject = stream;
+  video.style.display = "";
+  snap.disabled = false;
 };
 
-snap.onclick=async()=>{
-  statusEl.textContent="Recognizing…";
-  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+snap.onclick = async () => {
+  statusEl.textContent = "Recognizing…";
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
   canvas.getContext("2d").drawImage(video,0,0);
 
-  const maxW=800, sc=Math.min(maxW/canvas.width,1);
-  const t=document.createElement("canvas");
-  t.width=canvas.width*sc; t.height=canvas.height*sc;
+  // resize for cheap vision
+  const maxW = 800;
+  const sc = Math.min(maxW / canvas.width, 1);
+  const t = document.createElement("canvas");
+  t.width = canvas.width * sc;
+  t.height = canvas.height * sc;
   t.getContext("2d").drawImage(canvas,0,0,t.width,t.height);
-  const img=t.toDataURL("image/jpeg",0.7);
+  const img = t.toDataURL("image/jpeg",0.7);
 
-  const res=await fetch(WORKER_URL,{
+  const res = await fetch(WORKER_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
-      imageBase64:img,
-      game:document.getElementById("game").value
+      imageBase64: img,
+      game: document.getElementById("game").value,
+      paytable: document.getElementById("paytable").value
     })
   });
 
-  const data=await res.json();
-  hand=data.cards||[];
-  hold=data.hold||[false,false,false,false,false];
+  const data = await res.json();
+
+  cards = data.cards || [];
+  hold = data.hold || [false,false,false,false,false];
+  multiplier = data.multiplier || 1;
+
   render();
-  statusEl.textContent="Done";
+  statusEl.textContent = "Done";
 };
 
+/* ========= RENDER ========= */
 function render(){
-  handDiv.innerHTML="";
-  hand.forEach((c,i)=>{
-    const d=document.createElement("div");
-    d.className="card"+(hold[i]?" hold":"");
-    d.innerHTML=`<div class="face">${c.rank}${SUIT[c.suit]}</div>`;
+  handDiv.innerHTML = "";
+  const isUX = document.getElementById("game").value.startsWith("ux");
+  uxBox.style.display = isUX ? "" : "none";
+  uxMult.value = multiplier;
+
+  cards.forEach((c,i)=>{
+    const d = document.createElement("div");
+    d.className = "card" + (hold[i] ? " hold" : "");
+    d.innerHTML = `<div class="face">${c.rank}${SUIT[c.suit]}</div>`;
     handDiv.appendChild(d);
   });
 }
