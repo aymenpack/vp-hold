@@ -9,14 +9,13 @@ export async function handler(event) {
       };
     }
 
-    const response = await fetch("https://api.roboflow.com/v1/vision-llm", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.ROBOFLOW_API_KEY}`
-      },
-      body: JSON.stringify({
-        prompt: `
+    const response = await fetch(
+      `https://infer.roboflow.com/vision-llm?api_key=${process.env.ROBOFLOW_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `
 You are a vision system.
 
 TASK:
@@ -30,7 +29,7 @@ RULES:
 - Do NOT explain anything.
 
 OUTPUT:
-Return STRICT JSON ONLY, with NO extra text, NO markdown, NO comments.
+Return STRICT JSON ONLY, with NO extra text.
 
 FORMAT:
 {
@@ -44,28 +43,20 @@ FORMAT:
 }
 
 SUITS:
-S = spades
-H = hearts
-D = diamonds
-C = clubs
-        `,
-        image: imageBase64
-      })
-    });
+S=spades, H=hearts, D=diamonds, C=clubs.
+          `,
+          image: imageBase64
+        })
+      }
+    );
 
     const raw = await response.text();
-    console.log("Raw LLM response:", raw);
+    console.log("Raw Vision LLM response:", raw);
 
-    // --- Extract JSON safely ---
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) {
-      throw new Error("No JSON found in Vision LLM response");
-    }
-
-    const parsed = JSON.parse(match[0]);
+    const parsed = JSON.parse(raw);
 
     if (!parsed.cards || parsed.cards.length !== 5) {
-      throw new Error("JSON parsed but does not contain 5 cards");
+      throw new Error("Vision LLM response did not return 5 cards");
     }
 
     return {
