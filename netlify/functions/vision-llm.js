@@ -9,13 +9,20 @@ export async function handler(event) {
       };
     }
 
-    const response = await fetch(
-      `https://infer.roboflow.com/vision-llm?api_key=${process.env.ROBOFLOW_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: `
+    // Convert base64 to binary buffer
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+
+    // Build multipart/form-data
+    const form = new FormData();
+    form.append("image", buffer, {
+      filename: "snapshot.jpg",
+      contentType: "image/jpeg"
+    });
+
+    form.append(
+      "prompt",
+      `
 You are a vision system.
 
 TASK:
@@ -44,16 +51,21 @@ FORMAT:
 
 SUITS:
 S=spades, H=hearts, D=diamonds, C=clubs.
-          `,
-          image: imageBase64
-        })
+      `
+    );
+
+    const response = await fetch(
+      `https://infer.roboflow.com/vision-llm?api_key=${process.env.ROBOFLOW_API_KEY}`,
+      {
+        method: "POST",
+        body: form
       }
     );
 
-    const raw = await response.text();
-    console.log("Raw Vision LLM response:", raw);
+    const text = await response.text();
+    console.log("Raw Vision LLM response:", text);
 
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(text);
 
     if (!parsed.cards || parsed.cards.length !== 5) {
       throw new Error("Vision LLM response did not return 5 cards");
