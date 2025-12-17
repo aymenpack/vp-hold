@@ -44,7 +44,9 @@ video,canvas{width:100%;border-radius:12px;border:1px solid var(--border);backgr
 .status{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
 
 .snapBtn{
-  position:fixed;bottom:18px;left:50%;
+  position:fixed;
+  bottom:72px; /* ⬅ moved higher */
+  left:50%;
   transform:translateX(-50%);
   width:74px;height:74px;border-radius:50%;
   background:var(--accent);border:none;
@@ -149,21 +151,39 @@ const toast=document.getElementById("toast");
 /* ===== SNAP ===== */
 snapBtn.onclick=async()=>{
   navigator.vibrate?.(30);
+
+  // Full frame
   canvas.width=video.videoWidth;
   canvas.height=video.videoHeight;
-  canvas.getContext("2d").drawImage(video,0,0);
+  const ctx=canvas.getContext("2d");
+  ctx.drawImage(video,0,0);
 
-  const t=document.createElement("canvas");
-  const sc=Math.min(800/canvas.width,1);
-  t.width=canvas.width*sc; t.height=canvas.height*sc;
-  t.getContext("2d").drawImage(canvas,0,0,t.width,t.height);
-  lastImage=t.toDataURL("image/jpeg",0.7);
+  // 🔹 Crop horizontal band (cards area)
+  const bandHeight = canvas.height * 0.4;
+  const bandY = (canvas.height - bandHeight) / 2;
 
+  const crop=document.createElement("canvas");
+  crop.width=canvas.width;
+  crop.height=bandHeight;
+  crop.getContext("2d").drawImage(
+    canvas,
+    0, bandY, canvas.width, bandHeight,
+    0, 0, canvas.width, bandHeight
+  );
+
+  // Resize to max width 800
+  const sc=Math.min(800/crop.width,1);
+  const out=document.createElement("canvas");
+  out.width=crop.width*sc;
+  out.height=crop.height*sc;
+  out.getContext("2d").drawImage(crop,0,0,out.width,out.height);
+
+  lastImage=out.toDataURL("image/jpeg",0.7);
   await recognize(lastImage);
 };
 
 retry.onclick=()=>lastImage&&recognize(lastImage);
-reset.onclick=()=>{cards=[];hold=[];render();};
+reset.onclick=()=>{cards=[];hold=[];render();statusEl.textContent="Reset.";};
 
 /* ===== RECOGNIZE ===== */
 async function recognize(img){
@@ -187,9 +207,7 @@ async function recognize(img){
 
   if(confidence<0.7){
     confMsg.textContent="⚠️ Low confidence — verify holds";
-  }else{
-    confMsg.textContent="";
-  }
+  }else confMsg.textContent="";
 
   if(isWinningHand(cards)){
     toast.style.display="block";
@@ -212,7 +230,7 @@ function render(){
   });
 }
 
-/* ===== WIN DETECTION (simple) ===== */
+/* ===== WIN DETECTION ===== */
 function isWinningHand(cards){
   if(cards.length!==5) return false;
   const counts={};
