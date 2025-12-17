@@ -1,67 +1,73 @@
 export async function handler(event) {
   try {
     const { imageBase64 } = JSON.parse(event.body || "{}");
-
     if (!imageBase64) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "No image provided" })
-      };
+      return { statusCode: 400, body: JSON.stringify({ error: "No image provided" }) };
     }
 
-    // Roboflow detect API expects RAW base64 (no data:image prefix)
-    const rawBase64 = imageBase64.split(",")[1];
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        temperature: 0,
+        messages: [
+          { role: "system", content: "You output STRICT JSON only." },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `
+Read this image of a VIDEO POKER machine.
 
-    const response = await fetch(
-      `https://detect.roboflow.com/playing-cards/1?api_key=${process.env.ROBOFLOW_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-octet-stream"
-        },
-        body: rawBase64
-      }
-    );
+Rules:
+- Identify EXACTLY 5 playing cards.
+- Use the BOTTOM ROW (active hand).
+- Order cards LEFT TO RIGHT.
+- Ignore all UI, paytables, and other cards.
+- Do NOT explain anything.
 
-    const data = await response.json();
-    console.log("Roboflow raw response:", JSON.stringify(data));
+Return STRICT JSON ONLY in this format:
 
-    if (!data.predictions || data.predictions.length === 0) {
-      throw new Error("No cards detected");
-    }
+{
+  "cards": [
+    {"rank":"A","suit":"S"},
+    {"rank":"9","suit":"D"},
+    {"rank":"9","suit":"C"},
+    {"rank":"K","suit":"S"},
+    {"rank":"2","suit":"H"}
+  ]
+}
 
-    // Keep only bottom-row cards (largest Y values)
-    const sortedByY = [...data.predictions].sort((a, b) => b.y - a.y);
-    const bottomRowY = sortedByY[0].y;
-
-    const bottomRow = data.predictions.filter(p => Math.abs(p.y - bottomRowY) < 40);
-
-    if (bottomRow.length < 5) {
-      throw new Error("Less than 5 cards detected in bottom row");
-    }
-
-    // Sort left → right
-    bottomRow.sort((a, b) => a.x - b.x);
-
-    // Take first 5 cards
-    const cards = bottomRow.slice(0, 5).map(p => {
-      const cls = p.class; // e.g. "9H", "AS"
-      return {
-        rank: cls.slice(0, -1),
-        suit: cls.slice(-1)
-      };
+Suit letters: S=spades, H=hearts, D=diamonds, C=clubs.
+                `
+              },
+              { type: "image_url", image_url: { url: imageBase64 } }
+            ]
+          }
+        ]
+      })
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ cards })
-    };
+    const raw = await res.text();
+    console.log("Raw OpenAI response:", raw);
+
+    const parsed = JSON.parse(raw);
+    const content = parsed.choices?.[0]?.message?.content || "";
+    const match = content.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("No JSON found in response");
+
+    const result = JSON.parse(match[0]);
+    if (!result.cards || result.cards.length !== 5) throw new Error("Did not receive 5 cards");
+
+    return { statusCode: 200, body: JSON.stringify(result) };
 
   } catch (err) {
-    console.error("Roboflow detect error:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message })
-    };
+    console.error("OpenAI Vision error:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
