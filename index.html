@@ -89,20 +89,25 @@
 </div>
 
 <script>
-/* ---------------------------
+/* =============================
+   CONFIG — CHANGE THIS
+============================= */
+const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+
+/* =============================
    STATE
---------------------------- */
+============================= */
 let hand = [null, null, null, null, null];
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
-const photo = document.getElementById("photo");
+const photo = document-0.getElementById("photo");
 const handEl = document.getElementById("hand");
 const statusEl = document.getElementById("status");
 
-/* ---------------------------
+/* =============================
    RENDER
---------------------------- */
+============================= */
 function renderHand() {
   handEl.innerHTML = "";
   for (let i = 0; i < 5; i++) {
@@ -121,9 +126,9 @@ function renderHand() {
 }
 renderHand();
 
-/* ---------------------------
+/* =============================
    CAMERA
---------------------------- */
+============================= */
 document.getElementById("startCam").onclick = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "environment" }
@@ -140,9 +145,9 @@ document.getElementById("snap").onclick = async () => {
   canvas.height = video.videoHeight;
   canvas.getContext("2d").drawImage(video, 0, 0);
 
-  /* ---------------------------
-     STEP 3: RESIZE IMAGE (CHEAP)
-  --------------------------- */
+  /* =============================
+     RESIZE IMAGE (CHEAP)
+  ============================= */
   const maxW = 800;
   const scale = Math.min(maxW / canvas.width, 1);
 
@@ -158,13 +163,13 @@ document.getElementById("snap").onclick = async () => {
   photo.src = dataUrl;
   photo.style.display = "";
 
-  /* ---------------------------
-     CALL NETLIFY FUNCTION
-  --------------------------- */
+  /* =============================
+     CALL CLOUDFLARE WORKER
+  ============================= */
   try {
     statusEl.textContent = "Recognizing cards…";
 
-    const res = await fetch("/.netlify/functions/vision-llm", {
+    const res = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageBase64: dataUrl })
