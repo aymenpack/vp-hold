@@ -23,84 +23,67 @@ body{
   color:var(--text);
   font-family:-apple-system,system-ui;
 }
-.app{max-width:900px;margin:auto;padding:12px 12px 180px}
+.app{max-width:900px;margin:auto;padding:12px 12px 220px}
 
 /* GAME BAR */
 .gameBar{
-  display:flex;
-  gap:8px;
-  overflow-x:auto;
-  padding-bottom:6px;
+  display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;
 }
 .gameBtn{
-  padding:10px 14px;
-  border-radius:999px;
+  padding:10px 14px;border-radius:999px;
   border:1px solid var(--border);
-  background:#0c1f15;
-  color:var(--muted);
-  font-size:13px;
+  background:#0c1f15;color:var(--muted);font-size:13px;
 }
 .gameBtn.active{
   background:rgba(26,255,140,.15);
-  color:#eafff4;
-  border-color:var(--accent);
+  color:#eafff4;border-color:var(--accent);
   box-shadow:0 0 12px rgba(26,255,140,.4);
 }
 
-/* PANELS */
+/* PANEL */
 .panel{
   background:linear-gradient(180deg,#0e2418,#08140f);
   border:1px solid var(--border);
-  border-radius:16px;
-  padding:12px;
-  margin-bottom:12px;
+  border-radius:16px;padding:12px;margin-bottom:12px;
 }
 h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
 
 /* SCANNER */
 .scanWrap{
-  position:relative;
-  height:140px;
-  border-radius:12px;
-  overflow:hidden;
-  border:1px solid var(--border);
+  position:relative;height:140px;border-radius:12px;
+  overflow:hidden;border:1px solid var(--border);
 }
 .scanWrap video{
-  position:absolute;
-  width:100%;
-  top:50%;
+  position:absolute;width:100%;top:50%;
   transform:translateY(-50%);
 }
 .scanGuide{
-  position:absolute;
-  inset:0;
+  position:absolute;inset:0;
   border-top:2px dashed rgba(255,255,255,.25);
   border-bottom:2px dashed rgba(255,255,255,.25);
 }
 .scanLabel{
-  position:absolute;
-  bottom:6px;left:50%;
+  position:absolute;bottom:6px;left:50%;
   transform:translateX(-50%);
-  font-size:11px;
-  background:rgba(0,0,0,.6);
-  padding:3px 10px;
-  border-radius:999px;
-  color:var(--muted);
+  font-size:11px;background:rgba(0,0,0,.6);
+  padding:3px 10px;border-radius:999px;color:var(--muted);
 }
+
+/* CONTROLS */
+.controls{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.controls label{font-size:11px;color:var(--muted)}
+input[type=range]{width:100%}
 
 /* HAND */
 .hand{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:10px;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:10px;
 }
 .card{
   background:linear-gradient(180deg,#1b2f25,#0f1e17);
-  border-radius:14px;
-  padding:12px 6px;
-  text-align:center;
-  position:relative;
-  border:1px solid var(--border);
+  border-radius:14px;padding:12px 6px;text-align:center;
+  position:relative;border:1px solid var(--border);
   transition:.15s ease;
 }
 .card.hold{
@@ -113,76 +96,48 @@ h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
 .rank{font-size:22px;font-weight:800}
 .suit{font-size:18px}
 .holdBadge{
-  position:absolute;
-  top:6px;right:6px;
-  background:var(--hold);
-  color:#00140a;
-  font-size:10px;
-  font-weight:900;
-  padding:2px 6px;
-  border-radius:999px;
+  position:absolute;top:6px;right:6px;
+  background:var(--hold);color:#00140a;
+  font-size:10px;font-weight:900;
+  padding:2px 6px;border-radius:999px;
 }
 
 /* SNAP */
 .snapBtn{
-  position:fixed;
-  bottom:72px;
-  left:50%;
+  position:fixed;bottom:72px;left:50%;
   transform:translateX(-50%);
-  width:76px;height:76px;
-  border-radius:50%;
+  width:76px;height:76px;border-radius:50%;
   background:radial-gradient(circle,#ffffff,#d1fff0);
-  border:none;
-  box-shadow:0 12px 40px rgba(26,255,140,.7);
+  border:none;box-shadow:0 12px 40px rgba(26,255,140,.7);
 }
 .snapBtn::after{
-  content:"";
-  display:block;
-  width:56px;height:56px;
-  background:#0a1b12;
-  border-radius:50%;
-  margin:auto;
+  content:"";display:block;width:56px;height:56px;
+  background:#0a1b12;border-radius:50%;margin:auto;
 }
 
-/* ANALYSIS OVERLAY */
+/* OVERLAY */
 .overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:999;
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  display:none;align-items:center;justify-content:center;z-index:999;
 }
 .loader{
-  background:#0c1f15;
-  border-radius:16px;
-  padding:18px 22px;
-  text-align:center;
-  border:1px solid var(--border);
+  background:#0c1f15;border-radius:16px;padding:18px 22px;
+  border:1px solid var(--border);text-align:center;
 }
 .spinner{
-  width:32px;height:32px;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-  margin:0 auto 10px;
+  width:32px;height:32px;border:3px solid rgba(255,255,255,.2);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin 1s linear infinite;margin:0 auto 10px;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* TOAST */
 .toast{
-  position:fixed;
-  top:20px;
-  left:50%;
+  position:fixed;top:20px;left:50%;
   transform:translateX(-50%);
-  background:#22c55e;
-  color:#00140a;
-  font-weight:900;
-  padding:10px 18px;
-  border-radius:999px;
-  display:none;
+  background:#22c55e;color:#00140a;
+  font-weight:900;padding:10px 18px;
+  border-radius:999px;display:none;
 }
 </style>
 </head>
@@ -201,7 +156,18 @@ h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
   <div class="scanWrap">
     <video id="video" playsinline autoplay muted></video>
     <div class="scanGuide"></div>
-    <div class="scanLabel">Align card row here</div>
+    <div class="scanLabel" id="scanLabel">Hold steady to auto-scan</div>
+  </div>
+
+  <div class="controls">
+    <div>
+      <label>Zoom</label>
+      <input type="range" id="zoom" min="0.8" max="1.4" step="0.01" value="1">
+    </div>
+    <div>
+      <label>Vertical adjust</label>
+      <input type="range" id="offset" min="-0.2" max="0.2" step="0.01" value="0">
+    </div>
   </div>
 </div>
 
@@ -226,29 +192,24 @@ h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
 <canvas id="canvas" style="display:none"></canvas>
 
 <script>
-/* CONFIG */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
 
 const GAMES=[
-  ["job","Jacks"],
-  ["bonus","Bonus"],
-  ["double_bonus","Double Bonus"],
-  ["ddb","DDB"],
-  ["deuces","Deuces"],
-  ["ux","Ultimate X"]
+  ["job","Jacks"],["bonus","Bonus"],["double_bonus","Double Bonus"],
+  ["ddb","DDB"],["deuces","Deuces"],["ux","Ultimate X"]
 ];
 
-let currentGame="job";
-let cards=[],hold=[];
-let lastImage=null;
+let currentGame="job", cards=[], hold=[];
+let lastFrame=null, steadyCount=0;
 
-/* ELEMENTS */
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const handDiv=document.getElementById("hand");
 const overlay=document.getElementById("overlay");
 const toast=document.getElementById("toast");
+const zoom=document.getElementById("zoom");
+const offset=document.getElementById("offset");
 
 /* GAME BAR */
 const gameBar=document.getElementById("gameBar");
@@ -268,30 +229,54 @@ GAMES.forEach(([k,n])=>{
 (async()=>{
   const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
   video.srcObject=s;
+  requestAnimationFrame(checkSteady);
 })();
 
+/* AUTO-SNAP WHEN STEADY */
+function checkSteady(){
+  if(video.videoWidth){
+    const tmp=document.createElement("canvas");
+    tmp.width=160; tmp.height=90;
+    tmp.getContext("2d").drawImage(video,0,0,160,90);
+    const img=tmp.toDataURL("image/jpeg",0.2);
+
+    if(lastFrame && img===lastFrame){
+      steadyCount++;
+      if(steadyCount>20){ snap(); steadyCount=0; }
+    }else{
+      steadyCount=0;
+      lastFrame=img;
+    }
+  }
+  requestAnimationFrame(checkSteady);
+}
+
 /* SNAP */
-snapBtn.onclick=async()=>{
-  navigator.vibrate?.(30);
+snapBtn.onclick=snap;
+async function snap(){
   overlay.style.display="flex";
 
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
-  canvas.getContext("2d").drawImage(video,0,0);
+  const vw=video.videoWidth, vh=video.videoHeight;
+  const bandH=vh*0.35;
+  const bandY=(vh*(0.5+parseFloat(offset.value))) - bandH/2;
 
-  const vh=canvas.height,vw=canvas.width;
-  const bandH=vh*0.35,bandY=(vh-bandH)/2;
+  canvas.width=vw;
+  canvas.height=bandH;
+  canvas.getContext("2d").drawImage(
+    video,0,bandY,vw,bandH,0,0,vw,bandH
+  );
 
+  const sc=Math.min(800/(vw*zoom.value),1);
   const out=document.createElement("canvas");
-  out.width=vw; out.height=bandH;
-  out.getContext("2d").drawImage(canvas,0,bandY,vw,bandH,0,0,vw,bandH);
+  out.width=vw*zoom.value*sc;
+  out.height=bandH*sc;
+  out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
 
-  lastImage=out.toDataURL("image/jpeg",0.7);
+  const img=out.toDataURL("image/jpeg",0.7);
 
   const res=await fetch(WORKER_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({imageBase64:lastImage,game:currentGame,paytable:"standard"})
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({imageBase64:img,game:currentGame,paytable:"standard"})
   });
 
   const d=await res.json();
@@ -305,14 +290,14 @@ snapBtn.onclick=async()=>{
     toast.style.display="block";
     setTimeout(()=>toast.style.display="none",2500);
   }
-};
+}
 
 /* RENDER */
 function render(){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
-    const div=document.createElement("div");
     const red=(c.suit==="H"||c.suit==="D");
+    const div=document.createElement("div");
     div.className=`card ${hold[i]?"hold":""} ${red?"red":"black"}`;
     div.innerHTML=`
       ${hold[i]?'<div class="holdBadge">HOLD</div>':''}
