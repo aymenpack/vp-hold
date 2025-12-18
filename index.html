@@ -26,9 +26,7 @@ body{
 .app{max-width:900px;margin:auto;padding:12px 12px 220px}
 
 /* GAME BAR */
-.gameBar{
-  display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;
-}
+.gameBar{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
 .gameBtn{
   padding:10px 14px;border-radius:999px;
   border:1px solid var(--border);
@@ -69,17 +67,8 @@ h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
   padding:3px 10px;border-radius:999px;color:var(--muted);
 }
 
-/* CONTROLS */
-.controls{
-  display:grid;grid-template-columns:1fr 1fr;gap:10px;
-}
-.controls label{font-size:11px;color:var(--muted)}
-input[type=range]{width:100%}
-
 /* HAND */
-.hand{
-  display:grid;grid-template-columns:repeat(5,1fr);gap:10px;
-}
+.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .card{
   background:linear-gradient(180deg,#1b2f25,#0f1e17);
   border-radius:14px;padding:12px 6px;text-align:center;
@@ -145,33 +134,19 @@ input[type=range]{width:100%}
 <body>
 <div class="app">
 
-<!-- GAME BAR -->
 <div class="panel">
   <div class="gameBar" id="gameBar"></div>
 </div>
 
-<!-- SCANNER -->
 <div class="panel">
   <h2>Scan cards</h2>
   <div class="scanWrap">
     <video id="video" playsinline autoplay muted></video>
     <div class="scanGuide"></div>
-    <div class="scanLabel" id="scanLabel">Hold steady to auto-scan</div>
-  </div>
-
-  <div class="controls">
-    <div>
-      <label>Zoom</label>
-      <input type="range" id="zoom" min="0.8" max="1.4" step="0.01" value="1">
-    </div>
-    <div>
-      <label>Vertical adjust</label>
-      <input type="range" id="offset" min="-0.2" max="0.2" step="0.01" value="0">
-    </div>
+    <div class="scanLabel">Hold steady to auto-scan</div>
   </div>
 </div>
 
-<!-- HAND -->
 <div class="panel">
   <div class="hand" id="hand"></div>
 </div>
@@ -192,6 +167,7 @@ input[type=range]{width:100%}
 <canvas id="canvas" style="display:none"></canvas>
 
 <script>
+/* CONFIG */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
 
@@ -201,15 +177,14 @@ const GAMES=[
 ];
 
 let currentGame="job", cards=[], hold=[];
-let lastFrame=null, steadyCount=0;
+let cameraStream=null;
 
+/* ELEMENTS */
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const handDiv=document.getElementById("hand");
 const overlay=document.getElementById("overlay");
 const toast=document.getElementById("toast");
-const zoom=document.getElementById("zoom");
-const offset=document.getElementById("offset");
 
 /* GAME BAR */
 const gameBar=document.getElementById("gameBar");
@@ -225,51 +200,48 @@ GAMES.forEach(([k,n])=>{
   gameBar.appendChild(b);
 });
 
-/* CAMERA */
-(async()=>{
-  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject=s;
-  requestAnimationFrame(checkSteady);
-})();
-
-/* AUTO-SNAP WHEN STEADY */
-function checkSteady(){
-  if(video.videoWidth){
-    const tmp=document.createElement("canvas");
-    tmp.width=160; tmp.height=90;
-    tmp.getContext("2d").drawImage(video,0,0,160,90);
-    const img=tmp.toDataURL("image/jpeg",0.2);
-
-    if(lastFrame && img===lastFrame){
-      steadyCount++;
-      if(steadyCount>20){ snap(); steadyCount=0; }
-    }else{
-      steadyCount=0;
-      lastFrame=img;
-    }
-  }
-  requestAnimationFrame(checkSteady);
+/* CAMERA CONTROL */
+async function startCamera(){
+  if(cameraStream) return;
+  cameraStream = await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:"environment"}
+  });
+  video.srcObject = cameraStream;
 }
 
+function stopCamera(){
+  if(!cameraStream) return;
+  cameraStream.getTracks().forEach(t => t.stop());
+  cameraStream = null;
+  video.srcObject = null;
+}
+
+/* AUTO START */
+startCamera();
+
+/* STOP CAMERA WHEN PAGE HIDDEN */
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden) stopCamera();
+  else startCamera();
+});
+window.addEventListener("pagehide", stopCamera);
+window.addEventListener("beforeunload", stopCamera);
+
 /* SNAP */
-snapBtn.onclick=snap;
-async function snap(){
+snapBtn.onclick=async()=>{
   overlay.style.display="flex";
 
-  const vw=video.videoWidth, vh=video.videoHeight;
-  const bandH=vh*0.35;
-  const bandY=(vh*(0.5+parseFloat(offset.value))) - bandH/2;
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const bandH=vh*0.35,bandY=(vh-bandH)/2;
 
-  canvas.width=vw;
-  canvas.height=bandH;
+  canvas.width=vw;canvas.height=bandH;
   canvas.getContext("2d").drawImage(
     video,0,bandY,vw,bandH,0,0,vw,bandH
   );
 
-  const sc=Math.min(800/(vw*zoom.value),1);
   const out=document.createElement("canvas");
-  out.width=vw*zoom.value*sc;
-  out.height=bandH*sc;
+  const sc=Math.min(800/vw,1);
+  out.width=vw*sc; out.height=bandH*sc;
   out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
 
   const img=out.toDataURL("image/jpeg",0.7);
@@ -290,7 +262,7 @@ async function snap(){
     toast.style.display="block";
     setTimeout(()=>toast.style.display="none",2500);
   }
-}
+};
 
 /* RENDER */
 function render(){
