@@ -5,64 +5,104 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>VP Assistant</title>
 
+<!-- ====== FONTS ====== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
 <style>
-/* ================= THEMES ================= */
+/* ================= THEME TOKENS ================= */
+body[data-theme="neon"]{
+  --bg:#0b0020;
+  --panel:#16002f;
+  --panel2:#0f0022;
+  --border:#3f007d;
+  --text:#f3e8ff;
+  --muted:#c4b5fd;
+  --accent:#d946ef;
+  --accent-soft:rgba(217,70,239,.25);
+  --hold:#22ffcc;
+}
 body[data-theme="casino"]{
-  --bg:#07140e; --panel:#0f2318; --panel2:#0b1a12; --border:#1e3a2a;
-  --text:#e9f6ef; --muted:#9fc7b2;
-  --accent:#1aff8c; --hold:#22c55e;
+  --bg:#07140e;
+  --panel:#0f2318;
+  --panel2:#0b1a12;
+  --border:#1e3a2a;
+  --text:#e9f6ef;
+  --muted:#9fc7b2;
+  --accent:#1aff8c;
+  --accent-soft:rgba(26,255,140,.25);
+  --hold:#22c55e;
 }
 body[data-theme="dark"]{
-  --bg:#0b0f14; --panel:#121a24; --panel2:#0e141d; --border:#223043;
-  --text:#e9eef6; --muted:#b7c3d7;
-  --accent:#2f6bff; --hold:#3b82f6;
-}
-body[data-theme="neon"]{
-  --bg:#0b0020; --panel:#16002f; --panel2:#0f0022; --border:#3f007d;
-  --text:#f3e8ff; --muted:#c4b5fd;
-  --accent:#d946ef; --hold:#22ffcc;
-}
-body[data-theme="bright"]{
-  --bg:#f4f6f8; --panel:#ffffff; --panel2:#f1f5f9; --border:#d0d7de;
-  --text:#111827; --muted:#4b5563;
-  --accent:#2563eb; --hold:#16a34a;
+  --bg:#0b0f14;
+  --panel:#121a24;
+  --panel2:#0e141d;
+  --border:#223043;
+  --text:#e9eef6;
+  --muted:#b7c3d7;
+  --accent:#2f6bff;
+  --accent-soft:rgba(47,107,255,.25);
+  --hold:#3b82f6;
 }
 
 /* ================= BASE ================= */
 *{box-sizing:border-box}
 body{
   margin:0;
-  background:var(--bg);
+  background:radial-gradient(circle at top,var(--accent-soft),var(--bg) 55%);
   color:var(--text);
-  font-family:-apple-system,system-ui;
+  font-family:Inter,-apple-system,system-ui;
 }
-.app{max-width:900px;margin:auto;padding:12px 12px 120px}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:14px 14px 120px;
+}
 .panel{
   background:linear-gradient(180deg,var(--panel),var(--panel2));
   border:1px solid var(--border);
-  border-radius:18px;
-  padding:12px;
-  margin-bottom:12px;
+  border-radius:20px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
 }
 
-/* ================= TOP ================= */
-.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.title{font-size:16px;font-weight:900}
-.sub{font-size:12px;color:var(--muted)}
+/* ================= HEADER ================= */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.title{
+  font-weight:900;
+  font-size:20px;
+  letter-spacing:.2px;
+}
+.subtitle{
+  font-size:13px;
+  color:var(--muted);
+}
 .iconBtn{
   border:1px solid var(--border);
   background:transparent;
   color:var(--text);
-  padding:8px 12px;
+  padding:10px 14px;
   border-radius:999px;
+  font-weight:700;
 }
 
-/* ================= CHIPS ================= */
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* ================= STATUS CHIPS ================= */
+.chips{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
 .chip{
-  border:1px solid var(--border);
-  padding:6px 10px;
+  padding:6px 12px;
   border-radius:999px;
+  border:1px solid var(--border);
   font-size:12px;
   color:var(--muted);
 }
@@ -70,77 +110,119 @@ body{
 
 /* ================= SCANNER ================= */
 .scanWrap{
-  position:relative;height:180px;border-radius:16px;
-  overflow:hidden;border:1px solid var(--border);
-  user-select:none;touch-action:manipulation;
+  position:relative;
+  height:200px;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  box-shadow:
+    0 0 0 6px var(--accent-soft),
+    0 20px 50px rgba(0,0,0,.55);
+  touch-action:manipulation;
 }
 .scanWrap video{
-  position:absolute;width:100%;top:50%;
+  position:absolute;
+  width:100%;
+  top:50%;
   transform:translateY(-50%);
 }
-.scanMask{
-  position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.05) 35%,rgba(0,0,0,.05) 65%,rgba(0,0,0,.55));
+.scanOverlay{
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.1) 35%,rgba(0,0,0,.1) 65%,rgba(0,0,0,.6));
 }
 .scanWindow{
-  position:absolute;left:12px;right:12px;top:32%;height:36%;
-  border:2px dashed rgba(255,255,255,.25);border-radius:14px;
+  position:absolute;
+  left:14px; right:14px;
+  top:34%; height:32%;
+  border:2px dashed rgba(255,255,255,.25);
+  border-radius:14px;
 }
 .scanText{
-  position:absolute;left:50%;top:50%;
+  position:absolute;
+  left:50%; top:50%;
   transform:translate(-50%,-50%);
-  text-align:center;font-weight:900;
+  text-align:center;
+  font-weight:900;
+  font-size:18px;
 }
-.scanText small{display:block;font-weight:600;color:var(--muted);margin-top:6px}
+.scanText small{
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  color:var(--muted);
+  margin-top:6px;
+}
 
 /* ================= HAND ================= */
-.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.hand{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+}
 .card{
   border:1px solid var(--border);
   border-radius:16px;
-  padding:14px 6px;
+  padding:16px 8px;
   text-align:center;
   position:relative;
 }
 .card.hold{
   outline:3px solid var(--hold);
-  box-shadow:0 0 18px var(--hold);
-  transform:translateY(-4px);
+  box-shadow:0 0 20px var(--hold);
+  transform:translateY(-6px);
 }
-.card.red{color:#ef4444}
-.card.black{color:var(--text)}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
+.red{color:#ff5b5b}
+.black{color:var(--text)}
 .badge{
-  position:absolute;top:8px;right:8px;
-  background:var(--hold);color:#000;
-  font-size:10px;font-weight:900;
-  padding:2px 8px;border-radius:999px;
+  position:absolute;
+  top:8px; right:8px;
+  background:var(--hold);
+  color:#000;
+  font-size:10px;
+  font-weight:900;
+  padding:3px 8px;
+  border-radius:999px;
 }
 
 /* ================= EXPLANATION ================= */
 .explain{
-  margin-top:12px;
-  padding:12px;
-  border-radius:14px;
+  margin-top:14px;
+  padding:14px;
+  border-radius:16px;
   border:1px solid var(--border);
+  background:rgba(0,0,0,.25);
 }
-.explain h3{margin:0 0 6px;font-size:13px;color:var(--accent)}
-.explain p{margin:0;font-size:13px;line-height:1.45}
+.explain h3{
+  margin:0 0 8px;
+  font-size:14px;
+  color:var(--accent);
+}
+.explain p{
+  margin:0;
+  font-size:14px;
+  line-height:1.5;
+}
 
 /* ================= SETTINGS ================= */
 .sheetBack{
-  position:fixed;inset:0;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
   display:none;
-  background:rgba(0,0,0,.55);
-  z-index:1200;
+  z-index:1000;
 }
 .sheet{
-  position:absolute;bottom:0;left:0;right:0;
-  max-width:900px;margin:auto;
+  position:absolute;
+  bottom:0; left:0; right:0;
+  max-width:900px;
+  margin:auto;
   height:90vh;
-  background:var(--panel);
-  border-radius:18px 18px 0 0;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border-radius:22px 22px 0 0;
   display:flex;
   flex-direction:column;
 }
@@ -148,74 +230,94 @@ body{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:12px;
+  padding:14px;
   border-bottom:1px solid var(--border);
 }
 .sheetContent{
-  padding:12px;
+  padding:14px;
   overflow:auto;
   flex:1;
 }
 .sheetFooter{
-  padding:12px;
+  padding:14px;
   border-top:1px solid var(--border);
 }
-.section{margin-bottom:16px}
-.section h3{margin:0 0 8px;font-size:13px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.section{
+  margin-bottom:18px;
+}
+.section h3{
+  margin:0 0 8px;
+  font-size:14px;
+  color:var(--muted);
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 .tile{
+  padding:14px;
+  border-radius:16px;
   border:1px solid var(--border);
-  border-radius:14px;
-  padding:12px;
+  font-weight:700;
+  cursor:pointer;
 }
 .tile.active{
   border-color:var(--accent);
-  box-shadow:0 0 0 4px rgba(0,0,0,.15);
+  box-shadow:0 0 0 4px var(--accent-soft);
 }
 
-/* ================= BUTTON ================= */
+/* ================= BUTTONS ================= */
 .primaryBtn{
   width:100%;
-  padding:12px;
-  border-radius:14px;
-  background:var(--accent);
+  padding:16px;
+  border-radius:18px;
+  background:linear-gradient(180deg,var(--accent),#00000000);
+  background-color:var(--accent);
   color:#000;
+  font-size:17px;
   font-weight:900;
   border:none;
 }
 
 /* ================= OVERLAY ================= */
 .overlay{
-  position:fixed;inset:0;
+  position:fixed;
+  inset:0;
   display:none;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.55);
-  z-index:1000;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.6);
+  z-index:2000;
 }
 .loader{
   background:var(--panel);
-  border-radius:18px;
-  padding:18px;
+  border-radius:20px;
+  padding:22px;
   text-align:center;
 }
 .spinner{
-  width:32px;height:32px;
-  border:3px solid rgba(255,255,255,.2);
+  width:34px;height:34px;
+  border:4px solid rgba(255,255,255,.2);
   border-top-color:var(--accent);
   border-radius:50%;
   animation:spin 1s linear infinite;
-  margin:0 auto 10px;
+  margin:0 auto 12px;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ================= TOAST ================= */
 .toast{
-  position:fixed;top:18px;left:50%;
+  position:fixed;
+  top:20px; left:50%;
   transform:translateX(-50%);
-  display:none;
-  background:var(--hold);color:#000;
+  background:var(--hold);
+  color:#000;
   font-weight:900;
-  padding:10px 16px;border-radius:999px;
+  padding:12px 18px;
+  border-radius:999px;
+  display:none;
+  z-index:3000;
 }
 </style>
 </head>
@@ -223,45 +325,45 @@ body{
 <body data-theme="neon">
 <div class="app">
 
-  <!-- TOP -->
-  <div class="panel">
-    <div class="hrow">
-      <div>
-        <div class="title">VP Assistant</div>
-        <div class="sub">Tap scanner to snap</div>
-      </div>
-      <button class="iconBtn" id="openSettings">⚙️</button>
+<!-- HEADER -->
+<div class="panel">
+  <div class="header">
+    <div>
+      <div class="title">VP Assistant</div>
+      <div class="subtitle">Tap scanner to snap</div>
     </div>
-    <div class="chips">
-      <div class="chip">Game: <strong id="chipGame"></strong></div>
-      <div class="chip">Paytable: <strong id="chipPay"></strong></div>
-      <div class="chip" id="chipMult" style="display:none">Mult: <strong id="chipMultVal"></strong></div>
-      <div class="chip">Theme: <strong id="chipTheme"></strong></div>
-    </div>
+    <button class="iconBtn" id="openSettings">⚙️</button>
   </div>
+  <div class="chips">
+    <div class="chip">Game: <strong id="chipGame"></strong></div>
+    <div class="chip">Paytable: <strong id="chipPay"></strong></div>
+    <div class="chip" id="chipMult" style="display:none">Mult: <strong id="chipMultVal"></strong></div>
+    <div class="chip">Theme: <strong id="chipTheme"></strong></div>
+  </div>
+</div>
 
-  <!-- SCANNER -->
-  <div class="panel">
-    <div class="scanWrap" id="scanWrap">
-      <video id="video" playsinline autoplay muted></video>
-      <div class="scanMask"></div>
-      <div class="scanWindow"></div>
-      <div class="scanText">
-        Align the 5 cards here
-        <small>Tap anywhere to scan</small>
-      </div>
+<!-- SCANNER -->
+<div class="panel">
+  <div class="scanWrap" id="scanWrap">
+    <video id="video" playsinline autoplay muted></video>
+    <div class="scanOverlay"></div>
+    <div class="scanWindow"></div>
+    <div class="scanText">
+      Align the 5 cards here
+      <small>Tap anywhere to scan</small>
     </div>
-    <div class="sub" id="status" style="margin-top:8px">Starting camera…</div>
   </div>
+  <div class="subtitle" id="status" style="margin-top:10px">Starting camera…</div>
+</div>
 
-  <!-- RESULT -->
-  <div class="panel">
-    <div class="hand" id="hand"></div>
-    <div class="explain" id="explainBox" style="display:none">
-      <h3>Why hold these cards?</h3>
-      <p id="explainText"></p>
-    </div>
+<!-- RESULT -->
+<div class="panel">
+  <div class="hand" id="hand"></div>
+  <div class="explain" id="explainBox" style="display:none">
+    <h3>Why hold these cards?</h3>
+    <p id="explainText"></p>
   </div>
+</div>
 
 </div>
 
@@ -270,7 +372,7 @@ body{
 <div class="overlay" id="overlay">
   <div class="loader">
     <div class="spinner"></div>
-    <div style="font-weight:900;margin-bottom:6px">Analyzing…</div>
+    <div style="font-weight:900">Analyzing…</div>
   </div>
 </div>
 
@@ -281,32 +383,27 @@ body{
   <div class="sheet">
     <div class="sheetHeader">
       <button class="iconBtn" id="backSettings">← Back</button>
-      <div style="font-weight:900">Settings</div>
+      <strong>Settings</strong>
       <span></span>
     </div>
-
     <div class="sheetContent">
       <div class="section">
         <h3>Game</h3>
         <div class="grid" id="gameGrid"></div>
       </div>
-
       <div class="section">
         <h3>Paytable</h3>
         <div class="grid" id="payGrid"></div>
       </div>
-
       <div class="section" id="multSection" style="display:none">
         <h3>Ultimate X Multiplier</h3>
         <div class="grid" id="multGrid"></div>
       </div>
-
       <div class="section">
         <h3>Theme</h3>
         <div class="grid" id="themeGrid"></div>
       </div>
     </div>
-
     <div class="sheetFooter">
       <button class="primaryBtn" id="doneSettings">Done</button>
     </div>
@@ -314,10 +411,10 @@ body{
 </div>
 
 <script>
-/* ========= CONFIG ========= */
+/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ========= DATA ========= */
+/* ================= DATA ================= */
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
 const GAMES=[
   {k:"job",n:"Jacks or Better"},
@@ -335,20 +432,23 @@ const PAYTABLES={
   deuces:["standard"],
   ux:["standard"]
 };
-const THEMES=["casino","dark","neon","bright"];
+const THEMES=["neon","casino","dark","bright"];
 const MULTS=[1,2,3,4,5,8,10,12];
 
-/* ========= STATE ========= */
+/* ================= STATE ================= */
 const state={
   game:localStorage.getItem("game")||"job",
   paytable:localStorage.getItem("paytable")||"9/6",
   theme:localStorage.getItem("theme")||"neon",
   multiplier:Number(localStorage.getItem("multiplier")||1),
-  cards:[],hold:[],explanation:"",
-  stream:null,busy:false
+  cards:[],
+  hold:[],
+  explanation:"",
+  stream:null,
+  busy:false
 };
 
-/* ========= ELEMENTS ========= */
+/* ================= ELEMENTS ================= */
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const scanWrap=document.getElementById("scanWrap");
@@ -372,7 +472,7 @@ const multGrid=document.getElementById("multGrid");
 const multSection=document.getElementById("multSection");
 const themeGrid=document.getElementById("themeGrid");
 
-/* ========= INIT ========= */
+/* ================= INIT ================= */
 document.body.dataset.theme=state.theme;
 normalizePaytable();
 renderChips();
@@ -381,7 +481,7 @@ renderHand();
 renderExplanation();
 startCamera();
 
-/* ========= CAMERA ========= */
+/* ================= CAMERA ================= */
 async function startCamera(){
   if(state.stream) return;
   try{
@@ -404,13 +504,13 @@ function stopCamera(){
 async function waitForVideo(){
   const t0=Date.now();
   while(true){
-    if(video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0) return;
+    if(video.readyState>=2 && video.videoWidth>0) return;
     if(Date.now()-t0>3000) return;
     await new Promise(r=>setTimeout(r,50));
   }
 }
 
-/* ========= SNAP ========= */
+/* ================= SNAP ================= */
 scanWrap.addEventListener("pointerdown",e=>{
   e.preventDefault();
   safeSnap();
@@ -426,122 +526,148 @@ async function safeSnap(){
     const res=await fetch(WORKER_URL,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        imageBase64:img,
-        game:state.game,
-        paytable:state.paytable,
-        multiplier:state.multiplier
+      body: JSON.stringify({
+        imageBase64: img,
+        game: state.game,
+        paytable: state.paytable,
+        multiplier: state.multiplier
       })
     });
-    const data=await res.json();
-    state.cards=data.cards||[];
-    state.hold=data.hold||[];
-    state.explanation=data.explanation||"";
-    if(state.game==="ux" && data.multiplier && data.confidence>=0.75){
-      state.multiplier=data.multiplier;
-      localStorage.setItem("multiplier",String(state.multiplier));
+
+    const data = await res.json();
+
+    state.cards = data.cards || [];
+    state.hold = data.hold || [false,false,false,false,false];
+    state.explanation = data.explanation || "";
+
+    // Auto-update multiplier if Ultimate X and high confidence
+    if (state.game === "ux" && data.multiplier && data.confidence >= 0.75) {
+      state.multiplier = Number(data.multiplier) || state.multiplier;
+      localStorage.setItem("multiplier", String(state.multiplier));
     }
+
     renderHand();
     renderChips();
     renderExplanation();
-    if(isWin(state.cards)){
-      toast.style.display="block";
-      setTimeout(()=>toast.style.display="none",2000);
+
+    if (isWin(state.cards)) {
+      toast.style.display = "block";
+      setTimeout(() => toast.style.display = "none", 2000);
     }
-  }catch(e){
-    statusEl.textContent="Scan failed, try again.";
-  }finally{
-    overlay.style.display="none";
-        state.busy=false;
+
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = "Scan failed — try again";
+  } finally {
+    overlay.style.display = "none";
+    state.busy = false;
   }
 }
 
 function captureBand(){
-  const vw=video.videoWidth, vh=video.videoHeight;
-  const bandH=vh*0.35, bandY=(vh-bandH)/2;
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const bandH = vh * 0.35;
+  const bandY = (vh - bandH) / 2;
 
-  canvas.width=vw;
-  canvas.height=bandH;
-  canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
+  canvas.width = vw;
+  canvas.height = bandH;
 
-  const sc=Math.min(900/vw,1);
-  const out=document.createElement("canvas");
-  out.width=Math.round(vw*sc);
-  out.height=Math.round(bandH*sc);
-  out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
-  return out.toDataURL("image/jpeg",0.7);
+  canvas.getContext("2d").drawImage(
+    video,
+    0, bandY, vw, bandH,
+    0, 0, vw, bandH
+  );
+
+  const sc = Math.min(900 / vw, 1);
+  const out = document.createElement("canvas");
+  out.width = Math.round(vw * sc);
+  out.height = Math.round(bandH * sc);
+
+  out.getContext("2d").drawImage(canvas, 0, 0, out.width, out.height);
+  return out.toDataURL("image/jpeg", 0.7);
 }
 
-/* ========= RENDER ========= */
+/* ================= RENDER ================= */
 function renderHand(){
-  handDiv.innerHTML="";
-  if(!state.cards.length) return;
+  handDiv.innerHTML = "";
+  if (!state.cards.length) return;
+
   state.cards.forEach((c,i)=>{
-    const red=(c.suit==="H"||c.suit==="D");
-    const d=document.createElement("div");
-    d.className=`card ${state.hold[i]?"hold":""} ${red?"red":"black"}`;
-    d.innerHTML=`
-      ${state.hold[i]?'<div class="badge">HOLD</div>':''}
+    const red = (c.suit === "H" || c.suit === "D");
+    const d = document.createElement("div");
+    d.className = `card ${state.hold[i] ? "hold" : ""} ${red ? "red" : "black"}`;
+    d.innerHTML = `
+      ${state.hold[i] ? '<div class="badge">HOLD</div>' : ''}
       <div class="rank">${c.rank}</div>
-      <div class="suit">${SUIT[c.suit]}</div>
+      <div class="suit">${SUIT[c.suit] || c.suit}</div>
     `;
-    d.onclick=()=>{state.hold[i]=!state.hold[i];renderHand();};
+    d.onclick = () => {
+      state.hold[i] = !state.hold[i];
+      renderHand();
+    };
     handDiv.appendChild(d);
   });
 }
 
 function renderExplanation(){
-  if(state.explanation){
-    explainBox.style.display="";
-    explainText.textContent=state.explanation;
+  if (state.explanation && state.cards.length === 5) {
+    explainBox.style.display = "";
+    explainText.textContent = state.explanation;
   } else {
-    explainBox.style.display="none";
+    explainBox.style.display = "none";
+    explainText.textContent = "";
   }
 }
 
 function isWin(cards){
-  if(!cards || cards.length!==5) return false;
-  const counts={};
-  cards.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
-  return Object.values(counts).some(v=>v>=2);
+  if (!cards || cards.length !== 5) return false;
+  const counts = {};
+  cards.forEach(c => counts[c.rank] = (counts[c.rank] || 0) + 1);
+  return Object.values(counts).some(v => v >= 2);
 }
 
-/* ========= SETTINGS ========= */
-document.getElementById("openSettings").onclick=()=>{
+/* ================= SETTINGS NAV ================= */
+const openSettingsBtn = document.getElementById("openSettings");
+const closeSettingsBtn = document.getElementById("closeSettings");
+const backSettingsBtn = document.getElementById("backSettings");
+const doneSettingsBtn = document.getElementById("doneSettings");
+
+function openSettings(){
   renderSettings();
-  sheetBack.style.display="block";
-};
-document.getElementById("closeSettings").onclick=()=>{
-  sheetBack.style.display="none";
-};
-document.getElementById("backSettings").onclick=()=>{
-  sheetBack.style.display="none";
-};
-document.getElementById("doneSettings").onclick=()=>{
-  sheetBack.style.display="none";
-};
-sheetBack.addEventListener("click",e=>{
-  if(e.target===sheetBack) sheetBack.style.display="none";
+  sheetBack.style.display = "block";
+}
+function closeSettings(){
+  sheetBack.style.display = "none";
+}
+
+openSettingsBtn.onclick = openSettings;
+closeSettingsBtn.onclick = closeSettings;
+backSettingsBtn.onclick = closeSettings;
+doneSettingsBtn.onclick = closeSettings;
+
+sheetBack.addEventListener("click", (e) => {
+  if (e.target === sheetBack) closeSettings();
 });
 
+/* ================= SETTINGS RENDER ================= */
 function normalizePaytable(){
-  const allowed=PAYTABLES[state.game]||["standard"];
-  if(!allowed.includes(state.paytable)){
-    state.paytable=allowed[0];
-    localStorage.setItem("paytable",state.paytable);
+  const allowed = PAYTABLES[state.game] || ["standard"];
+  if (!allowed.includes(state.paytable)) {
+    state.paytable = allowed[0];
+    localStorage.setItem("paytable", state.paytable);
   }
 }
 
 function renderSettings(){
   // GAME
-  gameGrid.innerHTML="";
+  gameGrid.innerHTML = "";
   GAMES.forEach(g=>{
-    const t=document.createElement("div");
-    t.className="tile"+(g.k===state.game?" active":"");
-    t.innerHTML=`<div class="name">${g.n}</div>`;
-    t.onclick=()=>{
-      state.game=g.k;
-      localStorage.setItem("game",state.game);
+    const t = document.createElement("div");
+    t.className = "tile" + (g.k === state.game ? " active" : "");
+    t.textContent = g.n;
+    t.onclick = ()=>{
+      state.game = g.k;
+      localStorage.setItem("game", state.game);
       normalizePaytable();
       renderSettings();
       renderChips();
@@ -550,50 +676,50 @@ function renderSettings(){
   });
 
   // PAYTABLE
-  payGrid.innerHTML="";
-  (PAYTABLES[state.game]||["standard"]).forEach(p=>{
-    const t=document.createElement("div");
-    t.className="tile"+(p===state.paytable?" active":"");
-    t.innerHTML=`<div class="name">${p}</div>`;
-    t.onclick=()=>{
-      state.paytable=p;
-      localStorage.setItem("paytable",state.paytable);
+  payGrid.innerHTML = "";
+  (PAYTABLES[state.game] || ["standard"]).forEach(p=>{
+    const t = document.createElement("div");
+    t.className = "tile" + (p === state.paytable ? " active" : "");
+    t.textContent = p;
+    t.onclick = ()=>{
+      state.paytable = p;
+      localStorage.setItem("paytable", state.paytable);
       renderSettings();
       renderChips();
     };
     payGrid.appendChild(t);
   });
 
-  // MULTIPLIER (Ultimate X only)
-  if(state.game==="ux"){
-    multSection.style.display="";
-    multGrid.innerHTML="";
+  // MULTIPLIER
+  if (state.game === "ux") {
+    multSection.style.display = "";
+    multGrid.innerHTML = "";
     MULTS.forEach(m=>{
-      const t=document.createElement("div");
-      t.className="tile"+(state.multiplier===m?" active":"");
-      t.innerHTML=`<div class="name">${m}×</div>`;
-      t.onclick=()=>{
-        state.multiplier=m;
-        localStorage.setItem("multiplier",String(m));
+      const t = document.createElement("div");
+      t.className = "tile" + (state.multiplier === m ? " active" : "");
+      t.textContent = `${m}×`;
+      t.onclick = ()=>{
+        state.multiplier = m;
+        localStorage.setItem("multiplier", String(m));
         renderSettings();
         renderChips();
       };
       multGrid.appendChild(t);
     });
   } else {
-    multSection.style.display="none";
+    multSection.style.display = "none";
   }
 
   // THEME
-  themeGrid.innerHTML="";
+  themeGrid.innerHTML = "";
   THEMES.forEach(th=>{
-    const t=document.createElement("div");
-    t.className="tile"+(th===state.theme?" active":"");
-    t.innerHTML=`<div class="name">${th}</div>`;
-    t.onclick=()=>{
-      state.theme=th;
-      localStorage.setItem("theme",th);
-      document.body.dataset.theme=th;
+    const t = document.createElement("div");
+    t.className = "tile" + (th === state.theme ? " active" : "");
+    t.textContent = th;
+    t.onclick = ()=>{
+      state.theme = th;
+      localStorage.setItem("theme", th);
+      document.body.dataset.theme = th;
       renderSettings();
       renderChips();
     };
@@ -602,18 +728,17 @@ function renderSettings(){
 }
 
 function renderChips(){
-  chipGame.textContent=state.game;
-  chipPay.textContent=state.paytable;
-  chipTheme.textContent=state.theme;
-  if(state.game==="ux"){
-    chipMult.style.display="";
-    chipMultVal.textContent=state.multiplier+"×";
+  chipGame.textContent = state.game;
+  chipPay.textContent = state.paytable;
+  chipTheme.textContent = state.theme;
+
+  if (state.game === "ux") {
+    chipMult.style.display = "";
+    chipMultVal.textContent = state.multiplier + "×";
   } else {
-    chipMult.style.display="none";
+    chipMult.style.display = "none";
   }
 }
-
-/* ========= END ========= */
 </script>
 </body>
 </html>
