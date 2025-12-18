@@ -10,200 +10,322 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <style>
-/* ===== Base ===== */
-body {
-  margin: 0;
-  font-family: Inter, -apple-system, system-ui, sans-serif;
-  background: radial-gradient(circle at top, #1f2937, #020617 60%);
-  color: #e5e7eb;
+/* ===== THEMES ===== */
+body[data-theme="neon"]{
+  --bg:#0b0020; --panel:#16002f; --panel2:#0f0022; --border:#3f007d;
+  --text:#f3e8ff; --muted:#c4b5fd; --accent:#d946ef; --hold:#22ffcc;
+}
+body[data-theme="casino"]{
+  --bg:#07140e; --panel:#0f2318; --panel2:#0b1a12; --border:#1e3a2a;
+  --text:#e9f6ef; --muted:#9fc7b2; --accent:#1aff8c; --hold:#22c55e;
+}
+body[data-theme="dark"]{
+  --bg:#0b0f14; --panel:#121a24; --panel2:#0e141d; --border:#223043;
+  --text:#e9eef6; --muted:#b7c3d7; --accent:#2f6bff; --hold:#3b82f6;
 }
 
-header {
-  padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
-  border-bottom: 1px solid #1f2937;
+/* ===== BASE ===== */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,-apple-system,system-ui;
+  background:radial-gradient(circle at top,#1f2937,var(--bg) 60%);
+  color:var(--text);
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:
+    calc(12px + env(safe-area-inset-top))
+    16px
+    calc(96px + env(safe-area-inset-bottom));
+}
+.panel{
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:14px;
 }
 
-h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 900;
+/* ===== HEADER ===== */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.title{font-weight:900;font-size:20px}
+.subtitle{font-size:13px;color:var(--muted)}
+.iconBtn{
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text);
+  padding:8px 14px;
+  border-radius:999px;
+  font-weight:700;
 }
 
-.subtitle {
-  font-size: 13px;
-  color: #9ca3af;
-  margin-top: 2px;
+/* ===== CONTROLS ===== */
+.controls{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+select{
+  background:#020617;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  font-size:14px;
 }
 
-.controls {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px 8px;
+/* ===== SCANNER ===== */
+.scanner{
+  margin-top:10px;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  box-shadow:0 0 0 6px rgba(34,197,94,.15),0 20px 40px rgba(0,0,0,.6);
+}
+video{
+  width:100%;
+  max-height:260px;
+  object-fit:cover;
+  background:black;
+}
+.status{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
 }
 
-select, button {
-  background: #020617;
-  color: #e5e7eb;
-  border: 1px solid #374151;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
+/* ===== HAND ===== */
+#hand{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+  margin-top:12px;
+}
+.card{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:14px 6px;
+  text-align:center;
+  background:#020617;
+}
+.card.hold{
+  outline:3px solid var(--hold);
+  box-shadow:0 0 18px rgba(34,197,94,.7);
+  transform:translateY(-4px);
+}
+.rank{font-size:22px;font-weight:900}
+.suit{font-size:18px}
+.red{color:#ef4444}
+
+/* ===== EXPLANATION ===== */
+#explanationBox{
+  margin-top:12px;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#020617;
+  display:none;
+}
+#explanationBox h3{
+  margin:0 0 6px;
+  font-size:14px;
+  color:var(--accent);
+}
+#explanationText{
+  margin:0;
+  font-size:14px;
+  line-height:1.5;
 }
 
-button {
-  font-weight: 700;
-  cursor: pointer;
+/* ===== SNAP BUTTON ===== */
+footer{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,transparent,#020617 40%);
+}
+#snap{
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border-radius:14px;
+  background:linear-gradient(180deg,#22c55e,#16a34a);
+  color:#000;
+  font-weight:900;
+  border:none;
 }
 
-button:active {
-  transform: scale(0.98);
+/* ===== SETTINGS PANEL ===== */
+.sheetBack{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  z-index:1000;
 }
-
-/* ===== Scanner ===== */
-.scanner {
-  margin: 6px 16px 8px;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid #374151;
-  box-shadow: 0 0 0 6px rgba(34,197,94,.15), 0 20px 40px rgba(0,0,0,.6);
+.sheet{
+  position:absolute;
+  bottom:0; left:0; right:0;
+  max-width:900px;
+  margin:auto;
+  height:60vh;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border-radius:20px 20px 0 0;
+  display:flex;
+  flex-direction:column;
 }
-
-video {
-  width: 100%;
-  max-height: 260px;
-  object-fit: cover;
-  background: black;
+.sheetHeader{
+  padding:14px;
+  border-bottom:1px solid var(--border);
+  text-align:center;
+  font-weight:900;
 }
-
-.status {
-  padding: 6px 16px 12px;
-  font-size: 12px;
-  color: #9ca3af;
+.sheetContent{
+  padding:14px;
+  overflow:auto;
+  flex:1;
 }
-
-/* ===== Hand ===== */
-#hand {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  padding: 12px 16px;
+.sheetFooter{
+  padding:14px;
+  border-top:1px solid var(--border);
 }
-
-.card {
-  border: 1px solid #374151;
-  border-radius: 14px;
-  padding: 14px 6px;
-  text-align: center;
-  background: #020617;
+.section{
+  margin-bottom:16px;
 }
-
-.card.hold {
-  outline: 3px solid #22c55e;
-  box-shadow: 0 0 18px rgba(34,197,94,.7);
-  transform: translateY(-4px);
+.section h3{
+  margin:0 0 8px;
+  font-size:14px;
+  color:var(--muted);
 }
-
-.rank {
-  font-size: 22px;
-  font-weight: 900;
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
 }
-
-.suit {
-  font-size: 18px;
+.tile{
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  font-weight:700;
+  text-align:center;
+  cursor:pointer;
 }
-
-.red {
-  color: #ef4444;
+.tile.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(34,197,94,.25);
 }
-
-/* ===== Explanation ===== */
-#explanationBox {
-  margin: 4px 16px 16px;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid #374151;
-  background: #020617;
-  display: none;
-}
-
-#explanationBox h3 {
-  margin: 0 0 6px;
-  font-size: 14px;
-  color: #22c55e;
-}
-
-#explanationText {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #e5e7eb;
-}
-
-/* ===== Footer ===== */
-footer {
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  border-top: 1px solid #1f2937;
-}
-
-#snap {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  border-radius: 14px;
-  background: linear-gradient(180deg,#22c55e,#16a34a);
-  color: #000;
-  font-weight: 900;
-  border: none;
+.primaryBtn{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  background:var(--accent);
+  color:#000;
+  font-weight:900;
+  font-size:16px;
+  border:none;
 }
 </style>
 </head>
 
-<body>
+<body data-theme="neon">
+<div class="app">
 
-<header>
-  <h1>VP Assistant</h1>
-  <div class="subtitle">Scan a hand, get the perfect hold</div>
-</header>
+<!-- HEADER -->
+<div class="panel">
+  <div class="header">
+    <div>
+      <div class="title">VP Assistant</div>
+      <div class="subtitle">Scan a hand, get the perfect hold</div>
+    </div>
+    <button class="iconBtn" id="openSettings">⚙️</button>
+  </div>
 
-<div class="controls">
-  <select id="game">
-    <option value="job">Jacks or Better</option>
-    <option value="bonus">Bonus Poker</option>
-    <option value="double_bonus">Double Bonus</option>
-    <option value="ddb">Double Double Bonus</option>
-    <option value="deuces">Deuces Wild</option>
-    <option value="ux">Ultimate X</option>
-  </select>
+  <div class="controls">
+    <select id="game">
+      <option value="job">Jacks or Better</option>
+      <option value="bonus">Bonus Poker</option>
+      <option value="double_bonus">Double Bonus</option>
+      <option value="ddb">Double Double Bonus</option>
+      <option value="deuces">Deuces Wild</option>
+      <option value="ux">Ultimate X</option>
+    </select>
 
-  <select id="paytable">
-    <option value="9/6">9/6</option>
-    <option value="8/5">8/5</option>
-    <option value="standard">Standard</option>
-  </select>
+    <select id="paytable">
+      <option value="9/6">9/6</option>
+      <option value="8/5">8/5</option>
+      <option value="standard">Standard</option>
+    </select>
+  </div>
 </div>
 
-<div class="scanner">
-  <video id="video" playsinline autoplay muted></video>
+<!-- SCANNER -->
+<div class="panel">
+  <div class="scanner">
+    <video id="video" playsinline autoplay muted></video>
+  </div>
+  <div class="status" id="status">Starting camera…</div>
 </div>
 
-<div class="status" id="status">Starting camera…</div>
+<!-- RESULT -->
+<div class="panel">
+  <div id="hand"></div>
+  <div id="explanationBox">
+    <h3>Why hold these cards?</h3>
+    <p id="explanationText"></p>
+  </div>
+</div>
 
-<div id="hand"></div>
-
-<div id="explanationBox">
-  <h3>Why hold these cards?</h3>
-  <p id="explanationText"></p>
 </div>
 
 <footer>
   <button id="snap">SNAP</button>
 </footer>
 
-<canvas id="canvas" style="display:none;"></canvas>
+<!-- SETTINGS -->
+<div class="sheetBack" id="sheetBack">
+  <div class="sheet">
+    <div class="sheetHeader">Settings</div>
+    <div class="sheetContent">
+      <div class="section">
+        <h3>Game</h3>
+        <div class="grid" id="gameGrid"></div>
+      </div>
+      <div class="section">
+        <h3>Paytable</h3>
+        <div class="grid" id="payGrid"></div>
+      </div>
+      <div class="section">
+        <h3>Theme</h3>
+        <div class="grid" id="themeGrid"></div>
+      </div>
+    </div>
+    <div class="sheetFooter">
+      <button class="primaryBtn" id="doneSettings">Done</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="canvas" style="display:none"></canvas>
 
 <script>
 /* ========= CONFIG ========= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+
+/* ========= STATE ========= */
+let state = {
+  game: "job",
+  paytable: "9/6",
+  theme: "neon",
+  cards: [],
+  hold: [],
+  explanation: ""
+};
 
 /* ========= ELEMENTS ========= */
 const video = document.getElementById("video");
@@ -216,47 +338,29 @@ const paySel = document.getElementById("paytable");
 const explanationBox = document.getElementById("explanationBox");
 const explanationText = document.getElementById("explanationText");
 
-let stream = null;
-let busy = false;
+const sheetBack = document.getElementById("sheetBack");
+const gameGrid = document.getElementById("gameGrid");
+const payGrid = document.getElementById("payGrid");
+const themeGrid = document.getElementById("themeGrid");
 
 /* ========= CAMERA ========= */
+let stream = null;
 async function startCamera() {
   if (stream) return;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
     video.srcObject = stream;
-    statusEl.textContent = "Camera ready — tap SNAP";
+    statusEl.textContent = "Camera ready";
   } catch (e) {
     statusEl.textContent = "Camera permission denied";
-    console.error(e);
   }
 }
-
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-    }
-  } else {
-    startCamera();
-  }
-});
-
 startCamera();
 
 /* ========= SNAP ========= */
 snapBtn.onclick = async () => {
-  if (busy) return;
-  if (!video.videoWidth) {
-    statusEl.textContent = "Camera not ready";
-    return;
-  }
+  if (!video.videoWidth) return;
 
-  busy = true;
   statusEl.textContent = "Scanning…";
 
   const vw = video.videoWidth;
@@ -270,37 +374,33 @@ snapBtn.onclick = async () => {
 
   const img = canvas.toDataURL("image/jpeg", 0.7);
 
-  try {
-    const res = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageBase64: img,
-        game: gameSel.value,
-        paytable: paySel.value,
-        multiplier: 1
-      })
-    });
+  const res = await fetch(WORKER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      imageBase64: img,
+      game: state.game,
+      paytable: state.paytable,
+      multiplier: 1
+    })
+  });
 
-    const data = await res.json();
-    renderHand(data.cards || [], data.hold || []);
-    renderExplanation(data.explanation || "");
-    statusEl.textContent = "Done";
+  const data = await res.json();
+  state.cards = data.cards || [];
+  state.hold = data.hold || [];
+  state.explanation = data.explanation || "";
 
-  } catch (e) {
-    statusEl.textContent = "Scan failed";
-    console.error(e);
-  }
-
-  busy = false;
+  renderHand();
+  renderExplanation();
+  statusEl.textContent = "Done";
 };
 
 /* ========= RENDER ========= */
-function renderHand(cards, hold) {
+function renderHand() {
   handDiv.innerHTML = "";
-  cards.forEach((c, i) => {
+  state.cards.forEach((c, i) => {
     const div = document.createElement("div");
-    div.className = "card" + (hold[i] ? " hold" : "");
+    div.className = "card" + (state.hold[i] ? " hold" : "");
     const red = c.suit === "H" || c.suit === "D";
     div.innerHTML = `
       <div class="rank ${red ? "red" : ""}">${c.rank}</div>
@@ -310,14 +410,68 @@ function renderHand(cards, hold) {
   });
 }
 
-function renderExplanation(text) {
-  if (!text) {
+function renderExplanation() {
+  if (!state.explanation) {
     explanationBox.style.display = "none";
-    explanationText.textContent = "";
     return;
   }
   explanationBox.style.display = "block";
-  explanationText.textContent = text;
+  explanationText.textContent = state.explanation;
+}
+
+/* ========= SETTINGS ========= */
+document.getElementById("openSettings").onclick = () => {
+  populateSettings();
+  sheetBack.style.display = "block";
+};
+
+document.getElementById("doneSettings").onclick = () => {
+  sheetBack.style.display = "none";
+};
+
+sheetBack.onclick = e => {
+  if (e.target === sheetBack) sheetBack.style.display = "none";
+};
+
+function populateSettings() {
+  gameGrid.innerHTML = "";
+  ["job","bonus","double_bonus","ddb","deuces","ux"].forEach(g => {
+    const t = document.createElement("div");
+    t.className = "tile" + (state.game === g ? " active" : "");
+    t.textContent = g;
+    t.onclick = () => {
+      state.game = g;
+      gameSel.value = g;
+      populateSettings();
+    };
+    gameGrid.appendChild(t);
+  });
+
+  payGrid.innerHTML = "";
+  ["9/6","8/5","standard"].forEach(p => {
+    const t = document.createElement("div");
+    t.className = "tile" + (state.paytable === p ? " active" : "");
+    t.textContent = p;
+    t.onclick = () => {
+      state.paytable = p;
+      paySel.value = p;
+      populateSettings();
+    };
+    payGrid.appendChild(t);
+  });
+
+  themeGrid.innerHTML = "";
+  ["neon","casino","dark"].forEach(tn => {
+    const t = document.createElement("div");
+    t.className = "tile" + (state.theme === tn ? " active" : "");
+    t.textContent = tn;
+    t.onclick = () => {
+      state.theme = tn;
+      document.body.dataset.theme = tn;
+      populateSettings();
+    };
+    themeGrid.appendChild(t);
+  });
 }
 </script>
 
