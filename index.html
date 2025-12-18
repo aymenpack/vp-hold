@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>VP Assistant – v1</title>
+<title>VP Assistant – v1.1</title>
 
 <style>
 body {
@@ -85,13 +85,36 @@ video {
   font-size: 13px;
   color: #9ca3af;
 }
+
+/* ===== Explanation ===== */
+#explanationBox {
+  margin: 0 12px 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #020617;
+  display: none;
+}
+
+#explanationBox h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #22c55e;
+}
+
+#explanationText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #e5e7eb;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-  <h1>VP Assistant (v1 baseline)</h1>
+  <h1>VP Assistant (v1 + explanation)</h1>
 </header>
 
 <div class="controls">
@@ -119,6 +142,12 @@ video {
 
 <div id="hand"></div>
 
+<!-- Explanation -->
+<div id="explanationBox">
+  <h3>Why hold these cards?</h3>
+  <p id="explanationText"></p>
+</div>
+
 <canvas id="canvas" style="display:none;"></canvas>
 
 <script>
@@ -133,6 +162,9 @@ const handDiv = document.getElementById("hand");
 const statusEl = document.getElementById("status");
 const gameSel = document.getElementById("game");
 const paySel = document.getElementById("paytable");
+
+const explanationBox = document.getElementById("explanationBox");
+const explanationText = document.getElementById("explanationText");
 
 let stream = null;
 let busy = false;
@@ -179,7 +211,6 @@ snapBtn.onclick = async () => {
 
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-
   const bandH = vh * 0.35;
   const bandY = (vh - bandH) / 2;
 
@@ -207,8 +238,11 @@ snapBtn.onclick = async () => {
     });
 
     const data = await res.json();
+
     renderHand(data.cards || [], data.hold || []);
+    renderExplanation(data.explanation || "");
     statusEl.textContent = "Done";
+
   } catch (e) {
     statusEl.textContent = "Scan failed";
     console.error(e);
@@ -230,6 +264,16 @@ function renderHand(cards, hold) {
     `;
     handDiv.appendChild(div);
   });
+}
+
+function renderExplanation(text) {
+  if (!text) {
+    explanationBox.style.display = "none";
+    explanationText.textContent = "";
+    return;
+  }
+  explanationBox.style.display = "block";
+  explanationText.textContent = text;
 }
 </script>
 
