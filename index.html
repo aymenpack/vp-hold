@@ -6,7 +6,7 @@
 <title>VP Assistant</title>
 
 <style>
-/* ================= THEME TOKENS ================= */
+/* ========== THEMES ========== */
 body[data-theme="casino"]{
   --bg:#07140e; --panel:#10261b; --border:#1e3a2a;
   --text:#e9f6ef; --muted:#9fc7b2;
@@ -28,7 +28,7 @@ body[data-theme="bright"]{
   --accent:#2563eb; --hold:#16a34a;
 }
 
-/* ================= BASE ================= */
+/* ========== BASE ========== */
 *{box-sizing:border-box}
 body{
   margin:0;background:var(--bg);color:var(--text);
@@ -36,31 +36,28 @@ body{
 }
 .app{max-width:900px;margin:auto;padding:12px 12px 160px}
 .panel{
-  background:var(--panel);border:1px solid var(--border);
-  border-radius:16px;padding:12px;margin-bottom:12px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:12px;
+  margin-bottom:12px;
 }
 .hrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 h2{margin:0;font-size:13px;color:var(--muted)}
 button{
   background:transparent;color:var(--text);
   border:1px solid var(--border);
-  border-radius:999px;padding:8px 14px;
+  border-radius:999px;
+  padding:8px 14px;
 }
 button.primary{border-color:var(--accent)}
 .small{font-size:12px;color:var(--muted)}
 
-/* ================= GAME BAR ================= */
-.gameBar{display:flex;gap:8px;overflow-x:auto}
-.gameBtn{white-space:nowrap}
-.gameBtn.active{
-  border-color:var(--accent);
-  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent);
-}
-
-/* ================= SCANNER ================= */
+/* ========== SCANNER ========== */
 .scanWrap{
   position:relative;height:140px;border-radius:12px;
   overflow:hidden;border:1px solid var(--border);
+  user-select:none;touch-action:manipulation;
 }
 .scanWrap video{
   position:absolute;width:100%;top:50%;
@@ -78,11 +75,14 @@ button.primary{border-color:var(--accent)}
   padding:3px 10px;border-radius:999px;
 }
 
-/* ================= HAND ================= */
+/* ========== HAND ========== */
 .hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .card{
-  border:1px solid var(--border);border-radius:14px;
-  padding:12px 6px;text-align:center;position:relative;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 6px;
+  text-align:center;
+  position:relative;
 }
 .card.hold{
   outline:3px solid var(--hold);
@@ -99,7 +99,7 @@ button.primary{border-color:var(--accent)}
   font-size:10px;font-weight:900;padding:2px 6px;border-radius:999px;
 }
 
-/* ================= SNAP ================= */
+/* ========== SNAP BUTTON ========== */
 .snapBtn{
   position:fixed;bottom:70px;left:50%;
   transform:translateX(-50%);
@@ -108,31 +108,35 @@ button.primary{border-color:var(--accent)}
   background:radial-gradient(circle,#fff,#e5e7eb);
 }
 
-/* ================= HISTORY ================= */
-.historyItem{
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:8px;
-  margin-bottom:6px;
-}
-.historyRow{display:flex;gap:6px;font-size:12px}
-
-/* ================= SETTINGS ================= */
+/* ========== SETTINGS SHEET ========== */
 .sheetBack{
   position:fixed;inset:0;background:rgba(0,0,0,.55);
   display:none;align-items:flex-end;justify-content:center;
 }
 .sheet{
   width:min(900px,100%);
-  background:var(--panel);border:1px solid var(--border);
-  border-radius:18px;padding:12px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:12px;
 }
-.tileGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.section{margin-bottom:14px}
+.section h3{margin:0 0 6px;font-size:13px;color:var(--muted)}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
 .tile{
-  border:1px solid var(--border);border-radius:14px;
-  padding:12px;text-align:left;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+  text-align:left;
 }
-.tile.active{border-color:var(--accent)}
+.tile.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent);
+}
 </style>
 </head>
 
@@ -143,11 +147,6 @@ button.primary{border-color:var(--accent)}
 <div class="panel hrow">
   <h2>VP Assistant</h2>
   <button id="openSettings">⚙️ Settings</button>
-</div>
-
-<!-- GAME -->
-<div class="panel">
-  <div class="gameBar" id="gameBar"></div>
 </div>
 
 <!-- SCANNER -->
@@ -166,13 +165,6 @@ button.primary{border-color:var(--accent)}
   <div class="hand" id="hand"></div>
 </div>
 
-<!-- HISTORY -->
-<div class="panel">
-  <h2>History</h2>
-  <div id="history"></div>
-  <div class="small" id="stats"></div>
-</div>
-
 </div>
 
 <button class="snapBtn" id="snapBtn"></button>
@@ -186,22 +178,31 @@ button.primary{border-color:var(--accent)}
       <button id="closeSettings">Close</button>
     </div>
 
-    <h2>Game</h2>
-    <div class="tileGrid" id="gameTiles"></div>
+    <!-- GAME -->
+    <div class="section">
+      <h3>Game</h3>
+      <div class="grid" id="gameGrid"></div>
+    </div>
 
-    <h2>Theme</h2>
-    <div class="tileGrid" id="themeTiles"></div>
+    <!-- PAYTABLE -->
+    <div class="section">
+      <h3>Paytable</h3>
+      <div class="grid" id="paytableGrid"></div>
+    </div>
 
-    <button id="stopCam">Stop Camera</button>
+    <!-- THEME -->
+    <div class="section">
+      <h3>Theme</h3>
+      <div class="grid" id="themeGrid"></div>
+    </div>
   </div>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
+/* ===== CONFIG ===== */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-
-/* ================= DATA ================= */
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
+
 const GAMES=[
   {k:"job",n:"Jacks"},
   {k:"bonus",n:"Bonus"},
@@ -210,38 +211,32 @@ const GAMES=[
   {k:"deuces",n:"Deuces"},
   {k:"ux",n:"Ultimate X"}
 ];
+
+const PAYTABLES={
+  job:["9/6","8/5"],
+  bonus:["standard"],
+  double_bonus:["standard"],
+  ddb:["standard"],
+  deuces:["standard"],
+  ux:["standard"]
+};
+
 const THEMES=["casino","dark","neon","bright"];
 
-/* ================= STATE ================= */
+/* ===== STATE ===== */
 let currentGame=localStorage.getItem("game")||"job";
+let currentPaytable=localStorage.getItem("paytable")||"standard";
 let currentTheme=localStorage.getItem("theme")||"casino";
-let cards=[],hold=[];
-let history=[];
-let cameraStream=null;
+let cards=[],hold=[],cameraStream=null;
 
-/* ================= ELEMENTS ================= */
+/* ===== ELEMENTS ===== */
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const handDiv=document.getElementById("hand");
-const historyDiv=document.getElementById("history");
-const statsDiv=document.getElementById("stats");
+const statusEl=document.getElementById("status");
 
-/* ================= INIT ================= */
+/* ===== INIT ===== */
 document.body.dataset.theme=currentTheme;
-
-/* GAME BAR */
-const gameBar=document.getElementById("gameBar");
-GAMES.forEach(g=>{
-  const b=document.createElement("button");
-  b.className="gameBtn"+(g.k===currentGame?" active":"");
-  b.textContent=g.n;
-  b.onclick=()=>{currentGame=g.k;localStorage.setItem("game",g.k);renderGameBar();};
-  gameBar.appendChild(b);
-});
-function renderGameBar(){
-  [...gameBar.children].forEach(b=>b.classList.toggle("active",b.textContent===GAMES.find(x=>x.k===currentGame).n));
-}
-renderGameBar();
 
 /* CAMERA */
 async function startCamera(){
@@ -258,7 +253,7 @@ startCamera();
 document.addEventListener("visibilitychange",()=>document.hidden?stopCamera():startCamera());
 
 /* SNAP */
-document.getElementById("snapBtn").onclick=async()=>{
+async function snap(){
   const vw=video.videoWidth,vh=video.videoHeight;
   if(!vw) return;
 
@@ -270,21 +265,22 @@ document.getElementById("snapBtn").onclick=async()=>{
 
   const res=await fetch(WORKER_URL,{
     method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({imageBase64:img,game:currentGame,paytable:"standard"})
+    body:JSON.stringify({
+      imageBase64:img,
+      game:currentGame,
+      paytable:currentPaytable
+    })
   });
 
   const d=await res.json();
   cards=d.cards||[];
   hold=d.hold||[];
-
-  history.unshift({cards,hold,game:currentGame});
-  history=history.slice(0,10);
-
   renderHand();
-  renderHistory();
-};
+}
+document.getElementById("snapBtn").onclick=snap;
+document.getElementById("scanWrap").onclick=snap;
 
-/* RENDER */
+/* RENDER HAND */
 function renderHand(){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
@@ -298,22 +294,60 @@ function renderHand(){
     handDiv.appendChild(d);
   });
 }
-function renderHistory(){
-  historyDiv.innerHTML="";
-  history.forEach(h=>{
-    const div=document.createElement("div");
-    div.className="historyItem";
-    div.innerHTML=`<div class="historyRow">${h.game.toUpperCase()} — ${h.cards.map(c=>c.rank+c.suit).join(" ")}</div>`;
-    historyDiv.appendChild(div);
-  });
-  statsDiv.textContent=`Hands scanned: ${history.length}`;
-}
 
-/* SETTINGS */
+/* SETTINGS UI */
 const sheetBack=document.getElementById("sheetBack");
 document.getElementById("openSettings").onclick=()=>sheetBack.style.display="flex";
 document.getElementById("closeSettings").onclick=()=>sheetBack.style.display="none";
-document.getElementById("stopCam").onclick=stopCamera;
+
+function renderSettings(){
+  const gameGrid=document.getElementById("gameGrid");
+  const payGrid=document.getElementById("paytableGrid");
+  const themeGrid=document.getElementById("themeGrid");
+
+  gameGrid.innerHTML="";
+  GAMES.forEach(g=>{
+    const b=document.createElement("div");
+    b.className="tile"+(g.k===currentGame?" active":"");
+    b.textContent=g.n;
+    b.onclick=()=>{
+      currentGame=g.k;
+      localStorage.setItem("game",g.k);
+      currentPaytable=PAYTABLES[g.k][0];
+      localStorage.setItem("paytable",currentPaytable);
+      renderSettings();
+    };
+    gameGrid.appendChild(b);
+  });
+
+  payGrid.innerHTML="";
+  PAYTABLES[currentGame].forEach(p=>{
+    const b=document.createElement("div");
+    b.className="tile"+(p===currentPaytable?" active":"");
+    b.textContent=p;
+    b.onclick=()=>{
+      currentPaytable=p;
+      localStorage.setItem("paytable",p);
+      renderSettings();
+    };
+    payGrid.appendChild(b);
+  });
+
+  themeGrid.innerHTML="";
+  THEMES.forEach(t=>{
+    const b=document.createElement("div");
+    b.className="tile"+(t===currentTheme?" active":"");
+    b.textContent=t;
+    b.onclick=()=>{
+      currentTheme=t;
+      document.body.dataset.theme=t;
+      localStorage.setItem("theme",t);
+      renderSettings();
+    };
+    themeGrid.appendChild(b);
+  });
+}
+renderSettings();
 </script>
 </body>
 </html>
