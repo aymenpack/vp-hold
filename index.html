@@ -1,417 +1,237 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>VP Assistant</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>VP Assistant – v1</title>
 
 <style>
-/* ===== THEMES ===== */
-body[data-theme="neon"]{
-  --bg:#0b0020;
-  --panel:#16002f;
-  --panel2:#0f0022;
-  --border:#3f007d;
-  --text:#f3e8ff;
-  --muted:#c4b5fd;
-  --accent:#d946ef;
-  --accent-soft:rgba(217,70,239,.25);
-  --hold:#22ffcc;
-}
-body[data-theme="casino"]{
-  --bg:#07140e;
-  --panel:#0f2318;
-  --panel2:#0b1a12;
-  --border:#1e3a2a;
-  --text:#e9f6ef;
-  --muted:#9fc7b2;
-  --accent:#1aff8c;
-  --accent-soft:rgba(26,255,140,.25);
-  --hold:#22c55e;
+body {
+  margin: 0;
+  font-family: -apple-system, system-ui, sans-serif;
+  background: #0b0f14;
+  color: #e5e7eb;
 }
 
-/* ===== BASE ===== */
-*{box-sizing:border-box}
-body{
-  margin:0;
-  background:radial-gradient(circle at top,var(--accent-soft),var(--bg) 60%);
-  color:var(--text);
-  font-family:Inter,-apple-system,system-ui;
-}
-.app{
-  max-width:900px;
-  margin:auto;
-  padding:
-    calc(12px + env(safe-area-inset-top))
-    14px
-    calc(100px + env(safe-area-inset-bottom));
-}
-.panel{
-  background:linear-gradient(180deg,var(--panel),var(--panel2));
-  border:1px solid var(--border);
-  border-radius:20px;
-  padding:14px;
-  margin-bottom:14px;
+header {
+  padding: 12px;
+  border-bottom: 1px solid #1f2937;
 }
 
-/* ===== HEADER ===== */
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.title{font-weight:900;font-size:20px}
-.subtitle{font-size:13px;color:var(--muted)}
-.iconBtn{
-  border:1px solid var(--border);
-  background:transparent;
-  color:var(--text);
-  padding:8px 14px;
-  border-radius:999px;
-  font-weight:700;
+h1 {
+  margin: 0;
+  font-size: 18px;
 }
 
-/* ===== CHIPS ===== */
-.chips{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:8px;
-}
-.chip{
-  padding:6px 12px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  font-size:12px;
-  color:var(--muted);
-}
-.chip strong{color:var(--text)}
-
-/* ===== SCANNER ===== */
-.scanWrap{
-  position:relative;
-  height:180px;
-  border-radius:18px;
-  overflow:hidden;
-  border:1px solid var(--border);
-  box-shadow:0 0 0 6px var(--accent-soft),0 18px 40px rgba(0,0,0,.5);
-}
-.scanWrap video{
-  position:absolute;
-  width:100%;
-  top:50%;
-  transform:translateY(-50%);
-}
-.scanOverlay{
-  position:absolute;
-  inset:0;
-  background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.1) 35%,rgba(0,0,0,.1) 65%,rgba(0,0,0,.6));
-}
-.scanWindow{
-  position:absolute;
-  left:14px;right:14px;
-  top:34%;height:32%;
-  border:2px dashed rgba(255,255,255,.25);
-  border-radius:14px;
-}
-.scanText{
-  position:absolute;
-  left:50%;top:50%;
-  transform:translate(-50%,-50%);
-  text-align:center;
-  font-weight:900;
-  font-size:17px;
-}
-.scanText small{
-  display:block;
-  font-size:13px;
-  color:var(--muted);
-  margin-top:6px;
+.controls {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
 }
 
-/* ===== HAND ===== */
-.hand{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:12px;
-}
-.card{
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:14px 6px;
-  text-align:center;
-  position:relative;
-}
-.card.hold{
-  outline:3px solid var(--hold);
-  box-shadow:0 0 20px var(--hold);
-  transform:translateY(-5px);
-}
-.rank{font-size:22px;font-weight:900}
-.suit{font-size:18px}
-.red{color:#ff5b5b}
-.badge{
-  position:absolute;
-  top:6px;right:6px;
-  background:var(--hold);
-  color:#000;
-  font-size:10px;
-  font-weight:900;
-  padding:2px 8px;
-  border-radius:999px;
+select, button {
+  background: #111827;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
 }
 
-/* ===== EXPLANATION ===== */
-.explain{
-  margin-top:14px;
-  padding:14px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  background:rgba(0,0,0,.25);
-}
-.explain h3{margin:0 0 6px;font-size:14px;color:var(--accent)}
-.explain p{margin:0;font-size:14px;line-height:1.5}
-
-/* ===== SETTINGS ===== */
-.sheetBack{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;
-  z-index:1000;
-}
-.sheet{
-  position:absolute;
-  bottom:0;left:0;right:0;
-  max-width:900px;
-  margin:auto;
-  height:65vh;
-  background:linear-gradient(180deg,var(--panel),var(--panel2));
-  border-radius:22px 22px 0 0;
-  display:flex;
-  flex-direction:column;
-}
-.sheetHeader{
-  padding:14px;
-  border-bottom:1px solid var(--border);
-  text-align:center;
-  font-weight:900;
-}
-.sheetContent{
-  padding:14px;
-  overflow:auto;
-  flex:1;
-}
-.sheetFooter{
-  padding:14px;
-  border-top:1px solid var(--border);
-}
-.section{margin-bottom:16px}
-.section h3{margin:0 0 8px;font-size:14px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tile{
-  padding:14px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  font-weight:700;
-  cursor:pointer;
-}
-.tile.active{
-  border-color:var(--accent);
-  box-shadow:0 0 0 4px var(--accent-soft);
-}
-.primaryBtn{
-  width:100%;
-  padding:16px;
-  border-radius:18px;
-  background:var(--accent);
-  color:#000;
-  font-size:17px;
-  font-weight:900;
-  border:none;
+button {
+  cursor: pointer;
 }
 
-/* ===== OVERLAY & TOAST ===== */
-.overlay{
-  position:fixed;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,.6);
-  z-index:2000;
+video {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  background: black;
 }
-.loader{
-  background:var(--panel);
-  border-radius:20px;
-  padding:22px;
-  text-align:center;
+
+#hand {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 12px;
 }
-.spinner{
-  width:34px;height:34px;
-  border:4px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-  margin:0 auto 12px;
+
+.card {
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 12px 4px;
+  text-align: center;
 }
-@keyframes spin{to{transform:rotate(360deg)}}
-.toast{
-  position:fixed;
-  top:20px;left:50%;
-  transform:translateX(-50%);
-  background:var(--hold);
-  color:#000;
-  font-weight:900;
-  padding:12px 18px;
-  border-radius:999px;
-  display:none;
-  z-index:3000;
+
+.card.hold {
+  outline: 3px solid #22c55e;
+}
+
+.red {
+  color: #ef4444;
+}
+
+.rank {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.suit {
+  font-size: 16px;
+}
+
+#status {
+  padding: 12px;
+  font-size: 13px;
+  color: #9ca3af;
 }
 </style>
 </head>
 
-<body data-theme="neon">
-<div class="app">
+<body>
 
-<div class="panel">
-  <div class="header">
-    <div>
-      <div class="title">VP Assistant</div>
-      <div class="subtitle">Tap scanner to snap</div>
-    </div>
-    <button class="iconBtn" id="openSettings">⚙️</button>
-  </div>
-  <div class="chips">
-    <div class="chip">Game: <strong id="chipGame"></strong></div>
-    <div class="chip">Paytable: <strong id="chipPay"></strong></div>
-    <div class="chip">Theme: <strong id="chipTheme"></strong></div>
-  </div>
+<header>
+  <h1>VP Assistant (v1 baseline)</h1>
+</header>
+
+<div class="controls">
+  <select id="game">
+    <option value="job">Jacks or Better</option>
+    <option value="bonus">Bonus Poker</option>
+    <option value="double_bonus">Double Bonus</option>
+    <option value="ddb">Double Double Bonus</option>
+    <option value="deuces">Deuces Wild</option>
+    <option value="ux">Ultimate X</option>
+  </select>
+
+  <select id="paytable">
+    <option value="9/6">9/6</option>
+    <option value="8/5">8/5</option>
+    <option value="standard">Standard</option>
+  </select>
+
+  <button id="snap">SNAP</button>
 </div>
 
-<div class="panel">
-  <div class="scanWrap" id="scanWrap">
-    <video id="video" playsinline autoplay muted></video>
-    <div class="scanOverlay"></div>
-    <div class="scanWindow"></div>
-    <div class="scanText">
-      Align the 5 cards here
-      <small>Tap anywhere to scan</small>
-    </div>
-  </div>
-</div>
+<video id="video" playsinline autoplay muted></video>
 
-<div class="panel">
-  <div class="hand" id="hand"></div>
-  <div class="explain" id="explainBox" style="display:none">
-    <h3>Why hold these cards?</h3>
-    <p id="explainText"></p>
-  </div>
-</div>
+<div id="status">Starting camera…</div>
 
-</div>
+<div id="hand"></div>
 
-<div class="sheetBack" id="sheetBack">
-  <div class="sheet">
-    <div class="sheetHeader">Settings</div>
-    <div class="sheetContent">
-      <div class="section">
-        <h3>Game</h3>
-        <div class="grid" id="gameGrid"></div>
-      </div>
-      <div class="section">
-        <h3>Paytable</h3>
-        <div class="grid" id="payGrid"></div>
-      </div>
-      <div class="section">
-        <h3>Theme</h3>
-        <div class="grid" id="themeGrid"></div>
-      </div>
-    </div>
-    <div class="sheetFooter">
-      <button class="primaryBtn" id="doneSettings">Done</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="overlay">
-  <div class="loader">
-    <div class="spinner"></div>
-    <div style="font-weight:900">Analyzing…</div>
-  </div>
-</div>
-
-<div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
+/* ========= CONFIG ========= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-const state={
-  game:"job",
-  paytable:"9/6",
-  theme:"neon",
-  cards:[],
-  hold:[],
-  explanation:"",
-  stream:null,
-  busy:false
-};
+/* ========= ELEMENTS ========= */
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const snapBtn = document.getElementById("snap");
+const handDiv = document.getElementById("hand");
+const statusEl = document.getElementById("status");
+const gameSel = document.getElementById("game");
+const paySel = document.getElementById("paytable");
 
-const video=document.getElementById("video");
-const scanWrap=document.getElementById("scanWrap");
-const handDiv=document.getElementById("hand");
-const explainBox=document.getElementById("explainBox");
-const explainText=document.getElementById("explainText");
-const overlay=document.getElementById("overlay");
-const toast=document.getElementById("toast");
+let stream = null;
+let busy = false;
 
-const chipGame=document.getElementById("chipGame");
-const chipPay=document.getElementById("chipPay");
-const chipTheme=document.getElementById("chipTheme");
-
-const sheetBack=document.getElementById("sheetBack");
-document.getElementById("openSettings").onclick=()=>sheetBack.style.display="block";
-document.getElementById("doneSettings").onclick=()=>sheetBack.style.display="none";
-sheetBack.onclick=e=>{if(e.target===sheetBack) sheetBack.style.display="none"};
-
-function renderChips(){
-  chipGame.textContent=state.game;
-  chipPay.textContent=state.paytable;
-  chipTheme.textContent=state.theme;
+/* ========= CAMERA ========= */
+async function startCamera() {
+  if (stream) return;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
+    video.srcObject = stream;
+    statusEl.textContent = "Camera ready";
+  } catch (e) {
+    statusEl.textContent = "Camera permission denied";
+    console.error(e);
+  }
 }
-renderChips();
 
-scanWrap.onclick=async()=>{
-  if(state.busy) return;
-  state.busy=true;
-  overlay.style.display="flex";
-  try{
-    const res=await fetch(WORKER_URL,{method:"POST"});
-    const data=await res.json();
-    state.cards=data.cards||[];
-    state.hold=data.hold||[];
-    state.explanation=data.explanation||"";
-    renderHand();
-    explainBox.style.display=state.explanation?"block":"none";
-    explainText.textContent=state.explanation;
-    toast.style.display="block";
-    setTimeout(()=>toast.style.display="none",2000);
-  }catch{}
-  overlay.style.display="none";
-  state.busy=false;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+  } else {
+    startCamera();
+  }
+});
+
+startCamera();
+
+/* ========= SNAP ========= */
+snapBtn.onclick = async () => {
+  if (busy) return;
+  if (!video.videoWidth) {
+    statusEl.textContent = "Camera not ready";
+    return;
+  }
+
+  busy = true;
+  statusEl.textContent = "Scanning…";
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  const bandH = vh * 0.35;
+  const bandY = (vh - bandH) / 2;
+
+  canvas.width = vw;
+  canvas.height = bandH;
+
+  canvas.getContext("2d").drawImage(
+    video,
+    0, bandY, vw, bandH,
+    0, 0, vw, bandH
+  );
+
+  const img = canvas.toDataURL("image/jpeg", 0.7);
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageBase64: img,
+        game: gameSel.value,
+        paytable: paySel.value,
+        multiplier: 1
+      })
+    });
+
+    const data = await res.json();
+    renderHand(data.cards || [], data.hold || []);
+    statusEl.textContent = "Done";
+  } catch (e) {
+    statusEl.textContent = "Scan failed";
+    console.error(e);
+  }
+
+  busy = false;
 };
 
-function renderHand(){
-  handDiv.innerHTML="";
-  state.cards.forEach((c,i)=>{
-    const d=document.createElement("div");
-    d.className="card"+(state.hold[i]?" hold":"");
-    d.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${c.suit}</div>`;
-    handDiv.appendChild(d);
+/* ========= RENDER ========= */
+function renderHand(cards, hold) {
+  handDiv.innerHTML = "";
+  cards.forEach((c, i) => {
+    const div = document.createElement("div");
+    div.className = "card" + (hold[i] ? " hold" : "");
+    const red = c.suit === "H" || c.suit === "D";
+    div.innerHTML = `
+      <div class="rank ${red ? "red" : ""}">${c.rank}</div>
+      <div class="suit ${red ? "red" : ""}">${c.suit}</div>
+    `;
+    handDiv.appendChild(div);
   });
 }
 </script>
+
 </body>
 </html>
