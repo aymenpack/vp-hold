@@ -8,7 +8,7 @@ const corsHeaders = {
    STRATEGY PROMPTS
 ========================= */
 
-function gameRules(game, paytable) {
+function gameRules(game, paytable, multiplier) {
   switch (game) {
 
     case "job":
@@ -27,8 +27,9 @@ RULES:
 STRATEGY: BONUS POKER (${paytable})
 
 RULES:
-- Strategy similar to Jacks or Better.
-- Quads are more valuable, but kicker does NOT matter.
+- Similar to Jacks or Better.
+- Four of a kind pays more.
+- Kicker does NOT matter.
 - Always hold all 5 cards on quads.
 `;
 
@@ -37,7 +38,7 @@ RULES:
 STRATEGY: DOUBLE BONUS (${paytable})
 
 RULES:
-- Quad aces and low quads are enhanced.
+- Quad aces and low quads pay more.
 - NEVER discard the kicker on any four of a kind.
 - Always hold all 5 cards on quads.
 `;
@@ -47,13 +48,9 @@ RULES:
 STRATEGY: DOUBLE DOUBLE BONUS (DDB)
 
 CRITICAL RULE:
-- In DDB, YOU NEVER DISCARD THE KICKER ON ANY FOUR OF A KIND.
-- If the hand contains four cards of the same rank, HOLD ALL FIVE CARDS.
-- This rule overrides ALL other considerations.
-
-OTHER RULES:
-- Always hold made hands (straight or better).
-- Always hold high pairs.
+- In DDB, YOU NEVER DISCARD THE KICKER on ANY four of a kind.
+- If four cards share the same rank, HOLD ALL FIVE cards.
+- This overrides all draw considerations.
 `;
 
     case "deuces":
@@ -73,11 +70,15 @@ RULES:
       return `
 STRATEGY: ULTIMATE X (${paytable})
 
+IMPORTANT CONTEXT:
+- The current multiplier for this row is ${multiplier}×.
+- This multiplier applies to the ENTIRE hand.
+
 RULES:
-- Use Jacks or Better as base strategy.
-- ONE multiplier applies to the entire row.
-- If multiplier >= 4x, prioritize keeping made hands and premium draws.
-- Never break quads or full houses.
+- Base strategy is Jacks or Better.
+- NEVER break quads or full houses.
+- As the multiplier increases, favor keeping made hands and premium draws.
+- If multiplier ≥ 8×, strongly prefer keeping made hands over speculative draws.
 `;
 
     default:
@@ -85,18 +86,19 @@ RULES:
   }
 }
 
-function buildPrompt(game, paytable) {
+function buildPrompt(game, paytable, multiplier) {
   return `
-You are a VIDEO POKER PERFECT STRATEGY engine.
+You are a VIDEO POKER PERFECT STRATEGY ENGINE.
 
 TASKS:
 1. Identify EXACTLY 5 cards in the BOTTOM ROW (left to right).
-2. If Ultimate X, read the SINGLE multiplier shown on the LEFT.
+2. If this is Ultimate X, identify the SINGLE multiplier shown on the LEFT (if visible).
 3. Decide which cards to HOLD using PERFECT STRATEGY.
+4. Explain WHY those cards are held.
 
-${gameRules(game, paytable)}
+${gameRules(game, paytable, multiplier)}
 
-OUTPUT STRICT JSON ONLY (NO TEXT):
+OUTPUT STRICT JSON ONLY (NO EXTRA TEXT):
 
 {
   "cards": [
@@ -108,7 +110,8 @@ OUTPUT STRICT JSON ONLY (NO TEXT):
   ],
   "multiplier": 10,
   "hold": [false,true,true,false,false],
-  "confidence": 0.9
+  "explanation": "Holding the pair of 9s because this is the highest-paying made hand available. No higher-value draws justify breaking the pair, and Ultimate X multiplier does not favor breaking it.",
+  "confidence": 0.92
 }
 
 Suit letters: S,H,D,C.
@@ -124,10 +127,6 @@ function isFourOfKind(cards) {
   const counts = {};
   for (const c of cards) counts[c.rank] = (counts[c.rank] || 0) + 1;
   return Object.values(counts).some(v => v === 4);
-}
-
-function countDeuces(cards) {
-  return cards.filter(c => c.rank === "2").length;
 }
 
 function normalizeHold(hold) {
@@ -163,7 +162,7 @@ export default {
     }
 
     try {
-      const { imageBase64, game, paytable } = await request.json();
+      const { imageBase64, game, paytable, multiplier = 1 } = await request.json();
 
       if (!imageBase64 || !game || !paytable) {
         return new Response(
@@ -186,7 +185,7 @@ export default {
             {
               role: "user",
               content: [
-                { type: "text", text: buildPrompt(game, paytable) },
+                { type: "text", text: buildPrompt(game, paytable, multiplier) },
                 { type: "image_url", image_url: { url: imageBase64 } }
               ]
             }
@@ -205,19 +204,20 @@ export default {
 
       /* ===== HARD GUARDRAILS ===== */
 
-      // Double Double Bonus: never discard kicker on quads
+      // DDB: never discard kicker on quads
       if (game === "ddb" && parsed.cards && isFourOfKind(parsed.cards)) {
         parsed.hold = [true,true,true,true,true];
+        parsed.explanation = "Four of a kind in Double Double Bonus. Kicker must never be discarded, so all five cards are held.";
       }
 
-      // Double Bonus: same rule for safety
-      if (game === "double_bonus" && parsed.cards && isFourOfKind(parsed.cards)) {
+      // Bonus / Double Bonus / Ultimate X: never break quads
+      if (
+        (game === "bonus" || game === "double_bonus" || game === "ux" || game === "uxp") &&
+        parsed.cards &&
+        isFourOfKind(parsed.cards)
+      ) {
         parsed.hold = [true,true,true,true,true];
-      }
-
-      // Bonus Poker: same
-      if (game === "bonus" && parsed.cards && isFourOfKind(parsed.cards)) {
-        parsed.hold = [true,true,true,true,true];
+        parsed.explanation = "Four of a kind detected. Quads are never broken in this game.";
       }
 
       // Deuces Wild: never discard a deuce
@@ -225,12 +225,15 @@ export default {
         parsed.cards.forEach((c, i) => {
           if (c.rank === "2") parsed.hold[i] = true;
         });
+        parsed.explanation = "Deuces are wild in Deuces Wild and must never be discarded.";
       }
 
-      // Ultimate X: never break quads
-      if ((game === "ux" || game === "uxp") && parsed.cards && isFourOfKind(parsed.cards)) {
-        parsed.hold = [true,true,true,true,true];
+      // Ultimate X: multiplier awareness safety
+      if ((game === "ux" || game === "uxp") && multiplier >= 8) {
+        parsed.explanation += ` The ${multiplier}× Ultimate X multiplier significantly increases future value, so this strategy prioritizes preserving made hands and high-EV outcomes.`;
       }
+
+      parsed.multiplier = parsed.multiplier || multiplier;
 
       return new Response(
         JSON.stringify(parsed),
