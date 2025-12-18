@@ -6,136 +6,238 @@
 <title>Video Poker Assistant</title>
 
 <style>
+/* ================= THEMES ================= */
 :root{
-  --felt:#0a1b12;
+  --bg:#07140e;
   --panel:#10261b;
   --border:#1e3a2a;
   --text:#e9f6ef;
   --muted:#9fc7b2;
   --accent:#1aff8c;
   --hold:#22c55e;
-  --warn:#f59e0b;
 }
+
+body[data-theme="dark"]{
+  --bg:#0b0f14;
+  --panel:#121a24;
+  --border:#223043;
+  --text:#e9eef6;
+  --muted:#b7c3d7;
+  --accent:#2f6bff;
+  --hold:#22c55e;
+}
+
+body[data-theme="bright"]{
+  --bg:#f4f6f8;
+  --panel:#ffffff;
+  --border:#d0d7de;
+  --text:#111827;
+  --muted:#4b5563;
+  --accent:#2563eb;
+  --hold:#16a34a;
+}
+
+body[data-theme="neon"]{
+  --bg:#0b0020;
+  --panel:#1a0033;
+  --border:#3f007d;
+  --text:#f3e8ff;
+  --muted:#c4b5fd;
+  --accent:#d946ef;
+  --hold:#22ffcc;
+}
+
 *{box-sizing:border-box}
 body{
   margin:0;
-  background:radial-gradient(circle at top,#0f3b26,#07140e 60%);
+  background:var(--bg);
   color:var(--text);
   font-family:-apple-system,system-ui;
 }
 .app{max-width:900px;margin:auto;padding:12px 12px 220px}
 
-/* GAME BAR */
-.gameBar{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
-.gameBtn{
-  padding:10px 14px;border-radius:999px;
+/* ================= COMMON ================= */
+.panel{
+  background:var(--panel);
   border:1px solid var(--border);
-  background:#0c1f15;color:var(--muted);font-size:13px;
+  border-radius:16px;
+  padding:12px;
+  margin-bottom:12px;
+}
+h2{margin:0 0 8px;font-size:13px;color:var(--muted)}
+
+button,select{
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:8px 14px;
+  font-size:13px;
+}
+
+/* ================= GAME BAR ================= */
+.gameBar{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+}
+.gameBtn{
+  white-space:nowrap;
+  background:transparent;
 }
 .gameBtn.active{
-  background:rgba(26,255,140,.15);
-  color:#eafff4;border-color:var(--accent);
-  box-shadow:0 0 12px rgba(26,255,140,.4);
+  background:color-mix(in srgb, var(--accent) 20%, transparent);
+  border-color:var(--accent);
+  box-shadow:0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
-/* PANEL */
-.panel{
-  background:linear-gradient(180deg,#0e2418,#08140f);
-  border:1px solid var(--border);
-  border-radius:16px;padding:12px;margin-bottom:12px;
+/* ================= THEME SWITCH ================= */
+.themeBar{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
 }
-h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
 
-/* SCANNER */
+/* ================= SCANNER ================= */
 .scanWrap{
-  position:relative;height:140px;border-radius:12px;
-  overflow:hidden;border:1px solid var(--border);
+  position:relative;
+  height:140px;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid var(--border);
 }
 .scanWrap video{
-  position:absolute;width:100%;top:50%;
+  position:absolute;
+  width:100%;
+  top:50%;
   transform:translateY(-50%);
 }
 .scanGuide{
-  position:absolute;inset:0;
+  position:absolute;
+  inset:0;
   border-top:2px dashed rgba(255,255,255,.25);
   border-bottom:2px dashed rgba(255,255,255,.25);
 }
 .scanLabel{
-  position:absolute;bottom:6px;left:50%;
+  position:absolute;
+  bottom:6px;left:50%;
   transform:translateX(-50%);
-  font-size:11px;background:rgba(0,0,0,.6);
-  padding:3px 10px;border-radius:999px;color:var(--muted);
+  font-size:11px;
+  background:rgba(0,0,0,.5);
+  padding:3px 10px;
+  border-radius:999px;
+  color:var(--muted);
 }
 
-/* HAND */
-.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+/* ================= HAND ================= */
+.hand{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+}
 .card{
-  background:linear-gradient(180deg,#1b2f25,#0f1e17);
-  border-radius:14px;padding:12px 6px;text-align:center;
-  position:relative;border:1px solid var(--border);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 6px;
+  text-align:center;
+  position:relative;
   transition:.15s ease;
 }
 .card.hold{
   outline:3px solid var(--hold);
-  box-shadow:0 0 18px rgba(34,197,94,.7);
+  box-shadow:0 0 18px color-mix(in srgb, var(--hold) 70%, transparent);
   transform:translateY(-4px);
 }
-.card.red{color:#ff6b6b}
-.card.black{color:#ffffff}
+.card.red{color:#ef4444}
+.card.black{color:var(--text)}
 .rank{font-size:22px;font-weight:800}
 .suit{font-size:18px}
 .holdBadge{
-  position:absolute;top:6px;right:6px;
-  background:var(--hold);color:#00140a;
-  font-size:10px;font-weight:900;
-  padding:2px 6px;border-radius:999px;
+  position:absolute;
+  top:6px;right:6px;
+  background:var(--hold);
+  color:#000;
+  font-size:10px;
+  font-weight:900;
+  padding:2px 6px;
+  border-radius:999px;
 }
 
-/* SNAP */
+/* ================= SNAP ================= */
 .snapBtn{
-  position:fixed;bottom:72px;left:50%;
+  position:fixed;
+  bottom:72px;
+  left:50%;
   transform:translateX(-50%);
-  width:76px;height:76px;border-radius:50%;
-  background:radial-gradient(circle,#ffffff,#d1fff0);
-  border:none;box-shadow:0 12px 40px rgba(26,255,140,.7);
+  width:76px;height:76px;
+  border-radius:50%;
+  background:radial-gradient(circle,#ffffff,#e5e7eb);
+  border:none;
+  box-shadow:0 12px 40px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 .snapBtn::after{
-  content:"";display:block;width:56px;height:56px;
-  background:#0a1b12;border-radius:50%;margin:auto;
+  content:"";
+  display:block;
+  width:56px;height:56px;
+  background:var(--bg);
+  border-radius:50%;
+  margin:auto;
 }
 
-/* OVERLAY */
+/* ================= OVERLAY ================= */
 .overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.55);
-  display:none;align-items:center;justify-content:center;z-index:999;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
 }
 .loader{
-  background:#0c1f15;border-radius:16px;padding:18px 22px;
-  border:1px solid var(--border);text-align:center;
+  background:var(--panel);
+  border-radius:16px;
+  padding:18px 22px;
+  border:1px solid var(--border);
+  text-align:center;
 }
 .spinner{
-  width:32px;height:32px;border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);border-radius:50%;
-  animation:spin 1s linear infinite;margin:0 auto 10px;
+  width:32px;height:32px;
+  border:3px solid rgba(255,255,255,.2);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:0 auto 10px;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* TOAST */
+/* ================= TOAST ================= */
 .toast{
-  position:fixed;top:20px;left:50%;
+  position:fixed;
+  top:20px;
+  left:50%;
   transform:translateX(-50%);
-  background:#22c55e;color:#00140a;
-  font-weight:900;padding:10px 18px;
-  border-radius:999px;display:none;
+  background:var(--hold);
+  color:#000;
+  font-weight:900;
+  padding:10px 18px;
+  border-radius:999px;
+  display:none;
 }
 </style>
 </head>
 
-<body>
+<body data-theme="casino">
 <div class="app">
 
 <div class="panel">
   <div class="gameBar" id="gameBar"></div>
+  <div class="themeBar">
+    <button onclick="setTheme('casino')">🎰 Casino</button>
+    <button onclick="setTheme('dark')">🌙 Dark</button>
+    <button onclick="setTheme('bright')">☀️ Bright</button>
+    <button onclick="setTheme('neon')">🟣 Neon</button>
+  </div>
 </div>
 
 <div class="panel">
@@ -143,7 +245,7 @@ h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
   <div class="scanWrap">
     <video id="video" playsinline autoplay muted></video>
     <div class="scanGuide"></div>
-    <div class="scanLabel">Hold steady to auto-scan</div>
+    <div class="scanLabel">Align card row here</div>
   </div>
 </div>
 
@@ -167,26 +269,19 @@ h2{margin:0 0 8px;font-size:13px;color:#c9ffe6}
 <canvas id="canvas" style="display:none"></canvas>
 
 <script>
-/* CONFIG */
+/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
 
+/* ================= STATE ================= */
+const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
 const GAMES=[
   ["job","Jacks"],["bonus","Bonus"],["double_bonus","Double Bonus"],
   ["ddb","DDB"],["deuces","Deuces"],["ux","Ultimate X"]
 ];
-
 let currentGame="job", cards=[], hold=[];
 let cameraStream=null;
 
-/* ELEMENTS */
-const video=document.getElementById("video");
-const canvas=document.getElementById("canvas");
-const handDiv=document.getElementById("hand");
-const overlay=document.getElementById("overlay");
-const toast=document.getElementById("toast");
-
-/* GAME BAR */
+/* ================= INIT ================= */
 const gameBar=document.getElementById("gameBar");
 GAMES.forEach(([k,n])=>{
   const b=document.createElement("button");
@@ -200,34 +295,33 @@ GAMES.forEach(([k,n])=>{
   gameBar.appendChild(b);
 });
 
-/* CAMERA CONTROL */
+const savedTheme=localStorage.getItem("theme");
+if(savedTheme) document.body.dataset.theme=savedTheme;
+
+function setTheme(t){
+  document.body.dataset.theme=t;
+  localStorage.setItem("theme",t);
+}
+
+/* ================= CAMERA ================= */
 async function startCamera(){
   if(cameraStream) return;
-  cameraStream = await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:"environment"}
-  });
-  video.srcObject = cameraStream;
+  cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject=cameraStream;
 }
-
 function stopCamera(){
   if(!cameraStream) return;
-  cameraStream.getTracks().forEach(t => t.stop());
-  cameraStream = null;
-  video.srcObject = null;
+  cameraStream.getTracks().forEach(t=>t.stop());
+  cameraStream=null;
 }
-
-/* AUTO START */
 startCamera();
 
-/* STOP CAMERA WHEN PAGE HIDDEN */
 document.addEventListener("visibilitychange",()=>{
-  if(document.hidden) stopCamera();
-  else startCamera();
+  document.hidden?stopCamera():startCamera();
 });
-window.addEventListener("pagehide", stopCamera);
-window.addEventListener("beforeunload", stopCamera);
+window.addEventListener("pagehide",stopCamera);
 
-/* SNAP */
+/* ================= SNAP ================= */
 snapBtn.onclick=async()=>{
   overlay.style.display="flex";
 
@@ -235,19 +329,18 @@ snapBtn.onclick=async()=>{
   const bandH=vh*0.35,bandY=(vh-bandH)/2;
 
   canvas.width=vw;canvas.height=bandH;
-  canvas.getContext("2d").drawImage(
-    video,0,bandY,vw,bandH,0,0,vw,bandH
-  );
+  canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
 
   const out=document.createElement("canvas");
   const sc=Math.min(800/vw,1);
-  out.width=vw*sc; out.height=bandH*sc;
+  out.width=vw*sc;out.height=bandH*sc;
   out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
 
   const img=out.toDataURL("image/jpeg",0.7);
 
   const res=await fetch(WORKER_URL,{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
     body:JSON.stringify({imageBase64:img,game:currentGame,paytable:"standard"})
   });
 
@@ -264,7 +357,7 @@ snapBtn.onclick=async()=>{
   }
 };
 
-/* RENDER */
+/* ================= RENDER ================= */
 function render(){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
@@ -281,10 +374,10 @@ function render(){
   });
 }
 
-/* WIN */
+/* ================= WIN ================= */
 function isWin(cards){
   if(cards.length!==5) return false;
-  const m={}; cards.forEach(c=>m[c.rank]=(m[c.rank]||0)+1);
+  const m={};cards.forEach(c=>m[c.rank]=(m[c.rank]||0)+1);
   return Object.values(m).some(v=>v>=2);
 }
 </script>
