@@ -6,94 +6,71 @@
 <title>VP Assistant</title>
 
 <style>
-/* ================= THEME TOKENS ================= */
+/* ================= THEMES ================= */
 body[data-theme="casino"]{
   --bg:#07140e; --panel:#0f2318; --panel2:#0b1a12; --border:#1e3a2a;
   --text:#e9f6ef; --muted:#9fc7b2;
-  --accent:#1aff8c; --accent2:#00c97a;
-  --hold:#22c55e; --warn:#f59e0b;
-  --shadow: rgba(26,255,140,.25);
+  --accent:#1aff8c; --hold:#22c55e;
 }
 body[data-theme="dark"]{
   --bg:#0b0f14; --panel:#121a24; --panel2:#0e141d; --border:#223043;
   --text:#e9eef6; --muted:#b7c3d7;
-  --accent:#2f6bff; --accent2:#1f4ed6;
-  --hold:#3b82f6; --warn:#f59e0b;
-  --shadow: rgba(47,107,255,.22);
+  --accent:#2f6bff; --hold:#3b82f6;
 }
 body[data-theme="neon"]{
   --bg:#0b0020; --panel:#16002f; --panel2:#0f0022; --border:#3f007d;
   --text:#f3e8ff; --muted:#c4b5fd;
-  --accent:#d946ef; --accent2:#7c3aed;
-  --hold:#22ffcc; --warn:#f59e0b;
-  --shadow: rgba(217,70,239,.22);
+  --accent:#d946ef; --hold:#22ffcc;
 }
 body[data-theme="bright"]{
   --bg:#f4f6f8; --panel:#ffffff; --panel2:#f1f5f9; --border:#d0d7de;
   --text:#111827; --muted:#4b5563;
-  --accent:#2563eb; --accent2:#1d4ed8;
-  --hold:#16a34a; --warn:#f59e0b;
-  --shadow: rgba(37,99,235,.14);
+  --accent:#2563eb; --hold:#16a34a;
 }
 
 /* ================= BASE ================= */
 *{box-sizing:border-box}
 body{
   margin:0;
-  background:radial-gradient(circle at top, color-mix(in srgb, var(--accent) 18%, var(--bg)), var(--bg) 60%);
+  background:var(--bg);
   color:var(--text);
   font-family:-apple-system,system-ui;
 }
 .app{max-width:900px;margin:auto;padding:12px 12px 140px}
 .panel{
-  background:linear-gradient(180deg, var(--panel), var(--panel2));
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
   border:1px solid var(--border);
   border-radius:18px;
   padding:12px;
   margin-bottom:12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.15);
 }
 .hrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.title{
-  font-size:16px;
-  font-weight:900;
-  letter-spacing:.2px;
-}
-.subtle{font-size:12px;color:var(--muted)}
-.iconBtn{
-  border:1px solid var(--border);
-  background:transparent;
-  color:var(--text);
-  padding:10px 12px;
-  border-radius:999px;
-  font-size:14px;
-}
+.title{font-size:16px;font-weight:900}
+.sub{font-size:12px;color:var(--muted)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{
   border:1px solid var(--border);
   padding:6px 10px;
   border-radius:999px;
   font-size:12px;
-  color:var(--muted);
-  background:color-mix(in srgb, var(--panel) 75%, transparent);
 }
 .chip strong{color:var(--text)}
-.chip.accent{
-  border-color:color-mix(in srgb, var(--accent) 60%, var(--border));
-  background:color-mix(in srgb, var(--accent) 10%, transparent);
+.iconBtn{
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:999px;
 }
 
 /* ================= SCANNER ================= */
 .scanWrap{
   position:relative;
-  height:180px;                 /* bigger hero scanner */
+  height:180px;
   border-radius:16px;
   overflow:hidden;
   border:1px solid var(--border);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 10%, transparent),
-              0 16px 40px var(--shadow);
   user-select:none;
-  -webkit-user-select:none;
   touch-action:manipulation;
 }
 .scanWrap video{
@@ -102,74 +79,35 @@ body{
   top:50%;
   transform:translateY(-50%);
 }
-.scanShadeTop, .scanShadeBot{
-  position:absolute;left:0;right:0;height:28%;
-  background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0));
-  pointer-events:none;
-}
-.scanShadeBot{
-  top:auto;bottom:0;
-  background:linear-gradient(0deg, rgba(0,0,0,.55), rgba(0,0,0,0));
+.scanMask{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.05) 35%,rgba(0,0,0,.05) 65%,rgba(0,0,0,.55));
 }
 .scanWindow{
-  position:absolute;left:10px;right:10px;top:32%;height:36%;
-  border-radius:14px;
+  position:absolute;left:12px;right:12px;top:32%;height:36%;
   border:2px dashed rgba(255,255,255,.25);
-  pointer-events:none;
+  border-radius:14px;
 }
-.scanLine{
-  position:absolute;left:14px;right:14px;top:33%;
-  height:2px;border-radius:2px;
-  background:linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity:.85;
-  animation: scan 1.5s ease-in-out infinite;
-  pointer-events:none;
+.scanText{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;font-weight:900;
 }
-@keyframes scan{
-  0%{transform:translateY(0)}
-  50%{transform:translateY(56px)}
-  100%{transform:translateY(0)}
-}
-.scanHint{
-  position:absolute;bottom:10px;left:50%;
-  transform:translateX(-50%);
-  font-size:12px;
-  padding:6px 12px;
-  border-radius:999px;
-  border:1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-  background:rgba(0,0,0,.45);
-  color:var(--text);
-  pointer-events:none;
-}
-.scanTapGlow{
-  position:absolute;inset:0;
-  background:transparent;
-  pointer-events:none;
-  transition:.15s ease;
-}
-.scanWrap.tapping .scanTapGlow{
-  background:rgba(255,255,255,.06);
-}
+.scanText small{display:block;font-weight:600;color:var(--muted);margin-top:6px}
 
 /* ================= HAND ================= */
-.hand{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:10px;
-}
+.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .card{
   border:1px solid var(--border);
   border-radius:16px;
   padding:14px 6px;
   text-align:center;
   position:relative;
-  background:color-mix(in srgb, var(--panel) 90%, black 10%);
-  transition:.15s ease;
 }
 .card.hold{
   outline:3px solid var(--hold);
-  box-shadow:0 0 18px color-mix(in srgb, var(--hold) 70%, transparent);
-  transform:translateY(-5px);
+  box-shadow:0 0 18px var(--hold);
+  transform:translateY(-4px);
 }
 .card.red{color:#ef4444}
 .card.black{color:var(--text)}
@@ -181,25 +119,36 @@ body{
   font-size:10px;font-weight:900;
   padding:2px 8px;border-radius:999px;
 }
-.tapTip{
-  text-align:center;margin-top:10px;font-size:12px;color:var(--muted)
-}
 
-/* ================= HISTORY ================= */
-.historyHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.historyList{margin-top:10px;display:none}
-.historyList.show{display:block}
-.histItem{
+/* ================= SETTINGS ================= */
+.sheetBack{
+  position:fixed;inset:0;
+  display:none;
+  background:rgba(0,0,0,.55);
+  z-index:1200;
+}
+.sheet{
+  position:absolute;bottom:0;left:0;right:0;
+  max-width:900px;margin:auto;
+  height:85vh;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px 18px 0 0;
+  padding:12px;
+  overflow:auto;
+}
+.section{margin-top:14px}
+.section h3{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{
   border:1px solid var(--border);
   border-radius:14px;
-  padding:10px;
-  margin-bottom:8px;
-  background:color-mix(in srgb, var(--panel) 85%, transparent);
+  padding:12px;
 }
-.histTop{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}
-.histCards{margin-top:6px;font-weight:800;letter-spacing:.2px}
-.histHold{margin-top:4px;font-size:12px;color:var(--muted)}
-.statsRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tile.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(0,0,0,.15);
+}
 
 /* ================= OVERLAY + TOAST ================= */
 .overlay{
@@ -210,19 +159,20 @@ body{
   z-index:1000;
 }
 .loader{
-  width:min(360px,92vw);
   background:var(--panel);
   border:1px solid var(--border);
   border-radius:18px;
   padding:18px;
   text-align:center;
+  width:min(340px, 92vw);
 }
 .spinner{
-  width:32px;height:32px;margin:0 auto 10px;
+  width:32px;height:32px;
   border:3px solid rgba(255,255,255,.2);
   border-top-color:var(--accent);
   border-radius:50%;
   animation:spin 1s linear infinite;
+  margin:0 auto 10px;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{
@@ -234,107 +184,47 @@ body{
   padding:10px 16px;border-radius:999px;
   z-index:1100;
 }
-
-/* ================= SETTINGS SHEET ================= */
-.sheetBack{
-  position:fixed;inset:0;
-  display:none;
-  align-items:flex-end;justify-content:center;
-  background:rgba(0,0,0,.55);
-  z-index:1200;
-  padding:12px;
-}
-.sheet{
-  width:min(900px,100%);
-  height:min(88vh,760px);   /* full-height feel */
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:12px;
-  overflow:auto;
-}
-.section{margin-top:12px}
-.section h3{margin:0 0 8px;font-size:13px;color:var(--muted)}
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-.tile{
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:12px;
-  background:color-mix(in srgb, var(--panel) 80%, transparent);
-  text-align:left;
-}
-.tile.active{
-  border-color:var(--accent);
-  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
-}
-.tile .name{font-weight:900}
-.tile .desc{font-size:12px;color:var(--muted);margin-top:4px}
-.themePreview{
-  height:22px;border-radius:999px;margin-top:10px;border:1px solid var(--border);
-}
-.preview-casino{background:linear-gradient(90deg,#07140e,#1aff8c)}
-.preview-dark{background:linear-gradient(90deg,#0b0f14,#2f6bff)}
-.preview-neon{background:linear-gradient(90deg,#0b0020,#d946ef)}
-.preview-bright{background:linear-gradient(90deg,#f4f6f8,#2563eb)}
 </style>
 </head>
 
 <body data-theme="neon">
 <div class="app">
 
-  <!-- TOP BAR -->
-  <div class="panel">
-    <div class="hrow">
-      <div>
-        <div class="title">VP Assistant</div>
-        <div class="subtle" id="subtitle">Tap the scanner to snap</div>
-      </div>
-      <button class="iconBtn" id="openSettings">⚙️ Settings</button>
+<!-- TOP -->
+<div class="panel">
+  <div class="hrow">
+    <div>
+      <div class="title">VP Assistant</div>
+      <div class="sub" id="subtitle">Tap scanner to snap</div>
     </div>
-    <div class="chips" style="margin-top:10px">
-      <div class="chip accent" id="chipGame">Game: <strong>—</strong></div>
-      <div class="chip" id="chipPay">Paytable: <strong>—</strong></div>
-      <div class="chip" id="chipTheme">Theme: <strong>—</strong></div>
+    <button class="iconBtn" id="openSettings">⚙️</button>
+  </div>
+  <div class="chips" style="margin-top:10px">
+    <div class="chip">Game: <strong id="chipGame"></strong></div>
+    <div class="chip">Paytable: <strong id="chipPay"></strong></div>
+    <div class="chip" id="chipMult" style="display:none">Mult: <strong id="chipMultVal"></strong></div>
+    <div class="chip">Theme: <strong id="chipTheme"></strong></div>
+  </div>
+</div>
+
+<!-- SCANNER -->
+<div class="panel">
+  <div class="scanWrap" id="scanWrap">
+    <video id="video" playsinline autoplay muted></video>
+    <div class="scanMask"></div>
+    <div class="scanWindow"></div>
+    <div class="scanText">
+      Align the 5 cards here
+      <small>Tap anywhere to scan</small>
     </div>
   </div>
+  <div class="sub" id="status" style="margin-top:8px">Starting camera…</div>
+</div>
 
-  <!-- SCANNER HERO -->
-  <div class="panel">
-    <h2>Scan</h2>
-    <div class="scanWrap" id="scanWrap">
-      <video id="video" playsinline autoplay muted></video>
-      <div class="scanShadeTop"></div>
-      <div class="scanShadeBot"></div>
-      <div class="scanWindow"></div>
-      <div class="scanLine"></div>
-      <div class="scanTapGlow"></div>
-      <div class="scanHint" id="scanHint">Align the 5 cards here • Tap to scan</div>
-    </div>
-    <div class="small" id="status" style="margin-top:10px">Starting camera…</div>
-  </div>
-
-  <!-- RESULT -->
-  <div class="panel">
-    <h2>Result</h2>
-    <div class="hand" id="hand"></div>
-    <div class="tapTip">Tap cards to toggle HOLD • Long-press to edit</div>
-  </div>
-
-  <!-- HISTORY -->
-  <div class="panel">
-    <div class="historyHead">
-      <h2>History & Stats</h2>
-      <button class="iconBtn" id="toggleHistory">Show</button>
-    </div>
-
-    <div class="statsRow" id="statsRow"></div>
-
-    <div class="historyList" id="historyList"></div>
-  </div>
+<!-- RESULT -->
+<div class="panel">
+  <div class="hand" id="hand"></div>
+</div>
 
 </div>
 
@@ -344,13 +234,13 @@ body{
   <div class="loader">
     <div class="spinner"></div>
     <div style="font-weight:900;margin-bottom:6px">Analyzing…</div>
-    <div class="small" id="overlayMsg">Reading cards & deciding holds</div>
+    <div class="sub" id="overlayMsg">Reading cards & deciding holds</div>
   </div>
 </div>
 
 <div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
 
-<!-- SETTINGS SHEET -->
+<!-- SETTINGS -->
 <div class="sheetBack" id="sheetBack">
   <div class="sheet">
     <div class="hrow">
@@ -368,6 +258,12 @@ body{
       <div class="grid" id="payGrid"></div>
     </div>
 
+    <div class="section" id="multSection" style="display:none">
+      <h3>Ultimate X Multiplier</h3>
+      <div class="grid" id="multGrid"></div>
+      <div class="sub" style="margin-top:8px">Auto-detected when visible (high confidence). Tap to override.</div>
+    </div>
+
     <div class="section">
       <h3>Theme</h3>
       <div class="grid" id="themeGrid"></div>
@@ -375,379 +271,305 @@ body{
 
     <div class="section">
       <h3>Battery</h3>
-      <div class="small">Camera auto-stops when you leave the page.</div>
+      <div class="sub">Camera stops automatically when you leave the page.</div>
       <button class="iconBtn" id="stopCamBtn" style="margin-top:10px">Stop camera now</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ========= CONFIG ========= */
+/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ========= DATA ========= */
-const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
-
-const GAMES = [
-  { key:"job", name:"Jacks or Better", desc:"Classic 5-card draw" },
-  { key:"bonus", name:"Bonus Poker", desc:"Quad bonuses" },
-  { key:"double_bonus", name:"Double Bonus", desc:"Big aces & low quads" },
-  { key:"ddb", name:"Double Double Bonus", desc:"Kicker bonuses" },
-  { key:"deuces", name:"Deuces Wild", desc:"2s are wild" },
-  { key:"ux", name:"Ultimate X", desc:"Multiplier impacts holds" },
+/* ================= DATA ================= */
+const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
+const GAMES=[
+  {k:"job",n:"Jacks or Better"},
+  {k:"bonus",n:"Bonus Poker"},
+  {k:"double_bonus",n:"Double Bonus"},
+  {k:"ddb",n:"Double Double Bonus"},
+  {k:"deuces",n:"Deuces Wild"},
+  {k:"ux",n:"Ultimate X"},
 ];
+const PAYTABLES={
+  job:["9/6","8/5"],
+  bonus:["standard"],
+  double_bonus:["standard"],
+  ddb:["standard"],
+  deuces:["standard"],
+  ux:["standard"]
+};
+const THEMES=["casino","dark","neon","bright"];
+const MULTS=[1,2,3,4,5,8,10,12];
 
-const PAYTABLES = {
-  job: ["9/6", "8/5"],
-  bonus: ["standard"],
-  double_bonus: ["standard"],
-  ddb: ["standard"],
-  deuces: ["standard"],
-  ux: ["standard"],
+/* ================= STATE ================= */
+const state={
+  game:localStorage.getItem("game")||"job",
+  paytable:localStorage.getItem("paytable")||"9/6",
+  theme:localStorage.getItem("theme")||"neon",
+  multiplier:Number(localStorage.getItem("multiplier")||1),
+  cards:[],hold:[],
+  stream:null,
+  busy:false
 };
 
-const THEMES = [
-  { key:"casino", name:"🎰 Casino Felt", desc:"Premium table vibe", previewClass:"preview-casino" },
-  { key:"dark", name:"🌙 Dark Minimal", desc:"Clean & focused", previewClass:"preview-dark" },
-  { key:"neon", name:"🟣 Neon Night", desc:"Cyber Vegas", previewClass:"preview-neon" },
-  { key:"bright", name:"☀️ Bright Pro", desc:"High contrast", previewClass:"preview-bright" },
-];
+/* ================= ELEMENTS ================= */
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const scanWrap=document.getElementById("scanWrap");
+const statusEl=document.getElementById("status");
+const handDiv=document.getElementById("hand");
+const overlay=document.getElementById("overlay");
+const overlayMsg=document.getElementById("overlayMsg");
+const toast=document.getElementById("toast");
 
-/* ========= STATE ========= */
-let state = {
-  game: localStorage.getItem("game") || "job",
-  paytable: localStorage.getItem("paytable") || "9/6",
-  theme: localStorage.getItem("theme") || "neon",
-  cards: [],
-  hold: [],
-  history: [],
-  busy: false,
-  cameraStream: null,
-};
+const chipGame=document.getElementById("chipGame");
+const chipPay=document.getElementById("chipPay");
+const chipTheme=document.getElementById("chipTheme");
+const chipMult=document.getElementById("chipMult");
+const chipMultVal=document.getElementById("chipMultVal");
 
-/* ========= ELEMENTS ========= */
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const scanWrap = document.getElementById("scanWrap");
-const statusEl = document.getElementById("status");
-const scanHint = document.getElementById("scanHint");
-const overlay = document.getElementById("overlay");
-const overlayMsg = document.getElementById("overlayMsg");
-const toast = document.getElementById("toast");
+const sheetBack=document.getElementById("sheetBack");
+const gameGrid=document.getElementById("gameGrid");
+const payGrid=document.getElementById("payGrid");
+const multGrid=document.getElementById("multGrid");
+const multSection=document.getElementById("multSection");
+const themeGrid=document.getElementById("themeGrid");
+const stopCamBtn=document.getElementById("stopCamBtn");
 
-const handDiv = document.getElementById("hand");
-const chipGame = document.getElementById("chipGame").querySelector("strong");
-const chipPay = document.getElementById("chipPay").querySelector("strong");
-const chipTheme = document.getElementById("chipTheme").querySelector("strong");
-
-const sheetBack = document.getElementById("sheetBack");
-const openSettings = document.getElementById("openSettings");
-const closeSettings = document.getElementById("closeSettings");
-const gameGrid = document.getElementById("gameGrid");
-const payGrid = document.getElementById("payGrid");
-const themeGrid = document.getElementById("themeGrid");
-const stopCamBtn = document.getElementById("stopCamBtn");
-
-const toggleHistory = document.getElementById("toggleHistory");
-const historyList = document.getElementById("historyList");
-const statsRow = document.getElementById("statsRow");
-
-/* ========= INIT ========= */
-applyTheme(state.theme);
+/* ================= INIT ================= */
+document.body.dataset.theme=state.theme;
 normalizePaytable();
 renderChips();
 renderSettings();
 renderHand();
-renderHistory();
+startCamera();
 
-/* ========= CAMERA LIFECYCLE ========= */
+/* ================= CAMERA ================= */
 async function startCamera(){
-  if(state.cameraStream) return;
+  if(state.stream) return;
   try{
-    state.cameraStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
-    video.srcObject = state.cameraStream;
-    await waitForVideoReady();
-    statusEl.textContent = "Ready — tap scanner to snap";
-  } catch(e){
-    statusEl.textContent = "Camera permission needed (Safari settings).";
-    console.error(e);
+    state.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    video.srcObject=state.stream;
+    await waitForVideo();
+    statusEl.textContent="Ready — tap scanner";
+  }catch(e){
+    statusEl.textContent="Camera permission needed.";
   }
 }
 function stopCamera(){
-  if(!state.cameraStream) return;
-  state.cameraStream.getTracks().forEach(t=>t.stop());
-  state.cameraStream = null;
-  video.srcObject = null;
-  statusEl.textContent = "Camera stopped";
+  if(!state.stream) return;
+  state.stream.getTracks().forEach(t=>t.stop());
+  state.stream=null;
+  video.srcObject=null;
+  statusEl.textContent="Camera stopped";
 }
-document.addEventListener("visibilitychange",()=>{ document.hidden ? stopCamera() : startCamera(); });
-stopCamBtn.onclick = stopCamera;
+stopCamBtn.onclick=stopCamera;
+document.addEventListener("visibilitychange",()=>document.hidden?stopCamera():startCamera());
 
-startCamera();
-
-async function waitForVideoReady(){
-  const start = Date.now();
+async function waitForVideo(){
+  const t0=Date.now();
   while(true){
-    if(video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) return;
-    if(Date.now() - start > 3000) return;
+    if(video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0) return;
+    if(Date.now()-t0>3000) return;
     await new Promise(r=>setTimeout(r,50));
   }
 }
 
-/* ========= SNAP (robust) ========= */
-scanWrap.addEventListener("pointerdown", (e)=>{ e.preventDefault(); scanWrap.classList.add("tapping"); safeSnap(); }, {passive:false});
-scanWrap.addEventListener("pointerup", ()=>scanWrap.classList.remove("tapping"));
-scanWrap.addEventListener("pointercancel", ()=>scanWrap.classList.remove("tapping"));
+/* ================= SNAP ================= */
+scanWrap.addEventListener("pointerdown", async (e)=>{
+  e.preventDefault();
+  await safeSnap();
+},{passive:false});
 
 async function safeSnap(){
   if(state.busy) return;
-  if(!state.cameraStream) await startCamera();
-  await waitForVideoReady();
-  if(video.videoWidth === 0){ statusEl.textContent="Camera not ready. Try again."; return; }
-
-  state.busy = true;
-  overlay.style.display = "flex";
-  overlayMsg.textContent = "Reading cards & deciding holds…";
-
+  state.busy=true;
+  overlay.style.display="flex";
+  overlayMsg.textContent="Reading cards & deciding holds…";
   try{
-    const img = captureBand();
-    const data = await callWorker(img);
+    if(!state.stream) await startCamera();
+    await waitForVideo();
+    if(video.videoWidth===0){ throw new Error("Video not ready"); }
 
-    state.cards = data.cards || [];
-    state.hold = data.hold || [false,false,false,false,false];
+    const img=captureBand();
 
-    renderHand();
+    const res=await fetch(WORKER_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        imageBase64:img,
+        game:state.game,
+        paytable:state.paytable,
+        multiplier:state.multiplier
+      })
+    });
 
-    // history
-    pushHistory(state.cards, state.hold);
+    const data=await res.json();
+    state.cards=data.cards||[];
+    state.hold=data.hold||[false,false,false,false,false];
 
-    // toast on win
-    if(isWin(state.cards)){
-      toast.style.display="block";
-      setTimeout(()=>toast.style.display="none",2200);
+    // auto multiplier detect only for UX and only if confident
+    if(state.game==="ux" && data.multiplier && data.confidence>=0.75){
+      state.multiplier=Number(data.multiplier)||state.multiplier;
+      localStorage.setItem("multiplier",state.multiplier);
     }
 
-  } catch(err){
+    renderHand();
+    renderChips();
+
+    if(isWin(state.cards)){
+      toast.style.display="block";
+      setTimeout(()=>toast.style.display="none",2000);
+    }
+
+  }catch(err){
     console.error(err);
-    statusEl.textContent="Scan failed — try again.";
-  } finally {
-    overlay.style.display = "none";
-    state.busy = false;
+    statusEl.textContent="Scan failed — try again";
+  }finally{
+    overlay.style.display="none";
+    state.busy=false;
   }
 }
 
 function captureBand(){
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const bandH=vh*0.35,bandY=(vh-bandH)/2;
 
-  // capture only central horizontal band
-  const bandH = vh * 0.35;
-  const bandY = (vh - bandH) / 2;
+  canvas.width=vw;
+  canvas.height=bandH;
+  canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
 
-  canvas.width = vw;
-  canvas.height = bandH;
-  canvas.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
-
-  // downscale for cost
-  const sc = Math.min(900 / vw, 1);
-  const out = document.createElement("canvas");
-  out.width = Math.round(vw * sc);
-  out.height = Math.round(bandH * sc);
-  out.getContext("2d").drawImage(canvas, 0, 0, out.width, out.height);
-
-  return out.toDataURL("image/jpeg", 0.7);
+  const sc=Math.min(900/vw,1);
+  const out=document.createElement("canvas");
+  out.width=Math.round(vw*sc);
+  out.height=Math.round(bandH*sc);
+  out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
+  return out.toDataURL("image/jpeg",0.7);
 }
 
-async function callWorker(imageBase64){
-  const res = await fetch(WORKER_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      imageBase64,
-      game: state.game,
-      paytable: state.paytable
-    })
-  });
-  return await res.json();
-}
-
-/* ========= RENDER HAND ========= */
+/* ================= RENDER HAND ================= */
 function renderHand(){
-  handDiv.innerHTML = "";
-  if(!state.cards.length){
-    handDiv.innerHTML = `<div class="small">Scan to see cards & holds.</div>`;
-    return;
-  }
-
+  handDiv.innerHTML="";
+  if(!state.cards.length) return;
   state.cards.forEach((c,i)=>{
-    const red = (c.suit==="H" || c.suit==="D");
-    const div = document.createElement("div");
-    div.className = `card ${state.hold[i] ? "hold":""} ${red ? "red":"black"}`;
-    div.innerHTML = `
-      ${state.hold[i] ? `<div class="badge">HOLD</div>` : ``}
+    const red=(c.suit==="H"||c.suit==="D");
+    const d=document.createElement("div");
+    d.className=`card ${state.hold[i]?"hold":""} ${red?"red":"black"}`;
+    d.innerHTML=`
+      ${state.hold[i]?'<div class="badge">HOLD</div>':''}
       <div class="rank">${c.rank}</div>
-      <div class="suit">${SUIT[c.suit] || c.suit}</div>
+      <div class="suit">${SUIT[c.suit]}</div>
     `;
-
-    // Tap toggles HOLD
-    div.addEventListener("click", ()=>{ state.hold[i] = !state.hold[i]; renderHand(); });
-
-    // Long-press edits card
-    let pressTimer=null;
-    div.addEventListener("touchstart", ()=>{
-      pressTimer=setTimeout(()=>{
-        const v = prompt("Edit card (AS, 9D, KC):");
-        if(v && v.length>=2){
-          state.cards[i] = { rank:v[0].toUpperCase(), suit:v[1].toUpperCase() };
-          renderHand();
-        }
-      }, 450);
-    }, {passive:true});
-    div.addEventListener("touchend", ()=>{ if(pressTimer) clearTimeout(pressTimer); });
-
-    handDiv.appendChild(div);
+    d.onclick=()=>{state.hold[i]=!state.hold[i];renderHand();};
+    handDiv.appendChild(d);
   });
-
-  statusEl.textContent = "Done";
 }
 
-/* ========= HISTORY + STATS ========= */
-toggleHistory.onclick = ()=>{
-  const show = !historyList.classList.contains("show");
-  historyList.classList.toggle("show", show);
-  toggleHistory.textContent = show ? "Hide" : "Show";
+function isWin(cards){
+  if(!cards || cards.length!==5) return false;
+  const m={};
+  cards.forEach(c=>m[c.rank]=(m[c.rank]||0)+1);
+  return Object.values(m).some(v=>v>=2);
+}
+
+/* ================= SETTINGS ================= */
+document.getElementById("openSettings").onclick=()=>{
+  renderSettings();
+  sheetBack.style.display="block";
 };
+document.getElementById("closeSettings").onclick=()=>{
+  sheetBack.style.display="none";
+};
+sheetBack.addEventListener("click",(e)=>{ if(e.target===sheetBack) sheetBack.style.display="none"; });
 
-function pushHistory(cards, hold){
-  const item = {
-    t: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-    game: state.game,
-    pay: state.paytable,
-    cards: cards.map(c=>c.rank+c.suit).join(" "),
-    hold: hold.map((h,i)=>h?(i+1):null).filter(Boolean).join(",") || "none",
-    win: isWin(cards)
-  };
-  state.history.unshift(item);
-  state.history = state.history.slice(0, 10);
-  renderHistory();
-}
-
-function renderHistory(){
-  // stats
-  const total = state.history.length;
-  const wins = state.history.filter(x=>x.win).length;
-  statsRow.innerHTML = `
-    <div class="chip">Hands: <strong>${total}</strong></div>
-    <div class="chip">Wins: <strong>${wins}</strong></div>
-    <div class="chip">Game: <strong>${labelGame(state.game)}</strong></div>
-  `;
-
-  // list
-  historyList.innerHTML = "";
-  state.history.forEach(h=>{
-    const div = document.createElement("div");
-    div.className="histItem";
-    div.innerHTML = `
-      <div class="histTop">
-        <div>${h.t} • ${labelGame(h.game)} • ${h.pay}</div>
-        <div>${h.win ? "✅" : ""}</div>
-      </div>
-      <div class="histCards">${h.cards}</div>
-      <div class="histHold">Hold: ${h.hold}</div>
-    `;
-    historyList.appendChild(div);
-  });
-
-  // default collapsed
-  if(!historyList.classList.contains("show")){
-    // keep empty visible space small
+function normalizePaytable(){
+  const allowed=PAYTABLES[state.game]||["standard"];
+  if(!allowed.includes(state.paytable)){
+    state.paytable=allowed[0];
+    localStorage.setItem("paytable",state.paytable);
   }
 }
-
-/* ========= SETTINGS ========= */
-openSettings.onclick = ()=>{ sheetBack.style.display="flex"; };
-closeSettings.onclick = ()=>{ sheetBack.style.display="none"; };
-sheetBack.addEventListener("click",(e)=>{ if(e.target===sheetBack) sheetBack.style.display="none"; });
 
 function renderSettings(){
   // GAME
-  gameGrid.innerHTML = "";
-  for(const g of GAMES){
-    const b = document.createElement("div");
-    b.className = "tile" + (g.key===state.game ? " active":"");
-    b.innerHTML = `<div class="name">${g.name}</div><div class="desc">${g.desc}</div>`;
-    b.onclick = ()=>{
-      state.game = g.key;
-      localStorage.setItem("game", state.game);
+  gameGrid.innerHTML="";
+  GAMES.forEach(g=>{
+    const t=document.createElement("div");
+    t.className="tile"+(g.k===state.game?" active":"");
+    t.innerHTML=`<div class="name">${g.n}</div>`;
+    t.onclick=()=>{
+      state.game=g.k;
+      localStorage.setItem("game",state.game);
       normalizePaytable();
       renderSettings();
       renderChips();
     };
-    gameGrid.appendChild(b);
-  }
-
-  // PAYTABLE (depends on game)
-  payGrid.innerHTML = "";
-  const list = PAYTABLES[state.game] || ["standard"];
-  list.forEach(p=>{
-    const b = document.createElement("div");
-    b.className="tile"+(p===state.paytable?" active":"");
-    b.innerHTML = `<div class="name">${p}</div><div class="desc">Paytable</div>`;
-    b.onclick = ()=>{
-      state.paytable = p;
-      localStorage.setItem("paytable", state.paytable);
-      renderSettings();
-      renderChips();
-    };
-    payGrid.appendChild(b);
+    gameGrid.appendChild(t);
   });
 
-  // THEME
-  themeGrid.innerHTML = "";
-  for(const t of THEMES){
-    const b = document.createElement("div");
-    b.className = "tile" + (t.key===state.theme ? " active":"");
-    b.innerHTML = `
-      <div class="name">${t.name}</div>
-      <div class="desc">${t.desc}</div>
-      <div class="themePreview ${t.previewClass}"></div>
-    `;
-    b.onclick = ()=>{
-      state.theme = t.key;
-      localStorage.setItem("theme", state.theme);
-      applyTheme(state.theme);
+  // PAYTABLE
+  payGrid.innerHTML="";
+  (PAYTABLES[state.game]||["standard"]).forEach(p=>{
+    const t=document.createElement("div");
+    t.className="tile"+(p===state.paytable?" active":"");
+    t.innerHTML=`<div class="name">${p}</div>`;
+    t.onclick=()=>{
+      state.paytable=p;
+      localStorage.setItem("paytable",state.paytable);
       renderSettings();
       renderChips();
     };
-    themeGrid.appendChild(b);
+    payGrid.appendChild(t);
+  });
+
+  // MULTIPLIER (Ultimate X only)
+  if(state.game==="ux"){
+    multSection.style.display="";
+    multGrid.innerHTML="";
+    MULTS.forEach(m=>{
+      const t=document.createElement("div");
+      t.className="tile"+(state.multiplier===m?" active":"");
+      t.innerHTML=`<div class="name">${m}×</div>`;
+      t.onclick=()=>{
+        state.multiplier=m;
+        localStorage.setItem("multiplier",m);
+        renderSettings();
+        renderChips();
+      };
+      multGrid.appendChild(t);
+    });
+  } else {
+    multSection.style.display="none";
   }
+
+  // THEME
+  themeGrid.innerHTML="";
+  THEMES.forEach(th=>{
+    const t=document.createElement("div");
+    t.className="tile"+(th===state.theme?" active":"");
+    t.innerHTML=`<div class="name">${th}</div>`;
+    t.onclick=()=>{
+      state.theme=th;
+      localStorage.setItem("theme",th);
+      document.body.dataset.theme=th;
+      renderSettings();
+      renderChips();
+    };
+    themeGrid.appendChild(t);
+  });
 }
 
-function normalizePaytable(){
-  const allowed = PAYTABLES[state.game] || ["standard"];
-  if(!allowed.includes(state.paytable)){
-    state.paytable = allowed[0];
-    localStorage.setItem("paytable", state.paytable);
-  }
-}
-
-function applyTheme(theme){
-  document.body.dataset.theme = theme;
-}
-function labelGame(k){
-  return (GAMES.find(g=>g.key===k)?.name) || k;
-}
 function renderChips(){
-  chipGame.textContent = labelGame(state.game);
+  chipGame.textContent = state.game;
   chipPay.textContent = state.paytable;
   chipTheme.textContent = state.theme;
-}
-
-/* ========= WIN DETECTOR ========= */
-function isWin(cards){
-  if(!cards || cards.length!==5) return false;
-  const m={}; cards.forEach(c=>m[c.rank]=(m[c.rank]||0)+1);
-  return Object.values(m).some(v=>v>=2);
+  if(state.game==="ux"){
+    chipMult.style.display="";
+    chipMultVal.textContent = state.multiplier + "×";
+  } else {
+    chipMult.style.display="none";
+  }
 }
 </script>
 </body>
