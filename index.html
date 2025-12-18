@@ -6,103 +6,87 @@
 <title>VP Assistant</title>
 
 <style>
-/* ---------- Theme tokens ---------- */
+/* ================= THEME TOKENS ================= */
 body[data-theme="casino"]{
-  --bg:#07140e; --panel:#10261b; --border:#1e3a2a; --text:#e9f6ef; --muted:#9fc7b2;
-  --accent:#1aff8c; --hold:#22c55e; --snapGlow:rgba(26,255,140,.65);
+  --bg:#07140e; --panel:#10261b; --border:#1e3a2a;
+  --text:#e9f6ef; --muted:#9fc7b2;
+  --accent:#1aff8c; --hold:#22c55e;
 }
 body[data-theme="dark"]{
-  --bg:#0b0f14; --panel:#121a24; --border:#223043; --text:#e9eef6; --muted:#b7c3d7;
-  --accent:#2f6bff; --hold:#3b82f6; --snapGlow:rgba(47,107,255,.65);
+  --bg:#0b0f14; --panel:#121a24; --border:#223043;
+  --text:#e9eef6; --muted:#b7c3d7;
+  --accent:#2f6bff; --hold:#3b82f6;
 }
 body[data-theme="neon"]{
-  --bg:#0b0020; --panel:#1a0033; --border:#3f007d; --text:#f3e8ff; --muted:#c4b5fd;
-  --accent:#d946ef; --hold:#22ffcc; --snapGlow:rgba(217,70,239,.75);
+  --bg:#0b0020; --panel:#1a0033; --border:#3f007d;
+  --text:#f3e8ff; --muted:#c4b5fd;
+  --accent:#d946ef; --hold:#22ffcc;
 }
 body[data-theme="bright"]{
-  --bg:#f4f6f8; --panel:#ffffff; --border:#d0d7de; --text:#111827; --muted:#4b5563;
-  --accent:#2563eb; --hold:#16a34a; --snapGlow:rgba(37,99,235,.35);
+  --bg:#f4f6f8; --panel:#ffffff; --border:#d0d7de;
+  --text:#111827; --muted:#4b5563;
+  --accent:#2563eb; --hold:#16a34a;
 }
 
+/* ================= BASE ================= */
 *{box-sizing:border-box}
 body{
-  margin:0; background:var(--bg); color:var(--text);
+  margin:0;background:var(--bg);color:var(--text);
   font-family:-apple-system,system-ui;
-  transition:background .25s ease;
 }
-.app{max-width:900px;margin:auto;padding:12px 12px 140px}
-
-/* ---------- Panels ---------- */
+.app{max-width:900px;margin:auto;padding:12px 12px 160px}
 .panel{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:12px;
-  margin-bottom:12px;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:16px;padding:12px;margin-bottom:12px;
 }
-.titleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.h1{font-size:14px;color:var(--muted);margin:0}
-.pillBtn{
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h2{margin:0;font-size:13px;color:var(--muted)}
+button{
+  background:transparent;color:var(--text);
   border:1px solid var(--border);
-  background:transparent;
-  color:var(--text);
-  padding:8px 12px;
-  border-radius:999px;
-  font-size:13px;
+  border-radius:999px;padding:8px 14px;
 }
-.pillBtn.primary{
+button.primary{border-color:var(--accent)}
+.small{font-size:12px;color:var(--muted)}
+
+/* ================= GAME BAR ================= */
+.gameBar{display:flex;gap:8px;overflow-x:auto}
+.gameBtn{white-space:nowrap}
+.gameBtn.active{
   border-color:var(--accent);
-  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent);
 }
 
-/* ---------- Scanner strip ---------- */
+/* ================= SCANNER ================= */
 .scanWrap{
-  position:relative;
-  height:140px;
-  border-radius:12px;
-  overflow:hidden;
-  border:1px solid var(--border);
-  user-select:none;
-  -webkit-user-select:none;
-  touch-action:manipulation;
+  position:relative;height:140px;border-radius:12px;
+  overflow:hidden;border:1px solid var(--border);
 }
 .scanWrap video{
-  position:absolute;
-  width:100%;
-  top:50%;
+  position:absolute;width:100%;top:50%;
   transform:translateY(-50%);
 }
 .scanGuide{
-  position:absolute; inset:0;
-  border-top:2px dashed rgba(255,255,255,.22);
-  border-bottom:2px dashed rgba(255,255,255,.22);
-  pointer-events:none;
+  position:absolute;inset:0;
+  border-top:2px dashed rgba(255,255,255,.25);
+  border-bottom:2px dashed rgba(255,255,255,.25);
 }
 .scanLabel{
-  position:absolute; bottom:6px; left:50%;
+  position:absolute;bottom:6px;left:50%;
   transform:translateX(-50%);
-  font-size:11px;
-  background:rgba(0,0,0,.45);
-  color:var(--muted);
-  padding:3px 10px;
-  border-radius:999px;
-  pointer-events:none;
+  font-size:11px;background:rgba(0,0,0,.5);
+  padding:3px 10px;border-radius:999px;
 }
 
-/* ---------- Cards ---------- */
+/* ================= HAND ================= */
 .hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .card{
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:12px 6px;
-  text-align:center;
-  position:relative;
-  background:color-mix(in srgb, var(--panel) 92%, #000 8%);
-  transition:.15s ease;
+  border:1px solid var(--border);border-radius:14px;
+  padding:12px 6px;text-align:center;position:relative;
 }
 .card.hold{
   outline:3px solid var(--hold);
-  box-shadow:0 0 18px color-mix(in srgb, var(--hold) 70%, transparent);
+  box-shadow:0 0 18px var(--hold);
   transform:translateY(-4px);
 }
 .card.red{color:#ef4444}
@@ -112,384 +96,224 @@ body{
 .badge{
   position:absolute;top:6px;right:6px;
   background:var(--hold);color:#000;
-  font-size:10px;font-weight:900;
-  padding:2px 6px;border-radius:999px;
+  font-size:10px;font-weight:900;padding:2px 6px;border-radius:999px;
 }
 
-/* ---------- Snap button ---------- */
+/* ================= SNAP ================= */
 .snapBtn{
-  position:fixed;
-  bottom:70px;
-  left:50%;
+  position:fixed;bottom:70px;left:50%;
   transform:translateX(-50%);
   width:78px;height:78px;border-radius:50%;
   border:3px solid var(--accent);
-  background:radial-gradient(circle,#ffffff,#e5e7eb);
-  box-shadow:0 16px 40px var(--snapGlow);
-  touch-action:manipulation;
+  background:radial-gradient(circle,#fff,#e5e7eb);
 }
-.snapBtn:active{transform:translateX(-50%) scale(.92)}
-.snapBtn[disabled]{opacity:.5}
 
-/* ---------- Overlay ---------- */
-.overlay{
-  position:fixed;inset:0;
-  display:none;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.55);
-  z-index:1000;
-}
-.loader{
-  background:var(--panel);
+/* ================= HISTORY ================= */
+.historyItem{
   border:1px solid var(--border);
-  border-radius:16px;
-  padding:16px 18px;
-  text-align:center;
-  width:min(320px, 92vw);
+  border-radius:12px;
+  padding:8px;
+  margin-bottom:6px;
 }
-.spinner{
-  width:30px;height:30px;margin:0 auto 10px;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.small{font-size:12px;color:var(--muted);line-height:1.35}
+.historyRow{display:flex;gap:6px;font-size:12px}
 
-/* ---------- Toast ---------- */
-.toast{
-  position:fixed;top:18px;left:50%;
-  transform:translateX(-50%);
-  display:none;
-  background:var(--hold);
-  color:#000;
-  font-weight:900;
-  padding:10px 16px;
-  border-radius:999px;
-  z-index:1100;
-}
-
-/* ---------- Bottom sheet ---------- */
+/* ================= SETTINGS ================= */
 .sheetBack{
-  position:fixed;inset:0;
-  display:none;
-  background:rgba(0,0,0,.55);
-  z-index:1200;
-  align-items:flex-end;
-  justify-content:center;
-  padding:12px;
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  display:none;align-items:flex-end;justify-content:center;
 }
 .sheet{
-  width:min(900px, 100%);
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:12px;
+  width:min(900px,100%);
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:18px;padding:12px;
 }
-.sheetHeader{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;
-}
-.sheetTitle{font-size:14px;color:var(--text);margin:0}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tileGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tile{
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:12px;
-  background:transparent;
-  text-align:left;
+  border:1px solid var(--border);border-radius:14px;
+  padding:12px;text-align:left;
 }
-.tile.active{
-  border-color:var(--accent);
-  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 15%, transparent);
-}
-.tile .name{font-weight:800}
-.tile .desc{font-size:12px;color:var(--muted);margin-top:4px}
-
+.tile.active{border-color:var(--accent)}
 </style>
 </head>
 
 <body data-theme="casino">
 <div class="app">
 
-  <div class="panel">
-    <div class="titleRow">
-      <div>
-        <p class="h1" style="margin:0;">VP Assistant</p>
-        <div class="small" id="subtitle">Tap the scan strip or the snap button</div>
-      </div>
-      <button class="pillBtn primary" id="openSettings">⚙️ Settings</button>
-    </div>
-  </div>
+<!-- HEADER -->
+<div class="panel hrow">
+  <h2>VP Assistant</h2>
+  <button id="openSettings">⚙️ Settings</button>
+</div>
 
-  <div class="panel">
-    <div class="scanWrap" id="scanWrap">
-      <video id="video" playsinline autoplay muted></video>
-      <div class="scanGuide"></div>
-      <div class="scanLabel" id="scanLabel">Align card row here • Tap to snap</div>
-    </div>
-    <div class="small" id="status" style="margin-top:8px;">Camera starting…</div>
-  </div>
+<!-- GAME -->
+<div class="panel">
+  <div class="gameBar" id="gameBar"></div>
+</div>
 
-  <div class="panel">
-    <div class="hand" id="hand"></div>
+<!-- SCANNER -->
+<div class="panel">
+  <h2>Scan cards</h2>
+  <div class="scanWrap" id="scanWrap">
+    <video id="video" playsinline autoplay muted></video>
+    <div class="scanGuide"></div>
+    <div class="scanLabel">Align card row here • Tap to snap</div>
   </div>
+  <div class="small" id="status">Camera ready</div>
+</div>
+
+<!-- HAND -->
+<div class="panel">
+  <div class="hand" id="hand"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="panel">
+  <h2>History</h2>
+  <div id="history"></div>
+  <div class="small" id="stats"></div>
+</div>
 
 </div>
 
-<button class="snapBtn" id="snapBtn" disabled></button>
+<button class="snapBtn" id="snapBtn"></button>
 <canvas id="canvas" style="display:none"></canvas>
 
-<div class="overlay" id="overlay">
-  <div class="loader">
-    <div class="spinner"></div>
-    <div style="font-weight:900;margin-bottom:6px;">Analyzing…</div>
-    <div class="small" id="overlayMsg">Reading cards & deciding holds</div>
-  </div>
-</div>
-
-<div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
-
-<!-- Settings sheet -->
+<!-- SETTINGS -->
 <div class="sheetBack" id="sheetBack">
   <div class="sheet">
-    <div class="sheetHeader">
-      <h3 class="sheetTitle">Settings</h3>
-      <button class="pillBtn" id="closeSettings">Close</button>
+    <div class="hrow">
+      <h2>Settings</h2>
+      <button id="closeSettings">Close</button>
     </div>
 
-    <div class="grid2" id="gameGrid"></div>
+    <h2>Game</h2>
+    <div class="tileGrid" id="gameTiles"></div>
 
-    <div style="height:10px"></div>
+    <h2>Theme</h2>
+    <div class="tileGrid" id="themeTiles"></div>
 
-    <div class="grid2" id="themeGrid"></div>
-
-    <div style="height:10px"></div>
-
-    <button class="pillBtn" id="stopCam">Stop Camera</button>
+    <button id="stopCam">Stop Camera</button>
   </div>
 </div>
 
 <script>
-/* ========= CONFIG ========= */
-const WORKER_URL = "https://vp-hold.azimaymen.workers.dev"; // <-- keep correct
+/* ================= CONFIG ================= */
+const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ========= DATA ========= */
-const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
-const GAMES = [
-  {key:"job", name:"Jacks or Better", desc:"Classic 5-card draw"},
-  {key:"bonus", name:"Bonus Poker", desc:"Bonus quads"},
-  {key:"double_bonus", name:"Double Bonus", desc:"Bigger ace quads"},
-  {key:"ddb", name:"Double Double Bonus", desc:"Kicker bonuses"},
-  {key:"deuces", name:"Deuces Wild", desc:"2s are wild"},
-  {key:"ux", name:"Ultimate X", desc:"Multiplier impacts hold"}
+/* ================= DATA ================= */
+const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
+const GAMES=[
+  {k:"job",n:"Jacks"},
+  {k:"bonus",n:"Bonus"},
+  {k:"double_bonus",n:"Double Bonus"},
+  {k:"ddb",n:"DDB"},
+  {k:"deuces",n:"Deuces"},
+  {k:"ux",n:"Ultimate X"}
 ];
-const THEMES = [
-  {key:"casino", name:"🎰 Casino Felt", desc:"Premium table vibe"},
-  {key:"dark", name:"🌙 Dark Minimal", desc:"Clean + focused"},
-  {key:"neon", name:"🟣 Neon Night", desc:"Cyber Vegas"},
-  {key:"bright", name:"☀️ Bright Pro", desc:"High contrast"}
-];
+const THEMES=["casino","dark","neon","bright"];
 
-/* ========= STATE ========= */
-let currentGame = localStorage.getItem("game") || "job";
-let currentTheme = localStorage.getItem("theme") || "casino";
-let cards = [];
-let hold = [];
-let busy = false;
-let cameraStream = null;
+/* ================= STATE ================= */
+let currentGame=localStorage.getItem("game")||"job";
+let currentTheme=localStorage.getItem("theme")||"casino";
+let cards=[],hold=[];
+let history=[];
+let cameraStream=null;
 
-/* ========= ELEMENTS ========= */
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const handDiv = document.getElementById("hand");
-const statusEl = document.getElementById("status");
-const snapBtn = document.getElementById("snapBtn");
-const scanWrap = document.getElementById("scanWrap");
-const overlay = document.getElementById("overlay");
-const overlayMsg = document.getElementById("overlayMsg");
-const toast = document.getElementById("toast");
-const sheetBack = document.getElementById("sheetBack");
-const gameGrid = document.getElementById("gameGrid");
-const themeGrid = document.getElementById("themeGrid");
+/* ================= ELEMENTS ================= */
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const handDiv=document.getElementById("hand");
+const historyDiv=document.getElementById("history");
+const statsDiv=document.getElementById("stats");
 
-/* ========= THEME ========= */
-document.body.dataset.theme = currentTheme;
+/* ================= INIT ================= */
+document.body.dataset.theme=currentTheme;
 
-/* ========= SETTINGS UI ========= */
-function renderSettings(){
-  gameGrid.innerHTML = "";
-  for (const g of GAMES){
-    const b = document.createElement("button");
-    b.className = "tile" + (g.key===currentGame ? " active": "");
-    b.innerHTML = `<div class="name">${g.name}</div><div class="desc">${g.desc}</div>`;
-    b.onclick = () => {
-      currentGame = g.key;
-      localStorage.setItem("game", currentGame);
-      renderSettings();
-    };
-    gameGrid.appendChild(b);
-  }
-
-  themeGrid.innerHTML = "";
-  for (const t of THEMES){
-    const b = document.createElement("button");
-    b.className = "tile" + (t.key===currentTheme ? " active": "");
-    b.innerHTML = `<div class="name">${t.name}</div><div class="desc">${t.desc}</div>`;
-    b.onclick = () => {
-      currentTheme = t.key;
-      localStorage.setItem("theme", currentTheme);
-      document.body.dataset.theme = currentTheme;
-      renderSettings();
-    };
-    themeGrid.appendChild(b);
-  }
+/* GAME BAR */
+const gameBar=document.getElementById("gameBar");
+GAMES.forEach(g=>{
+  const b=document.createElement("button");
+  b.className="gameBtn"+(g.k===currentGame?" active":"");
+  b.textContent=g.n;
+  b.onclick=()=>{currentGame=g.k;localStorage.setItem("game",g.k);renderGameBar();};
+  gameBar.appendChild(b);
+});
+function renderGameBar(){
+  [...gameBar.children].forEach(b=>b.classList.toggle("active",b.textContent===GAMES.find(x=>x.k===currentGame).n));
 }
-renderSettings();
+renderGameBar();
 
-document.getElementById("openSettings").onclick = ()=>{ sheetBack.style.display="flex"; };
-document.getElementById("closeSettings").onclick = ()=>{ sheetBack.style.display="none"; };
-sheetBack.addEventListener("click",(e)=>{ if(e.target===sheetBack) sheetBack.style.display="none"; });
-
-/* ========= CAMERA LIFECYCLE ========= */
+/* CAMERA */
 async function startCamera(){
-  if (cameraStream) return;
-  cameraStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
-  video.srcObject = cameraStream;
-
-  // Wait until video has dimensions and is playable
-  await waitForVideoReady();
-
-  snapBtn.disabled = false;
-  statusEl.textContent = "Ready — tap scan strip or snap button";
+  if(cameraStream) return;
+  cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject=cameraStream;
 }
 function stopCamera(){
   if(!cameraStream) return;
   cameraStream.getTracks().forEach(t=>t.stop());
-  cameraStream = null;
-  video.srcObject = null;
-  snapBtn.disabled = true;
-  statusEl.textContent = "Camera stopped";
+  cameraStream=null;
 }
-document.getElementById("stopCam").onclick = stopCamera;
+startCamera();
+document.addEventListener("visibilitychange",()=>document.hidden?stopCamera():startCamera());
 
-document.addEventListener("visibilitychange",()=>{
-  if(document.hidden) stopCamera();
-  else startCamera();
-});
+/* SNAP */
+document.getElementById("snapBtn").onclick=async()=>{
+  const vw=video.videoWidth,vh=video.videoHeight;
+  if(!vw) return;
 
-async function waitForVideoReady(){
-  // iOS Safari: videoWidth can be 0 for a bit even when showing preview
-  const start = Date.now();
-  while(true){
-    if(video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) return;
-    if(Date.now() - start > 3000) return; // don't hang forever
-    await new Promise(r=>setTimeout(r,50));
-  }
-}
+  const bandH=vh*0.35,bandY=(vh-bandH)/2;
+  canvas.width=vw;canvas.height=bandH;
+  canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
 
-// Start camera automatically
-startCamera().catch(err=>{
-  console.error(err);
-  statusEl.textContent = "Camera permission needed. Allow camera in Safari settings.";
-});
+  const img=canvas.toDataURL("image/jpeg",0.7);
 
-/* ========= SNAP (robust) ========= */
-snapBtn.addEventListener("pointerdown", (e)=>{ e.preventDefault(); safeSnap(); }, {passive:false});
-scanWrap.addEventListener("pointerdown", (e)=>{ e.preventDefault(); safeSnap(); }, {passive:false});
-
-async function safeSnap(){
-  if(busy) return;
-  if(!cameraStream) await startCamera();
-  await waitForVideoReady();
-  if(video.videoWidth === 0) { statusEl.textContent="Camera not ready. Try again."; return; }
-
-  busy = true;
-  snapBtn.disabled = true;
-  overlay.style.display = "flex";
-  overlayMsg.textContent = "Reading cards & deciding holds…";
-  navigator.vibrate?.(30);
-
-  try{
-    const img = captureBandImage();
-    const result = await callWorker(img);
-    cards = result.cards || [];
-    hold = result.hold || [false,false,false,false,false];
-    renderHand();
-
-    if(isWin(cards)){
-      toast.style.display="block";
-      setTimeout(()=>toast.style.display="none",2200);
-    }
-  } catch(err){
-    console.error(err);
-    statusEl.textContent = "Snap failed. Try again.";
-  } finally{
-    overlay.style.display="none";
-    snapBtn.disabled = false;
-    busy = false;
-  }
-}
-
-function captureBandImage(){
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-
-  // capture thin horizontal band (cards region)
-  const bandH = vh * 0.35;
-  const bandY = (vh - bandH) / 2;
-
-  canvas.width = vw;
-  canvas.height = bandH;
-  canvas.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
-
-  // downscale for cost
-  const sc = Math.min(800 / vw, 1);
-  const out = document.createElement("canvas");
-  out.width = Math.round(vw * sc);
-  out.height = Math.round(bandH * sc);
-  out.getContext("2d").drawImage(canvas, 0, 0, out.width, out.height);
-
-  return out.toDataURL("image/jpeg", 0.7);
-}
-
-async function callWorker(imageBase64){
-  const res = await fetch(WORKER_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      imageBase64,
-      game: currentGame,
-      paytable: "standard"
-    })
+  const res=await fetch(WORKER_URL,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({imageBase64:img,game:currentGame,paytable:"standard"})
   });
-  return await res.json();
-}
 
-/* ========= RENDER ========= */
+  const d=await res.json();
+  cards=d.cards||[];
+  hold=d.hold||[];
+
+  history.unshift({cards,hold,game:currentGame});
+  history=history.slice(0,10);
+
+  renderHand();
+  renderHistory();
+};
+
+/* RENDER */
 function renderHand(){
-  handDiv.innerHTML = "";
-  for(let i=0;i<cards.length;i++){
-    const c = cards[i];
-    const red = (c.suit==="H" || c.suit==="D");
-    const div = document.createElement("div");
-    div.className = "card " + (hold[i]?"hold ":"") + (red?"red":"black");
-    div.innerHTML = `
+  handDiv.innerHTML="";
+  cards.forEach((c,i)=>{
+    const red=(c.suit==="H"||c.suit==="D");
+    const d=document.createElement("div");
+    d.className=`card ${hold[i]?"hold":""} ${red?"red":"black"}`;
+    d.innerHTML=`
       ${hold[i]?'<div class="badge">HOLD</div>':''}
       <div class="rank">${c.rank}</div>
-      <div class="suit">${SUIT[c.suit] || c.suit}</div>
-    `;
-    div.addEventListener("click", ()=>{ hold[i]=!hold[i]; renderHand(); });
-    handDiv.appendChild(div);
-  }
+      <div class="suit">${SUIT[c.suit]}</div>`;
+    handDiv.appendChild(d);
+  });
+}
+function renderHistory(){
+  historyDiv.innerHTML="";
+  history.forEach(h=>{
+    const div=document.createElement("div");
+    div.className="historyItem";
+    div.innerHTML=`<div class="historyRow">${h.game.toUpperCase()} — ${h.cards.map(c=>c.rank+c.suit).join(" ")}</div>`;
+    historyDiv.appendChild(div);
+  });
+  statsDiv.textContent=`Hands scanned: ${history.length}`;
 }
 
-/* ========= WIN DETECTOR ========= */
-function isWin(cards){
-  if(cards.length!==5) return false;
-  const m={}; cards.forEach(c=>m[c.rank]=(m[c.rank]||0)+1);
-  return Object.values(m).some(v=>v>=2);
-}
+/* SETTINGS */
+const sheetBack=document.getElementById("sheetBack");
+document.getElementById("openSettings").onclick=()=>sheetBack.style.display="flex";
+document.getElementById("closeSettings").onclick=()=>sheetBack.style.display="none";
+document.getElementById("stopCam").onclick=stopCamera;
 </script>
 </body>
 </html>
