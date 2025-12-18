@@ -14,14 +14,22 @@
 body[data-theme="neon"]{
   --bg:#0b0020; --panel:#16002f; --panel2:#0f0022; --border:#3f007d;
   --text:#f3e8ff; --muted:#c4b5fd; --accent:#d946ef; --hold:#22ffcc;
+  --shadow:rgba(0,0,0,.5);
 }
 body[data-theme="casino"]{
   --bg:#07140e; --panel:#0f2318; --panel2:#0b1a12; --border:#1e3a2a;
   --text:#e9f6ef; --muted:#9fc7b2; --accent:#1aff8c; --hold:#22c55e;
+  --shadow:rgba(0,0,0,.45);
 }
 body[data-theme="dark"]{
   --bg:#0b0f14; --panel:#121a24; --panel2:#0e141d; --border:#223043;
   --text:#e9eef6; --muted:#b7c3d7; --accent:#2f6bff; --hold:#3b82f6;
+  --shadow:rgba(0,0,0,.45);
+}
+body[data-theme="bright"]{
+  --bg:#f4f6f8; --panel:#ffffff; --panel2:#f1f5f9; --border:#d0d7de;
+  --text:#111827; --muted:#4b5563; --accent:#2563eb; --hold:#16a34a;
+  --shadow:rgba(0,0,0,.12);
 }
 
 /* ===== BASE ===== */
@@ -29,7 +37,7 @@ body[data-theme="dark"]{
 body{
   margin:0;
   font-family:Inter,-apple-system,system-ui;
-  background:radial-gradient(circle at top,#1f2937,var(--bg) 60%);
+  background:radial-gradient(circle at top, color-mix(in srgb, var(--accent) 18%, var(--bg)), var(--bg) 60%);
   color:var(--text);
 }
 .app{
@@ -38,24 +46,21 @@ body{
   padding:
     calc(12px + env(safe-area-inset-top))
     16px
-    calc(96px + env(safe-area-inset-bottom));
+    calc(110px + env(safe-area-inset-bottom));
 }
 .panel{
   background:linear-gradient(180deg,var(--panel),var(--panel2));
   border:1px solid var(--border);
-  border-radius:18px;
+  border-radius:20px;
   padding:14px;
   margin-bottom:14px;
+  box-shadow:0 18px 40px var(--shadow);
 }
-
-/* ===== HEADER ===== */
 .header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
 }
-.title{font-weight:900;font-size:20px}
-.subtitle{font-size:13px;color:var(--muted)}
+.title{font-weight:900;font-size:20px;letter-spacing:.2px}
+.subtitle{font-size:13px;color:var(--muted);margin-top:2px}
 .iconBtn{
   border:1px solid var(--border);
   background:transparent;
@@ -65,39 +70,68 @@ body{
   font-weight:700;
 }
 
-/* ===== CONTROLS ===== */
-.controls{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
-}
-select{
-  background:#020617;
-  color:var(--text);
+/* ===== CHIPS ===== */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{
+  padding:6px 12px;border-radius:999px;
   border:1px solid var(--border);
-  border-radius:10px;
-  padding:10px;
-  font-size:14px;
+  font-size:12px;color:var(--muted);
+  background:color-mix(in srgb, var(--panel) 85%, transparent);
+}
+.chip strong{color:var(--text)}
+.chip.accent{
+  border-color:color-mix(in srgb, var(--accent) 50%, var(--border));
+  background:color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 /* ===== SCANNER ===== */
 .scanner{
-  margin-top:10px;
   border-radius:18px;
   overflow:hidden;
   border:1px solid var(--border);
-  box-shadow:0 0 0 6px rgba(34,197,94,.15),0 20px 40px rgba(0,0,0,.6);
+  box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent),
+             0 20px 40px var(--shadow);
+  position:relative;
+  user-select:none;
+  touch-action:manipulation;
 }
 video{
   width:100%;
   max-height:260px;
   object-fit:cover;
   background:black;
+  display:block;
+}
+.scanMask{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.12) 35%,rgba(0,0,0,.12) 65%,rgba(0,0,0,.55));
+  pointer-events:none;
+}
+.scanWindow{
+  position:absolute;left:14px;right:14px;top:35%;height:30%;
+  border:2px dashed rgba(255,255,255,.22);
+  border-radius:14px;
+  pointer-events:none;
+}
+.scanText{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+  font-weight:900;
+  font-size:16px;
+  pointer-events:none;
+}
+.scanText small{
+  display:block;
+  font-weight:600;
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
 }
 .status{
   font-size:12px;
   color:var(--muted);
-  margin-top:6px;
+  margin-top:8px;
 }
 
 /* ===== HAND ===== */
@@ -109,27 +143,34 @@ video{
 }
 .card{
   border:1px solid var(--border);
-  border-radius:14px;
+  border-radius:16px;
   padding:14px 6px;
   text-align:center;
-  background:#020617;
+  position:relative;
+  background:color-mix(in srgb, var(--panel) 88%, #000 12%);
 }
 .card.hold{
   outline:3px solid var(--hold);
-  box-shadow:0 0 18px rgba(34,197,94,.7);
+  box-shadow:0 0 18px color-mix(in srgb, var(--hold) 70%, transparent);
   transform:translateY(-4px);
 }
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
+.badge{
+  position:absolute;top:8px;right:8px;
+  background:var(--hold);color:#000;
+  font-size:10px;font-weight:900;
+  padding:2px 8px;border-radius:999px;
+}
 
 /* ===== EXPLANATION ===== */
 #explanationBox{
   margin-top:12px;
   padding:14px;
-  border-radius:14px;
+  border-radius:16px;
   border:1px solid var(--border);
-  background:#020617;
+  background:color-mix(in srgb, var(--panel) 82%, #000 18%);
   display:none;
 }
 #explanationBox h3{
@@ -143,19 +184,18 @@ video{
   line-height:1.5;
 }
 
-/* ===== SNAP BUTTON ===== */
+/* ===== FOOTER SNAP ===== */
 footer{
-  position:fixed;
-  left:0; right:0; bottom:0;
+  position:fixed;left:0;right:0;bottom:0;
   padding:12px 16px calc(12px + env(safe-area-inset-bottom));
-  background:linear-gradient(180deg,transparent,#020617 40%);
+  background:linear-gradient(180deg,transparent, color-mix(in srgb, var(--bg) 90%, #000 10%) 45%);
 }
 #snap{
   width:100%;
   padding:14px;
   font-size:16px;
-  border-radius:14px;
-  background:linear-gradient(180deg,#22c55e,#16a34a);
+  border-radius:16px;
+  background:linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #000 40%));
   color:#000;
   font-weight:900;
   border:none;
@@ -163,72 +203,96 @@ footer{
 
 /* ===== SETTINGS PANEL ===== */
 .sheetBack{
-  position:fixed;
-  inset:0;
+  position:fixed;inset:0;
   background:rgba(0,0,0,.6);
   display:none;
   z-index:1000;
 }
 .sheet{
-  position:absolute;
-  bottom:0; left:0; right:0;
-  max-width:900px;
-  margin:auto;
-  height:60vh;
+  position:absolute;bottom:0;left:0;right:0;
+  max-width:900px;margin:auto;
+  height:70vh;
   background:linear-gradient(180deg,var(--panel),var(--panel2));
-  border-radius:20px 20px 0 0;
-  display:flex;
-  flex-direction:column;
+  border-radius:22px 22px 0 0;
+  display:flex;flex-direction:column;
 }
 .sheetHeader{
   padding:14px;
   border-bottom:1px solid var(--border);
-  text-align:center;
-  font-weight:900;
+  display:flex;align-items:center;justify-content:space-between;
 }
-.sheetContent{
-  padding:14px;
-  overflow:auto;
-  flex:1;
-}
-.sheetFooter{
-  padding:14px;
-  border-top:1px solid var(--border);
-}
-.section{
-  margin-bottom:16px;
-}
-.section h3{
-  margin:0 0 8px;
-  font-size:14px;
-  color:var(--muted);
-}
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
+.sheetTitle{font-weight:900}
+.sheetContent{padding:14px;overflow:auto;flex:1}
+.sheetFooter{padding:14px;border-top:1px solid var(--border)}
+.section{margin-bottom:16px}
+.section h3{margin:0 0 8px;font-size:14px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .tile{
   padding:14px;
-  border-radius:14px;
+  border-radius:16px;
   border:1px solid var(--border);
   font-weight:700;
-  text-align:center;
   cursor:pointer;
 }
 .tile.active{
   border-color:var(--accent);
-  box-shadow:0 0 0 4px rgba(34,197,94,.25);
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
 }
+.tile small{display:block;color:var(--muted);font-weight:600;margin-top:4px}
+.themePreview{
+  height:10px;border-radius:999px;margin-top:10px;
+  border:1px solid var(--border);
+}
+.prev-neon{background:linear-gradient(90deg,#0b0020,#d946ef)}
+.prev-casino{background:linear-gradient(90deg,#07140e,#1aff8c)}
+.prev-dark{background:linear-gradient(90deg,#0b0f14,#2f6bff)}
+.prev-bright{background:linear-gradient(90deg,#f4f6f8,#2563eb)}
 .primaryBtn{
   width:100%;
   padding:14px;
-  border-radius:14px;
+  border-radius:16px;
   background:var(--accent);
   color:#000;
   font-weight:900;
   font-size:16px;
   border:none;
+}
+
+/* ===== OVERLAY ===== */
+.overlay{
+  position:fixed;inset:0;
+  display:none;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,.6);
+  z-index:2000;
+}
+.loader{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:22px;
+  text-align:center;
+}
+.spinner{
+  width:34px;height:34px;
+  border:4px solid rgba(255,255,255,.2);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;top:20px;left:50%;
+  transform:translateX(-50%);
+  background:var(--hold);
+  color:#000;
+  font-weight:900;
+  padding:12px 18px;border-radius:999px;
+  display:none;
+  z-index:3000;
 }
 </style>
 </head>
@@ -243,31 +307,27 @@ footer{
       <div class="title">VP Assistant</div>
       <div class="subtitle">Scan a hand, get the perfect hold</div>
     </div>
-    <button class="iconBtn" id="openSettings">⚙️</button>
+    <button class="iconBtn" id="openSettings">⚙️ Settings</button>
   </div>
 
-  <div class="controls">
-    <select id="game">
-      <option value="job">Jacks or Better</option>
-      <option value="bonus">Bonus Poker</option>
-      <option value="double_bonus">Double Bonus</option>
-      <option value="ddb">Double Double Bonus</option>
-      <option value="deuces">Deuces Wild</option>
-      <option value="ux">Ultimate X</option>
-    </select>
-
-    <select id="paytable">
-      <option value="9/6">9/6</option>
-      <option value="8/5">8/5</option>
-      <option value="standard">Standard</option>
-    </select>
+  <div class="chips">
+    <div class="chip">Game: <strong id="chipGame"></strong></div>
+    <div class="chip">Paytable: <strong id="chipPay"></strong></div>
+    <div class="chip accent" id="chipMult" style="display:none">UX Mult: <strong id="chipMultVal"></strong></div>
+    <div class="chip">Theme: <strong id="chipTheme"></strong></div>
   </div>
 </div>
 
 <!-- SCANNER -->
 <div class="panel">
-  <div class="scanner">
+  <div class="scanner" id="scanner">
     <video id="video" playsinline autoplay muted></video>
+    <div class="scanMask"></div>
+    <div class="scanWindow"></div>
+    <div class="scanText">
+      Align the 5 cards here
+      <small>Tap scanner to scan</small>
+    </div>
   </div>
   <div class="status" id="status">Starting camera…</div>
 </div>
@@ -290,21 +350,36 @@ footer{
 <!-- SETTINGS -->
 <div class="sheetBack" id="sheetBack">
   <div class="sheet">
-    <div class="sheetHeader">Settings</div>
+    <div class="sheetHeader">
+      <div class="sheetTitle">Settings</div>
+      <button class="iconBtn" id="closeSettings">Close</button>
+    </div>
+
     <div class="sheetContent">
       <div class="section">
         <h3>Game</h3>
         <div class="grid" id="gameGrid"></div>
       </div>
+
       <div class="section">
         <h3>Paytable</h3>
         <div class="grid" id="payGrid"></div>
       </div>
+
+      <div class="section" id="multSection" style="display:none">
+        <h3>Ultimate X Multiplier</h3>
+        <div class="grid" id="multGrid"></div>
+        <div class="sub" style="margin-top:8px">
+          Auto-detected when visible (high confidence). Tap to override.
+        </div>
+      </div>
+
       <div class="section">
         <h3>Theme</h3>
         <div class="grid" id="themeGrid"></div>
       </div>
     </div>
+
     <div class="sheetFooter">
       <button class="primaryBtn" id="doneSettings">Done</button>
     </div>
@@ -313,98 +388,200 @@ footer{
 
 <canvas id="canvas" style="display:none"></canvas>
 
+<div class="overlay" id="overlay">
+  <div class="loader">
+    <div class="spinner"></div>
+    <div style="font-weight:900">Analyzing…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
+
 <script>
 /* ========= CONFIG ========= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
+/* ========= DATA ========= */
+const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
+const GAMES = [
+  {k:"job", n:"Jacks or Better", i:"🎴"},
+  {k:"bonus", n:"Bonus Poker", i:"💎"},
+  {k:"double_bonus", n:"Double Bonus", i:"🔥"},
+  {k:"ddb", n:"Double Double Bonus", i:"⚡"},
+  {k:"deuces", n:"Deuces Wild", i:"🃏"},
+  {k:"ux", n:"Ultimate X", i:"🎰"},
+];
+const PAYTABLES = {
+  job:["9/6","8/5"],
+  bonus:["standard"],
+  double_bonus:["standard"],
+  ddb:["standard"],
+  deuces:["standard"],
+  ux:["standard"],
+};
+const THEMES = [
+  {k:"neon", n:"Neon", cls:"prev-neon"},
+  {k:"casino", n:"Casino", cls:"prev-casino"},
+  {k:"dark", n:"Dark", cls:"prev-dark"},
+  {k:"bright", n:"Bright", cls:"prev-bright"},
+];
+const MULTS = [1,2,3,4,5,8,10,12];
+
 /* ========= STATE ========= */
 let state = {
-  game: "job",
-  paytable: "9/6",
-  theme: "neon",
+  game: localStorage.getItem("game") || "job",
+  paytable: localStorage.getItem("paytable") || "9/6",
+  theme: localStorage.getItem("theme") || "neon",
+  multiplier: Number(localStorage.getItem("multiplier") || 1),
   cards: [],
   hold: [],
-  explanation: ""
+  explanation: "",
+  stream: null,
+  busy: false
 };
 
 /* ========= ELEMENTS ========= */
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
+const scanner = document.getElementById("scanner");
 const snapBtn = document.getElementById("snap");
-const handDiv = document.getElementById("hand");
 const statusEl = document.getElementById("status");
-const gameSel = document.getElementById("game");
-const paySel = document.getElementById("paytable");
+const handDiv = document.getElementById("hand");
 const explanationBox = document.getElementById("explanationBox");
 const explanationText = document.getElementById("explanationText");
+const overlay = document.getElementById("overlay");
+const toast = document.getElementById("toast");
+
+const chipGame = document.getElementById("chipGame");
+const chipPay = document.getElementById("chipPay");
+const chipTheme = document.getElementById("chipTheme");
+const chipMult = document.getElementById("chipMult");
+const chipMultVal = document.getElementById("chipMultVal");
 
 const sheetBack = document.getElementById("sheetBack");
+const openSettingsBtn = document.getElementById("openSettings");
+const closeSettingsBtn = document.getElementById("closeSettings");
+const doneSettingsBtn = document.getElementById("doneSettings");
+
 const gameGrid = document.getElementById("gameGrid");
 const payGrid = document.getElementById("payGrid");
+const multSection = document.getElementById("multSection");
+const multGrid = document.getElementById("multGrid");
 const themeGrid = document.getElementById("themeGrid");
 
+/* ========= INIT ========= */
+document.body.dataset.theme = state.theme;
+normalizePaytable();
+renderChips();
+renderSettings();
+renderHand();
+renderExplanation();
+startCamera();
+
 /* ========= CAMERA ========= */
-let stream = null;
 async function startCamera() {
-  if (stream) return;
+  if (state.stream) return;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    video.srcObject = stream;
+    state.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio:false });
+    video.srcObject = state.stream;
     statusEl.textContent = "Camera ready";
   } catch (e) {
     statusEl.textContent = "Camera permission denied";
+    console.error(e);
   }
 }
-startCamera();
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopCamera();
+  else startCamera();
+});
+function stopCamera(){
+  if (!state.stream) return;
+  state.stream.getTracks().forEach(t => t.stop());
+  state.stream = null;
+  video.srcObject = null;
+}
 
 /* ========= SNAP ========= */
-snapBtn.onclick = async () => {
-  if (!video.videoWidth) return;
+scanner.addEventListener("pointerdown", (e)=>{ e.preventDefault(); doScan(); }, {passive:false});
+snapBtn.onclick = doScan;
 
-  statusEl.textContent = "Scanning…";
+async function doScan() {
+  if (state.busy) return;
+  if (!video.videoWidth) { statusEl.textContent = "Camera not ready"; return; }
 
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  const bandH = vh * 0.35;
-  const bandY = (vh - bandH) / 2;
+  state.busy = true;
+  overlay.style.display = "flex";
+  navigator.vibrate?.(25);
 
-  canvas.width = vw;
-  canvas.height = bandH;
-  canvas.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
+  try {
+    statusEl.textContent = "Scanning…";
 
-  const img = canvas.toDataURL("image/jpeg", 0.7);
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const bandH = vh * 0.35;
+    const bandY = (vh - bandH) / 2;
 
-  const res = await fetch(WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      imageBase64: img,
-      game: state.game,
-      paytable: state.paytable,
-      multiplier: 1
-    })
-  });
+    canvas.width = vw;
+    canvas.height = bandH;
+    canvas.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
 
-  const data = await res.json();
-  state.cards = data.cards || [];
-  state.hold = data.hold || [];
-  state.explanation = data.explanation || "";
+    const img = canvas.toDataURL("image/jpeg", 0.7);
 
-  renderHand();
-  renderExplanation();
-  statusEl.textContent = "Done";
-};
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageBase64: img,
+        game: state.game,
+        paytable: state.paytable,
+        multiplier: (state.game === "ux" ? state.multiplier : 1)
+      })
+    });
+
+    const data = await res.json();
+    state.cards = data.cards || [];
+    state.hold = data.hold || [];
+    state.explanation = data.explanation || "";
+
+    // Auto-update multiplier when Ultimate X and high confidence
+    if (state.game === "ux" && data.multiplier && data.confidence >= 0.75) {
+      state.multiplier = Number(data.multiplier) || state.multiplier;
+      localStorage.setItem("multiplier", String(state.multiplier));
+    }
+
+    renderHand();
+    renderExplanation();
+    renderChips();
+
+    statusEl.textContent = "Done";
+
+    if (isWin(state.cards)) {
+      toast.style.display = "block";
+      setTimeout(() => toast.style.display = "none", 2200);
+    }
+
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = "Scan failed";
+  }
+
+  overlay.style.display = "none";
+  state.busy = false;
+}
 
 /* ========= RENDER ========= */
 function renderHand() {
   handDiv.innerHTML = "";
+  if (!state.cards.length) return;
+
   state.cards.forEach((c, i) => {
     const div = document.createElement("div");
-    div.className = "card" + (state.hold[i] ? " hold" : "");
     const red = c.suit === "H" || c.suit === "D";
+    div.className = "card" + (state.hold[i] ? " hold" : "");
     div.innerHTML = `
+      ${state.hold[i] ? '<div class="badge">HOLD</div>' : ''}
       <div class="rank ${red ? "red" : ""}">${c.rank}</div>
-      <div class="suit ${red ? "red" : ""}">${c.suit}</div>
+      <div class="suit ${red ? "red" : ""}">${SUIT[c.suit] || c.suit}</div>
     `;
     handDiv.appendChild(div);
   });
@@ -413,67 +590,114 @@ function renderHand() {
 function renderExplanation() {
   if (!state.explanation) {
     explanationBox.style.display = "none";
+    explanationText.textContent = "";
     return;
   }
   explanationBox.style.display = "block";
   explanationText.textContent = state.explanation;
 }
 
+function isWin(cards) {
+  if (!cards || cards.length !== 5) return false;
+  const m = {};
+  cards.forEach(c => m[c.rank] = (m[c.rank] || 0) + 1);
+  return Object.values(m).some(v => v >= 2);
+}
+
 /* ========= SETTINGS ========= */
-document.getElementById("openSettings").onclick = () => {
-  populateSettings();
-  sheetBack.style.display = "block";
-};
+openSettingsBtn.onclick = () => { renderSettings(); sheetBack.style.display = "block"; };
+closeSettingsBtn.onclick = () => { sheetBack.style.display = "none"; };
+doneSettingsBtn.onclick = () => { sheetBack.style.display = "none"; };
+sheetBack.addEventListener("click", (e) => { if (e.target === sheetBack) sheetBack.style.display = "none"; });
 
-document.getElementById("doneSettings").onclick = () => {
-  sheetBack.style.display = "none";
-};
+function normalizePaytable(){
+  const allowed = PAYTABLES[state.game] || ["standard"];
+  if (!allowed.includes(state.paytable)) {
+    state.paytable = allowed[0];
+    localStorage.setItem("paytable", state.paytable);
+  }
+}
 
-sheetBack.onclick = e => {
-  if (e.target === sheetBack) sheetBack.style.display = "none";
-};
-
-function populateSettings() {
+function renderSettings() {
+  // Game tiles
   gameGrid.innerHTML = "";
-  ["job","bonus","double_bonus","ddb","deuces","ux"].forEach(g => {
+  GAMES.forEach(g => {
     const t = document.createElement("div");
-    t.className = "tile" + (state.game === g ? " active" : "");
-    t.textContent = g;
+    t.className = "tile" + (state.game === g.k ? " active" : "");
+    t.innerHTML = `${g.i} ${g.n}<small>Tap to select</small>`;
     t.onclick = () => {
-      state.game = g;
-      gameSel.value = g;
-      populateSettings();
+      state.game = g.k;
+      localStorage.setItem("game", state.game);
+      normalizePaytable();
+      renderSettings();
+      renderChips();
     };
     gameGrid.appendChild(t);
   });
 
+  // Paytable tiles
   payGrid.innerHTML = "";
-  ["9/6","8/5","standard"].forEach(p => {
+  (PAYTABLES[state.game] || ["standard"]).forEach(p => {
     const t = document.createElement("div");
     t.className = "tile" + (state.paytable === p ? " active" : "");
-    t.textContent = p;
+    t.innerHTML = `${p}<small>Applies to strategy</small>`;
     t.onclick = () => {
       state.paytable = p;
-      paySel.value = p;
-      populateSettings();
+      localStorage.setItem("paytable", state.paytable);
+      renderSettings();
+      renderChips();
     };
     payGrid.appendChild(t);
   });
 
+  // Ultimate X multiplier (only show for ux)
+  if (state.game === "ux") {
+    multSection.style.display = "";
+    multGrid.innerHTML = "";
+    MULTS.forEach(m => {
+      const t = document.createElement("div");
+      t.className = "tile" + (state.multiplier === m ? " active" : "");
+      t.innerHTML = `${m}×<small>Tap to set</small>`;
+      t.onclick = () => {
+        state.multiplier = m;
+        localStorage.setItem("multiplier", String(m));
+        renderSettings();
+        renderChips();
+      };
+      multGrid.appendChild(t);
+    });
+  } else {
+    multSection.style.display = "none";
+  }
+
+  // Themes
   themeGrid.innerHTML = "";
-  ["neon","casino","dark"].forEach(tn => {
+  THEMES.forEach(th => {
     const t = document.createElement("div");
-    t.className = "tile" + (state.theme === tn ? " active" : "");
-    t.textContent = tn;
+    t.className = "tile" + (state.theme === th.k ? " active" : "");
+    t.innerHTML = `${th.n}<div class="themePreview ${th.cls}"></div>`;
     t.onclick = () => {
-      state.theme = tn;
-      document.body.dataset.theme = tn;
-      populateSettings();
+      state.theme = th.k;
+      localStorage.setItem("theme", state.theme);
+      document.body.dataset.theme = state.theme;
+      renderSettings();
+      renderChips();
     };
     themeGrid.appendChild(t);
   });
 }
-</script>
 
+function renderChips() {
+  chipGame.textContent = state.game;
+  chipPay.textContent = state.paytable;
+  chipTheme.textContent = state.theme;
+  if (state.game === "ux") {
+    chipMult.style.display = "";
+    chipMultVal.textContent = state.multiplier + "×";
+  } else {
+    chipMult.style.display = "none";
+  }
+}
+</script>
 </body>
 </html>
