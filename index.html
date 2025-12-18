@@ -2,24 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport"
-      content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Video Poker Assistant</title>
 
-<!-- ===== iOS PWA META ===== -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="VP Assistant">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#07140e">
-
-<!-- Prevent zoom on inputs -->
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-
 <style>
-/* ========== THEMES ========== */
-:root{
+/* ================= THEME TOKENS ================= */
+body[data-theme="casino"]{
   --bg:#07140e;
   --panel:#10261b;
   --border:#1e3a2a;
@@ -27,154 +15,207 @@
   --muted:#9fc7b2;
   --accent:#1aff8c;
   --hold:#22c55e;
-}
-body[data-theme="dark"]{
-  --bg:#0b0f14;--panel:#121a24;--border:#223043;
-  --text:#e9eef6;--muted:#b7c3d7;--accent:#2f6bff;
-}
-body[data-theme="bright"]{
-  --bg:#f4f6f8;--panel:#ffffff;--border:#d0d7de;
-  --text:#111827;--muted:#4b5563;--accent:#2563eb;
-}
-body[data-theme="neon"]{
-  --bg:#0b0020;--panel:#1a0033;--border:#3f007d;
-  --text:#f3e8ff;--muted:#c4b5fd;--accent:#d946ef;
+  --snapGlow:rgba(26,255,140,.8);
+  --cardGrad:linear-gradient(180deg,#1b2f25,#0f1e17);
 }
 
-/* ========== BASE ========== */
+body[data-theme="dark"]{
+  --bg:#0b0f14;
+  --panel:#121a24;
+  --border:#223043;
+  --text:#e9eef6;
+  --muted:#b7c3d7;
+  --accent:#2f6bff;
+  --hold:#3b82f6;
+  --snapGlow:rgba(47,107,255,.8);
+  --cardGrad:linear-gradient(180deg,#1a1f2b,#0f121a);
+}
+
+body[data-theme="neon"]{
+  --bg:#0b0020;
+  --panel:#1a0033;
+  --border:#3f007d;
+  --text:#f3e8ff;
+  --muted:#c4b5fd;
+  --accent:#d946ef;
+  --hold:#22ffcc;
+  --snapGlow:rgba(217,70,239,.9);
+  --cardGrad:linear-gradient(180deg,#2a004f,#140026);
+}
+
+body[data-theme="bright"]{
+  --bg:#f4f6f8;
+  --panel:#ffffff;
+  --border:#d0d7de;
+  --text:#111827;
+  --muted:#4b5563;
+  --accent:#2563eb;
+  --hold:#16a34a;
+  --snapGlow:rgba(37,99,235,.5);
+  --cardGrad:linear-gradient(180deg,#ffffff,#f1f5f9);
+}
+
+/* ================= BASE ================= */
 *{box-sizing:border-box}
 body{
   margin:0;
   background:var(--bg);
   color:var(--text);
   font-family:-apple-system,system-ui;
+  transition:background .4s ease;
 }
 .app{max-width:900px;margin:auto;padding:12px 12px 220px}
 
-/* ========== PANELS ========== */
+/* ================= PANELS ================= */
 .panel{
   background:var(--panel);
   border:1px solid var(--border);
   border-radius:16px;
   padding:12px;
   margin-bottom:12px;
+  transition:.3s ease;
 }
 h2{margin:0 0 8px;font-size:13px;color:var(--muted)}
 
-/* ========== GAME BAR ========== */
-.gameBar{display:flex;gap:8px;overflow-x:auto}
+/* ================= GAME BAR ================= */
+.gameBar{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+}
 .gameBtn{
-  padding:10px 14px;border-radius:999px;
+  padding:10px 14px;
+  border-radius:999px;
   border:1px solid var(--border);
-  background:transparent;color:var(--muted);
+  background:transparent;
+  color:var(--muted);
+  font-size:13px;
 }
 .gameBtn.active{
   background:color-mix(in srgb,var(--accent) 20%,transparent);
   border-color:var(--accent);
-  box-shadow:0 0 10px color-mix(in srgb,var(--accent) 60%,transparent);
+  box-shadow:0 0 12px var(--snapGlow);
 }
 
-/* ========== THEME BAR ========== */
-.themeBar{display:flex;gap:8px;margin-top:8px}
+/* ================= THEME BAR ================= */
+.themeBar{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+.themeBtn{
+  flex:1;
+  padding:8px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:transparent;
+  font-size:12px;
+}
 
-/* ========== SCANNER ========== */
+/* ================= SCANNER ================= */
 .scanWrap{
-  position:relative;height:140px;border-radius:12px;
-  overflow:hidden;border:1px solid var(--border);
+  position:relative;
+  height:140px;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid var(--border);
 }
 .scanWrap video{
-  position:absolute;width:100%;top:50%;
+  position:absolute;
+  width:100%;
+  top:50%;
   transform:translateY(-50%);
 }
 .scanGuide{
-  position:absolute;inset:0;
+  position:absolute;
+  inset:0;
   border-top:2px dashed rgba(255,255,255,.25);
   border-bottom:2px dashed rgba(255,255,255,.25);
 }
 .scanLabel{
-  position:absolute;bottom:6px;left:50%;
+  position:absolute;
+  bottom:6px;left:50%;
   transform:translateX(-50%);
-  font-size:11px;background:rgba(0,0,0,.5);
-  padding:3px 10px;border-radius:999px;
+  font-size:11px;
+  background:rgba(0,0,0,.5);
+  padding:3px 10px;
+  border-radius:999px;
   color:var(--muted);
 }
 
-/* ========== HAND ========== */
-.hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+/* ================= HAND ================= */
+.hand{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+}
 .card{
+  background:var(--cardGrad);
   border:1px solid var(--border);
   border-radius:14px;
   padding:12px 6px;
   text-align:center;
   position:relative;
-  transition:.15s ease;
+  transition:.2s ease;
 }
 .card.hold{
   outline:3px solid var(--hold);
-  box-shadow:0 0 18px color-mix(in srgb,var(--hold) 70%,transparent);
-  transform:translateY(-4px);
+  box-shadow:0 0 22px var(--hold);
+  transform:translateY(-6px);
 }
-.card.red{color:#ef4444}
-.card.black{color:var(--text)}
 .rank{font-size:22px;font-weight:800}
 .suit{font-size:18px}
+.card.red{color:#ef4444}
+.card.black{color:var(--text)}
 .holdBadge{
-  position:absolute;top:6px;right:6px;
-  background:var(--hold);color:#000;
-  font-size:10px;font-weight:900;
-  padding:2px 6px;border-radius:999px;
+  position:absolute;
+  top:6px;right:6px;
+  background:var(--hold);
+  color:#000;
+  font-size:10px;
+  font-weight:900;
+  padding:2px 6px;
+  border-radius:999px;
 }
 
-/* ========== SNAP BUTTON ========== */
+/* ================= SNAP BUTTON ================= */
 .snapBtn{
-  position:fixed;bottom:72px;left:50%;
+  position:fixed;
+  bottom:72px;
+  left:50%;
   transform:translateX(-50%);
-  width:76px;height:76px;border-radius:50%;
-  background:radial-gradient(circle,#ffffff,#e5e7eb);
-  border:none;
-  box-shadow:0 12px 40px color-mix(in srgb,var(--accent) 60%,transparent);
-}
-.snapBtn::after{
-  content:"";
-  display:block;width:56px;height:56px;
-  background:var(--bg);
+  width:78px;
+  height:78px;
   border-radius:50%;
-  margin:auto;
+  background:
+    radial-gradient(circle at 30% 30%,#ffffff,#e5e7eb);
+  border:3px solid var(--accent);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb,var(--accent) 20%,transparent),
+    0 16px 40px var(--snapGlow);
+  transition:.15s ease;
+}
+.snapBtn:active{
+  transform:translateX(-50%) scale(.92);
 }
 
-/* ========== OVERLAY ========== */
-.overlay{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.55);
-  display:none;align-items:center;justify-content:center;
-  z-index:999;
-}
-.loader{
-  background:var(--panel);
-  border-radius:16px;padding:18px 22px;
-  border:1px solid var(--border);
-  text-align:center;
-}
-.spinner{
-  width:32px;height:32px;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-  margin:0 auto 10px;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ========== TOASTS ========== */
+/* ================= TOAST ================= */
 .toast{
-  position:fixed;top:20px;left:50%;
+  position:fixed;
+  top:20px;
+  left:50%;
   transform:translateX(-50%);
-  background:var(--hold);color:#000;
-  font-weight:900;padding:10px 18px;
-  border-radius:999px;display:none;
+  background:var(--hold);
+  color:#000;
+  font-weight:900;
+  padding:10px 18px;
+  border-radius:999px;
+  display:none;
+  animation:bounce .4s ease;
 }
-.installToast{
-  background:#2563eb;color:#fff;
+@keyframes bounce{
+  0%{transform:translateX(-50%) scale(.8)}
+  100%{transform:translateX(-50%) scale(1)}
 }
 </style>
 </head>
@@ -182,16 +223,18 @@ h2{margin:0 0 8px;font-size:13px;color:var(--muted)}
 <body data-theme="casino">
 <div class="app">
 
+<!-- GAME BAR -->
 <div class="panel">
   <div class="gameBar" id="gameBar"></div>
   <div class="themeBar">
-    <button onclick="setTheme('casino')">🎰 Casino</button>
-    <button onclick="setTheme('dark')">🌙 Dark</button>
-    <button onclick="setTheme('bright')">☀️ Bright</button>
-    <button onclick="setTheme('neon')">🟣 Neon</button>
+    <button class="themeBtn" onclick="setTheme('casino')">🎰 Casino</button>
+    <button class="themeBtn" onclick="setTheme('dark')">🌙 Dark</button>
+    <button class="themeBtn" onclick="setTheme('neon')">🟣 Neon</button>
+    <button class="themeBtn" onclick="setTheme('bright')">☀️ Bright</button>
   </div>
 </div>
 
+<!-- SCANNER -->
 <div class="panel">
   <h2>Scan cards</h2>
   <div class="scanWrap">
@@ -201,6 +244,7 @@ h2{margin:0 0 8px;font-size:13px;color:var(--muted)}
   </div>
 </div>
 
+<!-- HAND -->
 <div class="panel">
   <div class="hand" id="hand"></div>
 </div>
@@ -208,32 +252,17 @@ h2{margin:0 0 8px;font-size:13px;color:var(--muted)}
 </div>
 
 <button class="snapBtn" id="snapBtn"></button>
-
-<div class="overlay" id="overlay">
-  <div class="loader">
-    <div class="spinner"></div>
-    <div>Analyzing strategy…</div>
-  </div>
-</div>
-
-<div class="toast" id="winToast">💰 Don’t forget Aymen’s share 😄</div>
-<div class="toast installToast" id="installToast">📲 Add to Home Screen for the best experience</div>
+<div class="toast" id="toast">💰 Don’t forget Aymen’s share 😄</div>
 
 <canvas id="canvas" style="display:none"></canvas>
 
 <script>
-/* ===== CONFIG ===== */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-
-/* ===== STATE ===== */
 const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-const GAMES=[
-  ["job","Jacks"],["bonus","Bonus"],["double_bonus","Double Bonus"],
-  ["ddb","DDB"],["deuces","Deuces"],["ux","Ultimate X"]
-];
+const GAMES=[["job","Jacks"],["bonus","Bonus"],["double_bonus","Double Bonus"],["ddb","DDB"],["deuces","Deuces"],["ux","Ultimate X"]];
 let currentGame="job", cards=[], hold=[], cameraStream=null;
 
-/* ===== GAME BAR ===== */
+/* GAME BAR */
 const gameBar=document.getElementById("gameBar");
 GAMES.forEach(([k,n])=>{
   const b=document.createElement("button");
@@ -247,7 +276,7 @@ GAMES.forEach(([k,n])=>{
   gameBar.appendChild(b);
 });
 
-/* ===== THEME ===== */
+/* THEME */
 const savedTheme=localStorage.getItem("theme");
 if(savedTheme) document.body.dataset.theme=savedTheme;
 function setTheme(t){
@@ -255,7 +284,7 @@ function setTheme(t){
   localStorage.setItem("theme",t);
 }
 
-/* ===== CAMERA ===== */
+/* CAMERA */
 async function startCamera(){
   if(cameraStream) return;
   cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
@@ -267,42 +296,35 @@ function stopCamera(){
   cameraStream=null;
 }
 startCamera();
-document.addEventListener("visibilitychange",()=>{document.hidden?stopCamera():startCamera()});
+document.addEventListener("visibilitychange",()=>document.hidden?stopCamera():startCamera());
 
-/* ===== SNAP ===== */
+/* SNAP */
 snapBtn.onclick=async()=>{
-  overlay.style.display="flex";
   const vw=video.videoWidth,vh=video.videoHeight;
   const bandH=vh*0.35,bandY=(vh-bandH)/2;
-
   canvas.width=vw;canvas.height=bandH;
   canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
-
-  const sc=Math.min(800/vw,1);
   const out=document.createElement("canvas");
+  const sc=Math.min(800/vw,1);
   out.width=vw*sc;out.height=bandH*sc;
   out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
-
   const img=out.toDataURL("image/jpeg",0.7);
 
   const res=await fetch(WORKER_URL,{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({imageBase64:img,game:currentGame,paytable:"standard"})
   });
-
   const d=await res.json();
-  cards=d.cards||[];
-  hold=d.hold||[];
-
+  cards=d.cards||[];hold=d.hold||[];
   render();
-  overlay.style.display="none";
-
   if(isWin(cards)){
-    showToast("winToast");
+    const t=document.getElementById("toast");
+    t.style.display="block";
+    setTimeout(()=>t.style.display="none",2500);
   }
 };
 
-/* ===== RENDER ===== */
+/* RENDER */
 function render(){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
@@ -319,26 +341,12 @@ function render(){
   });
 }
 
-/* ===== WIN ===== */
+/* WIN */
 function isWin(cards){
   if(cards.length!==5) return false;
   const m={};cards.forEach(c=>m[c.rank]=(m[c.rank]||0)+1);
   return Object.values(m).some(v=>v>=2);
 }
-
-/* ===== TOAST ===== */
-function showToast(id){
-  const t=document.getElementById(id);
-  t.style.display="block";
-  setTimeout(()=>t.style.display="none",2600);
-}
-
-/* ===== INSTALL HINT ===== */
-setTimeout(()=>{
-  if(!window.matchMedia('(display-mode: standalone)').matches){
-    showToast("installToast");
-  }
-},6000);
 </script>
 </body>
 </html>
