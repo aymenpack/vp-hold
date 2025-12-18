@@ -6,28 +6,37 @@
 <title>VP Assistant</title>
 
 <style>
-/* ===== Themes ===== */
+/* ================= THEMES ================= */
 body[data-theme="casino"]{
   --bg:#07140e; --panel:#0f2318; --panel2:#0b1a12; --border:#1e3a2a;
-  --text:#e9f6ef; --muted:#9fc7b2; --accent:#1aff8c; --hold:#22c55e;
+  --text:#e9f6ef; --muted:#9fc7b2;
+  --accent:#1aff8c; --hold:#22c55e;
 }
 body[data-theme="dark"]{
   --bg:#0b0f14; --panel:#121a24; --panel2:#0e141d; --border:#223043;
-  --text:#e9eef6; --muted:#b7c3d7; --accent:#2f6bff; --hold:#3b82f6;
+  --text:#e9eef6; --muted:#b7c3d7;
+  --accent:#2f6bff; --hold:#3b82f6;
 }
 body[data-theme="neon"]{
   --bg:#0b0020; --panel:#16002f; --panel2:#0f0022; --border:#3f007d;
-  --text:#f3e8ff; --muted:#c4b5fd; --accent:#d946ef; --hold:#22ffcc;
+  --text:#f3e8ff; --muted:#c4b5fd;
+  --accent:#d946ef; --hold:#22ffcc;
 }
 body[data-theme="bright"]{
   --bg:#f4f6f8; --panel:#ffffff; --panel2:#f1f5f9; --border:#d0d7de;
-  --text:#111827; --muted:#4b5563; --accent:#2563eb; --hold:#16a34a;
+  --text:#111827; --muted:#4b5563;
+  --accent:#2563eb; --hold:#16a34a;
 }
 
+/* ================= BASE ================= */
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,system-ui;
+}
 .app{max-width:900px;margin:auto;padding:12px 12px 120px}
-
 .panel{
   background:linear-gradient(180deg,var(--panel),var(--panel2));
   border:1px solid var(--border);
@@ -36,10 +45,19 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
   margin-bottom:12px;
 }
 
+/* ================= TOP ================= */
 .hrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .title{font-size:16px;font-weight:900}
 .sub{font-size:12px;color:var(--muted)}
+.iconBtn{
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:999px;
+}
 
+/* ================= CHIPS ================= */
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .chip{
   border:1px solid var(--border);
@@ -50,21 +68,15 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
 }
 .chip strong{color:var(--text)}
 
-.iconBtn{
-  border:1px solid var(--border);
-  background:transparent;
-  color:var(--text);
-  padding:8px 12px;
-  border-radius:999px;
-}
-
+/* ================= SCANNER ================= */
 .scanWrap{
-  position:relative;height:180px;border-radius:16px;overflow:hidden;
-  border:1px solid var(--border);
+  position:relative;height:180px;border-radius:16px;
+  overflow:hidden;border:1px solid var(--border);
   user-select:none;touch-action:manipulation;
 }
 .scanWrap video{
-  position:absolute;width:100%;top:50%;transform:translateY(-50%);
+  position:absolute;width:100%;top:50%;
+  transform:translateY(-50%);
 }
 .scanMask{
   position:absolute;inset:0;
@@ -81,6 +93,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
 }
 .scanText small{display:block;font-weight:600;color:var(--muted);margin-top:6px}
 
+/* ================= HAND ================= */
 .hand{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .card{
   border:1px solid var(--border);
@@ -105,51 +118,17 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
   padding:2px 8px;border-radius:999px;
 }
 
+/* ================= EXPLANATION ================= */
 .explain{
   margin-top:12px;
   padding:12px;
   border-radius:14px;
   border:1px solid var(--border);
-  background:color-mix(in srgb, var(--panel) 85%, black 15%);
 }
 .explain h3{margin:0 0 6px;font-size:13px;color:var(--accent)}
-.explain p{margin:0;font-size:13px;line-height:1.45;color:var(--text)}
+.explain p{margin:0;font-size:13px;line-height:1.45}
 
-.overlay{
-  position:fixed;inset:0;
-  display:none;
-  align-items:center;justify-content:center;
-  background:rgba(0,0,0,.55);
-  z-index:1000;
-}
-.loader{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:18px;
-  width:min(340px,92vw);
-  text-align:center;
-}
-.spinner{
-  width:32px;height:32px;margin:0 auto 10px;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.toast{
-  position:fixed;top:18px;left:50%;
-  transform:translateX(-50%);
-  display:none;
-  background:var(--hold);color:#000;
-  font-weight:900;
-  padding:10px 16px;border-radius:999px;
-  z-index:1100;
-}
-
-/* Settings sheet */
+/* ================= SETTINGS ================= */
 .sheetBack{
   position:fixed;inset:0;
   display:none;
@@ -159,25 +138,84 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
 .sheet{
   position:absolute;bottom:0;left:0;right:0;
   max-width:900px;margin:auto;
-  height:85vh;
+  height:90vh;
   background:var(--panel);
-  border:1px solid var(--border);
   border-radius:18px 18px 0 0;
+  display:flex;
+  flex-direction:column;
+}
+.sheetHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px;
+  border-bottom:1px solid var(--border);
+}
+.sheetContent{
   padding:12px;
   overflow:auto;
+  flex:1;
 }
-.section{margin-top:14px}
+.sheetFooter{
+  padding:12px;
+  border-top:1px solid var(--border);
+}
+.section{margin-bottom:16px}
 .section h3{margin:0 0 8px;font-size:13px;color:var(--muted)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tile{
   border:1px solid var(--border);
   border-radius:14px;
   padding:12px;
-  cursor:pointer;
 }
 .tile.active{
   border-color:var(--accent);
   box-shadow:0 0 0 4px rgba(0,0,0,.15);
+}
+
+/* ================= BUTTON ================= */
+.primaryBtn{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  background:var(--accent);
+  color:#000;
+  font-weight:900;
+  border:none;
+}
+
+/* ================= OVERLAY ================= */
+.overlay{
+  position:fixed;inset:0;
+  display:none;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,.55);
+  z-index:1000;
+}
+.loader{
+  background:var(--panel);
+  border-radius:18px;
+  padding:18px;
+  text-align:center;
+}
+.spinner{
+  width:32px;height:32px;
+  border:3px solid rgba(255,255,255,.2);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:0 auto 10px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ================= TOAST ================= */
+.toast{
+  position:fixed;top:18px;left:50%;
+  transform:translateX(-50%);
+  display:none;
+  background:var(--hold);color:#000;
+  font-weight:900;
+  padding:10px 16px;border-radius:999px;
 }
 </style>
 </head>
@@ -185,11 +223,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
 <body data-theme="neon">
 <div class="app">
 
+  <!-- TOP -->
   <div class="panel">
     <div class="hrow">
       <div>
         <div class="title">VP Assistant</div>
-        <div class="sub" id="subtitle">Tap scanner to snap</div>
+        <div class="sub">Tap scanner to snap</div>
       </div>
       <button class="iconBtn" id="openSettings">⚙️</button>
     </div>
@@ -201,6 +240,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
     </div>
   </div>
 
+  <!-- SCANNER -->
   <div class="panel">
     <div class="scanWrap" id="scanWrap">
       <video id="video" playsinline autoplay muted></video>
@@ -214,6 +254,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
     <div class="sub" id="status" style="margin-top:8px">Starting camera…</div>
   </div>
 
+  <!-- RESULT -->
   <div class="panel">
     <div class="hand" id="hand"></div>
     <div class="explain" id="explainBox" style="display:none">
@@ -230,7 +271,6 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
   <div class="loader">
     <div class="spinner"></div>
     <div style="font-weight:900;margin-bottom:6px">Analyzing…</div>
-    <div class="sub" id="overlayMsg">Reading cards & deciding holds</div>
   </div>
 </div>
 
@@ -239,29 +279,36 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,s
 <!-- SETTINGS -->
 <div class="sheetBack" id="sheetBack">
   <div class="sheet">
-    <div class="hrow">
-      <h2>Settings</h2>
-      <button class="iconBtn" id="closeSettings">Close</button>
+    <div class="sheetHeader">
+      <button class="iconBtn" id="backSettings">← Back</button>
+      <div style="font-weight:900">Settings</div>
+      <span></span>
     </div>
 
-    <div class="section">
-      <h3>Game</h3>
-      <div class="grid" id="gameGrid"></div>
+    <div class="sheetContent">
+      <div class="section">
+        <h3>Game</h3>
+        <div class="grid" id="gameGrid"></div>
+      </div>
+
+      <div class="section">
+        <h3>Paytable</h3>
+        <div class="grid" id="payGrid"></div>
+      </div>
+
+      <div class="section" id="multSection" style="display:none">
+        <h3>Ultimate X Multiplier</h3>
+        <div class="grid" id="multGrid"></div>
+      </div>
+
+      <div class="section">
+        <h3>Theme</h3>
+        <div class="grid" id="themeGrid"></div>
+      </div>
     </div>
 
-    <div class="section">
-      <h3>Paytable</h3>
-      <div class="grid" id="payGrid"></div>
-    </div>
-
-    <div class="section" id="multSection" style="display:none">
-      <h3>Ultimate X Multiplier</h3>
-      <div class="grid" id="multGrid"></div>
-    </div>
-
-    <div class="section">
-      <h3>Theme</h3>
-      <div class="grid" id="themeGrid"></div>
+    <div class="sheetFooter">
+      <button class="primaryBtn" id="doneSettings">Done</button>
     </div>
   </div>
 </div>
@@ -297,11 +344,8 @@ const state={
   paytable:localStorage.getItem("paytable")||"9/6",
   theme:localStorage.getItem("theme")||"neon",
   multiplier:Number(localStorage.getItem("multiplier")||1),
-  cards:[],
-  hold:[],
-  explanation:"",
-  stream:null,
-  busy:false
+  cards:[],hold:[],explanation:"",
+  stream:null,busy:false
 };
 
 /* ========= ELEMENTS ========= */
@@ -313,7 +357,6 @@ const handDiv=document.getElementById("hand");
 const explainBox=document.getElementById("explainBox");
 const explainText=document.getElementById("explainText");
 const overlay=document.getElementById("overlay");
-const overlayMsg=document.getElementById("overlayMsg");
 const toast=document.getElementById("toast");
 
 const chipGame=document.getElementById("chipGame");
@@ -348,16 +391,15 @@ async function startCamera(){
     statusEl.textContent="Ready — tap scanner";
   }catch(e){
     statusEl.textContent="Camera permission needed.";
-    console.error(e);
   }
 }
+document.addEventListener("visibilitychange",()=>document.hidden?stopCamera():startCamera());
 function stopCamera(){
   if(!state.stream) return;
   state.stream.getTracks().forEach(t=>t.stop());
   state.stream=null;
   video.srcObject=null;
 }
-document.addEventListener("visibilitychange",()=>document.hidden?stopCamera():startCamera());
 
 async function waitForVideo(){
   const t0=Date.now();
@@ -378,13 +420,9 @@ async function safeSnap(){
   if(state.busy) return;
   state.busy=true;
   overlay.style.display="flex";
-  overlayMsg.textContent="Reading cards & deciding holds…";
   try{
     await waitForVideo();
-    if(video.videoWidth===0) throw new Error("Video not ready");
-
     const img=captureBand();
-
     const res=await fetch(WORKER_URL,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -395,41 +433,32 @@ async function safeSnap(){
         multiplier:state.multiplier
       })
     });
-
     const data=await res.json();
-
     state.cards=data.cards||[];
-    state.hold=data.hold||[false,false,false,false,false];
+    state.hold=data.hold||[];
     state.explanation=data.explanation||"";
-
-    // Auto-update multiplier if UX and high confidence
     if(state.game==="ux" && data.multiplier && data.confidence>=0.75){
-      state.multiplier=Number(data.multiplier)||state.multiplier;
+      state.multiplier=data.multiplier;
       localStorage.setItem("multiplier",String(state.multiplier));
     }
-
     renderHand();
     renderChips();
     renderExplanation();
-
     if(isWin(state.cards)){
       toast.style.display="block";
       setTimeout(()=>toast.style.display="none",2000);
     }
-
   }catch(e){
     statusEl.textContent="Scan failed, try again.";
-    console.error(e);
   }finally{
     overlay.style.display="none";
-    state.busy=false;
+        state.busy=false;
   }
 }
 
 function captureBand(){
   const vw=video.videoWidth, vh=video.videoHeight;
-  const bandH=vh*0.35;
-  const bandY=(vh-bandH)/2;
+  const bandH=vh*0.35, bandY=(vh-bandH)/2;
 
   canvas.width=vw;
   canvas.height=bandH;
@@ -440,7 +469,6 @@ function captureBand(){
   out.width=Math.round(vw*sc);
   out.height=Math.round(bandH*sc);
   out.getContext("2d").drawImage(canvas,0,0,out.width,out.height);
-
   return out.toDataURL("image/jpeg",0.7);
 }
 
@@ -455,7 +483,7 @@ function renderHand(){
     d.innerHTML=`
       ${state.hold[i]?'<div class="badge">HOLD</div>':''}
       <div class="rank">${c.rank}</div>
-      <div class="suit">${SUIT[c.suit]||c.suit}</div>
+      <div class="suit">${SUIT[c.suit]}</div>
     `;
     d.onclick=()=>{state.hold[i]=!state.hold[i];renderHand();};
     handDiv.appendChild(d);
@@ -463,12 +491,11 @@ function renderHand(){
 }
 
 function renderExplanation(){
-  if(state.explanation && state.cards.length===5){
+  if(state.explanation){
     explainBox.style.display="";
     explainText.textContent=state.explanation;
   } else {
     explainBox.style.display="none";
-    explainText.textContent="";
   }
 }
 
@@ -487,7 +514,13 @@ document.getElementById("openSettings").onclick=()=>{
 document.getElementById("closeSettings").onclick=()=>{
   sheetBack.style.display="none";
 };
-sheetBack.addEventListener("click",(e)=>{
+document.getElementById("backSettings").onclick=()=>{
+  sheetBack.style.display="none";
+};
+document.getElementById("doneSettings").onclick=()=>{
+  sheetBack.style.display="none";
+};
+sheetBack.addEventListener("click",e=>{
   if(e.target===sheetBack) sheetBack.style.display="none";
 });
 
@@ -500,7 +533,7 @@ function normalizePaytable(){
 }
 
 function renderSettings(){
-  // Game
+  // GAME
   gameGrid.innerHTML="";
   GAMES.forEach(g=>{
     const t=document.createElement("div");
@@ -516,7 +549,7 @@ function renderSettings(){
     gameGrid.appendChild(t);
   });
 
-  // Paytable
+  // PAYTABLE
   payGrid.innerHTML="";
   (PAYTABLES[state.game]||["standard"]).forEach(p=>{
     const t=document.createElement("div");
@@ -531,7 +564,7 @@ function renderSettings(){
     payGrid.appendChild(t);
   });
 
-  // Multiplier (Ultimate X only)
+  // MULTIPLIER (Ultimate X only)
   if(state.game==="ux"){
     multSection.style.display="";
     multGrid.innerHTML="";
@@ -551,7 +584,7 @@ function renderSettings(){
     multSection.style.display="none";
   }
 
-  // Theme
+  // THEME
   themeGrid.innerHTML="";
   THEMES.forEach(th=>{
     const t=document.createElement("div");
@@ -579,6 +612,8 @@ function renderChips(){
     chipMult.style.display="none";
   }
 }
+
+/* ========= END ========= */
 </script>
 </body>
 </html>
