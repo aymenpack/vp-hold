@@ -3,54 +3,84 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Ultimate X Assistant (OpenAI Vision)</title>
+<title>Ultimate X Assistant</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
 <style>
 body{margin:0;font-family:Inter;background:#020617;color:#e5e7eb}
 .app{max-width:900px;margin:auto;padding:16px 16px 140px}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
+
+.tabs{display:flex;gap:8px;margin-top:12px}
+.tab{
+  flex:1;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #374151;
+  background:#020617;
+  color:#e5e7eb;
+  font-weight:900;
+  text-align:center;
+  cursor:pointer;
+}
+.tab.active{outline:3px solid #22c55e}
+
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-select,input,button{
+input,button{
   background:#020617;color:#e5e7eb;border:1px solid #374151;border-radius:10px;
   padding:10px 12px;font-size:14px
 }
 button{font-weight:900;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}
+
 .scanner{margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151;position:relative}
 video{width:100%;max-height:300px;object-fit:cover;background:black}
 .band{position:absolute;left:0;right:0;border-top:2px dashed #22c55e;border-bottom:2px dashed #22c55e;pointer-events:none}
+
 .status{font-size:12px;color:#9ca3af;margin-top:8px}
 #error{margin-top:10px;padding:12px;border-radius:12px;background:#7f1d1d;display:none}
 #cooldown{margin-top:8px;color:#facc15;display:none;font-size:13px}
+
+.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.kpi{padding:8px 12px;border-radius:999px;border:1px solid #374151;background:#020617;font-size:13px;color:#9ca3af}
+.kpi strong{color:#fff}
+
 #hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
 .card{border:1px solid #374151;border-radius:14px;padding:14px 6px;text-align:center;background:#020617}
 .card.hold{outline:3px solid #22c55e;box-shadow:0 0 18px rgba(34,197,94,.7);transform:translateY(-4px)}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
-footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#020617}
-#snap{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
-.panel{margin-top:12px;padding:12px;border:1px solid #374151;border-radius:12px;background:#020617}
+
+#explain{margin-top:12px;padding:12px;border:1px solid #374151;border-radius:12px;background:#020617;display:none;line-height:1.5}
+
+.panel{margin-top:12px;padding:12px;border:1px solid #374151;border-radius:12px;background:#020617;display:none}
 label{font-size:12px;color:#9ca3af}
 input[type="range"]{width:100%}
+
+footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#020617}
+#snap{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
 </style>
 </head>
+
 <body>
 <div class="app">
   <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">OpenAI vision with aggressive cost control</div>
+  <div class="subtitle">Reads cards + multiplier, tells you what to hold</div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabUX">Ultimate X</div>
+    <div class="tab" id="tabUXP">Ultimate X Progressive</div>
+  </div>
 
   <div class="row">
-    <select id="mode">
-      <option value="ux">Ultimate X</option>
-      <option value="uxp">Ultimate X Progressive</option>
-    </select>
-    <input id="fallbackMult" type="number" min="1" max="12" value="1" />
+    <input id="fallbackMult" type="number" min="1" max="12" value="1" placeholder="Multiplier fallback">
     <button id="toggleCal">Calibrate</button>
   </div>
 
-  <div class="scanner" id="scanner">
+  <div class="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
@@ -59,20 +89,26 @@ input[type="range"]{width:100%}
   <div id="cooldown"></div>
   <div id="error"></div>
 
-  <div class="panel" id="calPanel" style="display:none">
+  <div class="panel" id="calPanel">
     <div style="font-weight:900;margin-bottom:8px">Calibration</div>
-    <label>Band center (0.15–0.75)</label>
+    <label>Band center</label>
     <input id="bandY" type="range" min="0.15" max="0.75" step="0.01">
-    <label style="margin-top:8px;display:block">Band height (0.20–0.55)</label>
+    <label style="margin-top:8px;display:block">Band height</label>
     <input id="bandH" type="range" min="0.20" max="0.55" step="0.01">
     <div class="row">
       <button id="saveCal">Save</button>
       <button id="resetCal">Reset</button>
     </div>
-    <div style="font-size:12px;color:#9ca3af;margin-top:6px">Make the green dashed band cover only the card row.</div>
+    <div style="font-size:12px;color:#9ca3af;margin-top:6px">Make the dashed band cover ONLY the card row + multiplier area.</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi">Multiplier: <strong id="multShow">—</strong></div>
+    <div class="kpi">Source: <strong id="multSrc">—</strong></div>
   </div>
 
   <div id="hand"></div>
+  <div id="explain"></div>
 </div>
 
 <footer>
@@ -81,21 +117,26 @@ input[type="range"]{width:100%}
 
 <script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-const COOLDOWN_SECONDS = 20;
-const DOWNSCALE_WIDTH = 420;
-const JPEG_QUALITY = 0.5;
+const COOLDOWN_SECONDS = 10;       // now that you have billing, shorter is okay
+const DOWNSCALE_WIDTH = 520;       // slightly higher now that billing is on
+const JPEG_QUALITY = 0.6;
 
 const video = document.getElementById("video");
+const band = document.getElementById("band");
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
 const cooldownEl = document.getElementById("cooldown");
 const snapBtn = document.getElementById("snap");
 const handDiv = document.getElementById("hand");
+const explainDiv = document.getElementById("explain");
 
-const modeSel = document.getElementById("mode");
+const tabUX = document.getElementById("tabUX");
+const tabUXP = document.getElementById("tabUXP");
+
 const fallbackMult = document.getElementById("fallbackMult");
+const multShow = document.getElementById("multShow");
+const multSrc = document.getElementById("multSrc");
 
-const band = document.getElementById("band");
 const toggleCal = document.getElementById("toggleCal");
 const calPanel = document.getElementById("calPanel");
 const bandY = document.getElementById("bandY");
@@ -105,6 +146,8 @@ const resetCal = document.getElementById("resetCal");
 
 let stream=null;
 let busy=false;
+let mode="ux";
+
 let cooldown=0;
 let timer=null;
 
@@ -112,30 +155,38 @@ let cal={ bandY:0.50, bandH:0.35 };
 
 function loadCal(){
   try{
-    const s=localStorage.getItem("ux_openai_cal");
+    const s=localStorage.getItem("ux_tabs_cal");
     if(s) cal={...cal,...JSON.parse(s)};
   }catch{}
   bandY.value=cal.bandY;
   bandH.value=cal.bandH;
 }
-function saveCalLocal(){
-  localStorage.setItem("ux_openai_cal", JSON.stringify(cal));
-}
+function saveCalLocal(){ localStorage.setItem("ux_tabs_cal", JSON.stringify(cal)); }
 loadCal();
 
+tabUX.onclick=()=>{
+  mode="ux";
+  tabUX.classList.add("active");
+  tabUXP.classList.remove("active");
+};
+tabUXP.onclick=()=>{
+  mode="uxp";
+  tabUXP.classList.add("active");
+  tabUX.classList.remove("active");
+};
+
 toggleCal.onclick=()=>{
-  const show = calPanel.style.display==="none";
+  const show = calPanel.style.display==="none" || calPanel.style.display==="";
   calPanel.style.display = show ? "block" : "none";
   toggleCal.textContent = show ? "Close Calibration" : "Calibrate";
 };
 
 [bandY, bandH].forEach(el=>{
   el.oninput=()=>{
-    cal.bandY = Number(bandY.value);
-    cal.bandH = Number(bandH.value);
+    cal.bandY=Number(bandY.value);
+    cal.bandH=Number(bandH.value);
   };
 });
-
 saveCal.onclick=()=>{ saveCalLocal(); statusEl.textContent="Calibration saved ✅"; };
 resetCal.onclick=()=>{
   cal={ bandY:0.50, bandH:0.35 };
@@ -155,9 +206,9 @@ startCamera();
 
 function updateBandOverlay(){
   const rect = video.getBoundingClientRect();
-  const centerY = rect.height * cal.bandY;
+  const center = rect.height * cal.bandY;
   const h = rect.height * cal.bandH;
-  band.style.top = (centerY - h/2) + "px";
+  band.style.top = (center - h/2) + "px";
   band.style.height = h + "px";
   requestAnimationFrame(updateBandOverlay);
 }
@@ -236,36 +287,36 @@ snapBtn.onclick = async()=>{
   if(busy || snapBtn.disabled) return;
   busy=true;
   clearError();
+  explainDiv.style.display="none";
   statusEl.textContent="Capturing…";
 
   await new Promise(r=>requestAnimationFrame(r));
   const img = cropDownscaleBase64();
   if(!img){
     showError("Camera not ready");
-    busy=false; return;
+    busy=false;
+    return;
   }
 
-  statusEl.textContent="Reading cards…";
+  statusEl.textContent="Reading cards + multiplier…";
 
   const payload = {
     imageBase64: img,
-    mode: modeSel.value,
+    mode,
     multiplier: Number(fallbackMult.value||1)
   };
 
-  let data = await callWorker(payload);
-
-  // One retry on rate-limit
-  if(data?.openai_status===429 || /rate limit/i.test(data?.error||"")){
-    await new Promise(r=>setTimeout(r, 2000));
-    data = await callWorker(payload);
-  }
+  const data = await callWorker(payload);
 
   if(data.error){
     showError(data.error + (data.openai_status ? ` (HTTP ${data.openai_status})` : "") + (data.detail ? ` — ${data.detail}` : ""));
     statusEl.textContent="Error";
-  } else {
+  }else{
     renderHand(data.cards||[], data.hold||[]);
+    multShow.textContent = (data.multiplier_used ?? "—") + "×";
+    multSrc.textContent = data.multiplier_detected ? "vision" : "manual";
+    explainDiv.style.display="block";
+    explainDiv.textContent = data.explanation || "";
     statusEl.textContent="Done";
   }
 
