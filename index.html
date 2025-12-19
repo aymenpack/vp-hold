@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <style>
+/* ===== BASE ===== */
 body{
   margin:0;
   font-family:Inter,-apple-system,system-ui;
@@ -25,15 +26,23 @@ body{
     calc(96px + env(safe-area-inset-bottom));
 }
 
-/* Header */
+/* ===== HEADER ===== */
 header{
   border-bottom:1px solid #1f2937;
   padding-bottom:10px;
 }
-h1{margin:0;font-size:20px;font-weight:900}
-.subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
+h1{
+  margin:0;
+  font-size:20px;
+  font-weight:900;
+}
+.subtitle{
+  font-size:13px;
+  color:#9ca3af;
+  margin-top:4px;
+}
 
-/* Controls */
+/* ===== CONTROLS ===== */
 .controls{
   display:flex;
   gap:8px;
@@ -48,14 +57,15 @@ select,button,input{
   padding:10px 12px;
   font-size:14px;
 }
-button{font-weight:700;cursor:pointer}
+button{
+  font-weight:700;
+  cursor:pointer;
+}
 button:active{transform:scale(.98)}
 
-#multWrap{
-  display:none;
-}
+#multWrap{ display:none; }
 
-/* Camera */
+/* ===== CAMERA ===== */
 .scanner{
   margin-top:12px;
   border-radius:16px;
@@ -75,7 +85,7 @@ video{
   margin-top:6px;
 }
 
-/* Hand */
+/* ===== HAND ===== */
 #hand{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -88,17 +98,23 @@ video{
   padding:14px 6px;
   text-align:center;
   background:#020617;
+  position:relative;
 }
 .card.hold{
   outline:3px solid #22c55e;
   box-shadow:0 0 18px rgba(34,197,94,.7);
   transform:translateY(-4px);
 }
-.rank{font-size:22px;font-weight:900}
-.suit{font-size:18px}
+.rank{
+  font-size:22px;
+  font-weight:900;
+}
+.suit{
+  font-size:18px;
+}
 .red{color:#ef4444}
 
-/* Explanation */
+/* ===== EXPLANATION ===== */
 #explanationBox{
   margin-top:14px;
   padding:14px;
@@ -123,7 +139,7 @@ video{
   color:#9ca3af;
 }
 
-/* Snap */
+/* ===== SNAP ===== */
 footer{
   position:fixed;
   left:0; right:0; bottom:0;
@@ -274,9 +290,12 @@ snapBtn.onclick = async ()=>{
     const data = await res.json();
     renderHand(data.cards||[], data.hold||[]);
     renderExplanation(data.explanation||"", data.confidence);
-    if(data.multiplier && (gameSel.value==="ux"||gameSel.value==="uxp")){
+
+    // Update multiplier if detected by vision
+    if((gameSel.value==="ux"||gameSel.value==="uxp") && data.multiplier){
       multInput.value = data.multiplier;
     }
+
     statusEl.textContent="Done";
   }catch{
     statusEl.textContent="Scan failed";
