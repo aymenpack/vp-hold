@@ -1,45 +1,77 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Ultimate X Assistant – YOLO</title>
-
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Ultimate X Assistant (OpenAI Vision)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-
 <style>
 body{margin:0;font-family:Inter;background:#020617;color:#e5e7eb}
-.app{max-width:900px;margin:auto;padding:16px 16px 120px}
+.app{max-width:900px;margin:auto;padding:16px 16px 140px}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
-
-.scanner{margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151}
-video{width:100%;max-height:280px;object-fit:cover;background:black}
-
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+select,input,button{
+  background:#020617;color:#e5e7eb;border:1px solid #374151;border-radius:10px;
+  padding:10px 12px;font-size:14px
+}
+button{font-weight:900;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.scanner{margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151;position:relative}
+video{width:100%;max-height:300px;object-fit:cover;background:black}
+.band{position:absolute;left:0;right:0;border-top:2px dashed #22c55e;border-bottom:2px dashed #22c55e;pointer-events:none}
 .status{font-size:12px;color:#9ca3af;margin-top:8px}
-
-#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
-.card{border:1px solid #374151;border-radius:14px;padding:14px;text-align:center;background:#020617}
+#error{margin-top:10px;padding:12px;border-radius:12px;background:#7f1d1d;display:none}
+#cooldown{margin-top:8px;color:#facc15;display:none;font-size:13px}
+#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+.card{border:1px solid #374151;border-radius:14px;padding:14px 6px;text-align:center;background:#020617}
+.card.hold{outline:3px solid #22c55e;box-shadow:0 0 18px rgba(34,197,94,.7);transform:translateY(-4px)}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
-
 footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#020617}
-button{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
-button:disabled{opacity:.5}
+#snap{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
+.panel{margin-top:12px;padding:12px;border:1px solid #374151;border-radius:12px;background:#020617}
+label{font-size:12px;color:#9ca3af}
+input[type="range"]{width:100%}
 </style>
 </head>
-
 <body>
 <div class="app">
   <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">YOLO pretrained vision (Roboflow workflow)</div>
+  <div class="subtitle">OpenAI vision with aggressive cost control</div>
 
-  <div class="scanner">
-    <video id="video" autoplay playsinline muted></video>
+  <div class="row">
+    <select id="mode">
+      <option value="ux">Ultimate X</option>
+      <option value="uxp">Ultimate X Progressive</option>
+    </select>
+    <input id="fallbackMult" type="number" min="1" max="12" value="1" />
+    <button id="toggleCal">Calibrate</button>
   </div>
 
-  <div class="status" id="status">Camera ready</div>
+  <div class="scanner" id="scanner">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="band" id="band"></div>
+  </div>
+
+  <div class="status" id="status">Starting camera…</div>
+  <div id="cooldown"></div>
+  <div id="error"></div>
+
+  <div class="panel" id="calPanel" style="display:none">
+    <div style="font-weight:900;margin-bottom:8px">Calibration</div>
+    <label>Band center (0.15–0.75)</label>
+    <input id="bandY" type="range" min="0.15" max="0.75" step="0.01">
+    <label style="margin-top:8px;display:block">Band height (0.20–0.55)</label>
+    <input id="bandH" type="range" min="0.20" max="0.55" step="0.01">
+    <div class="row">
+      <button id="saveCal">Save</button>
+      <button id="resetCal">Reset</button>
+    </div>
+    <div style="font-size:12px;color:#9ca3af;margin-top:6px">Make the green dashed band cover only the card row.</div>
+  </div>
+
   <div id="hand"></div>
 </div>
 
@@ -48,120 +80,198 @@ button:disabled{opacity:.5}
 </footer>
 
 <script>
-/* =====================
-   CONFIG – YOUR WORKFLOW
-===================== */
-const ROBOFLOW_ENDPOINT =
-  "https://serverless.roboflow.com/vp-onhnx/workflows/custom-workflow";
-
-const ROBOFLOW_API_KEY = "XwDKa49dFzOqokOV1qIT";
-
-/* ===================== */
+const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const COOLDOWN_SECONDS = 20;
+const DOWNSCALE_WIDTH = 420;
+const JPEG_QUALITY = 0.5;
 
 const video = document.getElementById("video");
-const snapBtn = document.getElementById("snap");
 const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
+const cooldownEl = document.getElementById("cooldown");
+const snapBtn = document.getElementById("snap");
 const handDiv = document.getElementById("hand");
 
+const modeSel = document.getElementById("mode");
+const fallbackMult = document.getElementById("fallbackMult");
+
+const band = document.getElementById("band");
+const toggleCal = document.getElementById("toggleCal");
+const calPanel = document.getElementById("calPanel");
+const bandY = document.getElementById("bandY");
+const bandH = document.getElementById("bandH");
+const saveCal = document.getElementById("saveCal");
+const resetCal = document.getElementById("resetCal");
+
 let stream=null;
+let busy=false;
+let cooldown=0;
+let timer=null;
+
+let cal={ bandY:0.50, bandH:0.35 };
+
+function loadCal(){
+  try{
+    const s=localStorage.getItem("ux_openai_cal");
+    if(s) cal={...cal,...JSON.parse(s)};
+  }catch{}
+  bandY.value=cal.bandY;
+  bandH.value=cal.bandH;
+}
+function saveCalLocal(){
+  localStorage.setItem("ux_openai_cal", JSON.stringify(cal));
+}
+loadCal();
+
+toggleCal.onclick=()=>{
+  const show = calPanel.style.display==="none";
+  calPanel.style.display = show ? "block" : "none";
+  toggleCal.textContent = show ? "Close Calibration" : "Calibrate";
+};
+
+[bandY, bandH].forEach(el=>{
+  el.oninput=()=>{
+    cal.bandY = Number(bandY.value);
+    cal.bandH = Number(bandH.value);
+  };
+});
+
+saveCal.onclick=()=>{ saveCalLocal(); statusEl.textContent="Calibration saved ✅"; };
+resetCal.onclick=()=>{
+  cal={ bandY:0.50, bandH:0.35 };
+  loadCal();
+  saveCalLocal();
+  statusEl.textContent="Calibration reset ✅";
+};
 
 async function startCamera(){
-  stream = await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode:"environment" }
-  });
+  if(stream) return;
+  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
   video.srcObject = stream;
+  statusEl.textContent="Camera ready";
+  requestAnimationFrame(updateBandOverlay);
 }
 startCamera();
 
-snapBtn.onclick = async ()=>{
-  snapBtn.disabled = true;
-  statusEl.textContent = "Detecting cards…";
-
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if(!vw || !vh){
-    statusEl.textContent = "Camera not ready";
-    snapBtn.disabled = false;
-    return;
-  }
-
-  const bandH = Math.floor(vh * 0.40);
-  const bandY = Math.floor((vh - bandH) / 2);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = vw;
-  canvas.height = bandH;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
-
-  const base64 = canvas
-    .toDataURL("image/jpeg", 0.8)
-    .split(",")[1];
-
-  try{
-    const res = await fetch(ROBOFLOW_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ROBOFLOW_API_KEY
-      },
-      body: JSON.stringify({
-        inputs: {
-          image: {
-            type: "base64",
-            value: base64
-          }
-        }
-      })
-    });
-
-    const data = await res.json();
-    console.log("Roboflow response:", data);
-
-    if(!data.outputs || !data.outputs[0]?.predictions){
-      statusEl.textContent = "No cards detected";
-      snapBtn.disabled = false;
-      return;
-    }
-
-    const preds = data.outputs[0].predictions;
-
-    const cards = preds
-      .sort((a,b)=>a.x - b.x)
-      .slice(0,5)
-      .map(p => parseCardLabel(p.class));
-
-    renderHand(cards);
-    statusEl.textContent = "Done";
-
-  }catch(e){
-    console.error(e);
-    statusEl.textContent = "Detection failed";
-  }
-
-  snapBtn.disabled = false;
-};
-
-function parseCardLabel(label){
-  const suitChar = label.slice(-1).toUpperCase();
-  let rank = label.slice(0, -1).toUpperCase();
-  if(rank === "10") rank = "T";
-  return { rank, suit: suitChar };
+function updateBandOverlay(){
+  const rect = video.getBoundingClientRect();
+  const centerY = rect.height * cal.bandY;
+  const h = rect.height * cal.bandH;
+  band.style.top = (centerY - h/2) + "px";
+  band.style.height = h + "px";
+  requestAnimationFrame(updateBandOverlay);
 }
 
-function renderHand(cards){
-  handDiv.innerHTML = "";
-  cards.forEach(c=>{
-    const d = document.createElement("div");
-    d.className = "card";
-    const red = c.suit==="H" || c.suit==="D";
-    d.innerHTML = `
-      <div class="rank ${red?"red":""}">${c.rank}</div>
-      <div class="suit ${red?"red":""}">${c.suit}</div>
-    `;
+function showError(msg){
+  errorEl.style.display="block";
+  errorEl.textContent=msg;
+}
+function clearError(){
+  errorEl.style.display="none";
+  errorEl.textContent="";
+}
+
+function startCooldown(){
+  cooldown = COOLDOWN_SECONDS;
+  snapBtn.disabled = true;
+  cooldownEl.style.display="block";
+  cooldownEl.textContent = `Cooldown ${cooldown}s`;
+  timer = setInterval(()=>{
+    cooldown--;
+    cooldownEl.textContent = `Cooldown ${cooldown}s`;
+    if(cooldown<=0){
+      clearInterval(timer);
+      snapBtn.disabled=false;
+      cooldownEl.style.display="none";
+    }
+  },1000);
+}
+
+function cropDownscaleBase64(){
+  const vw=video.videoWidth, vh=video.videoHeight;
+  if(!vw||!vh) return null;
+
+  const bandHeight = Math.floor(vh * cal.bandH);
+  const bandCenter = Math.floor(vh * cal.bandY);
+  const top = Math.max(0, Math.min(vh - bandHeight, bandCenter - Math.floor(bandHeight/2)));
+
+  const crop = document.createElement("canvas");
+  crop.width = vw;
+  crop.height = bandHeight;
+  crop.getContext("2d").drawImage(video, 0, top, vw, bandHeight, 0, 0, vw, bandHeight);
+
+  const scale = DOWNSCALE_WIDTH / vw;
+  const outW = DOWNSCALE_WIDTH;
+  const outH = Math.max(1, Math.floor(bandHeight * scale));
+
+  const out = document.createElement("canvas");
+  out.width = outW;
+  out.height = outH;
+  out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
+
+  return out.toDataURL("image/jpeg", JPEG_QUALITY);
+}
+
+async function callWorker(payload){
+  const res = await fetch(WORKER_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+function renderHand(cards, hold){
+  handDiv.innerHTML="";
+  cards.forEach((c,i)=>{
+    const d=document.createElement("div");
+    d.className="card"+(hold?.[i]?" hold":"");
+    const red=c.suit==="H"||c.suit==="D";
+    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
     handDiv.appendChild(d);
   });
 }
+
+snapBtn.onclick = async()=>{
+  if(busy || snapBtn.disabled) return;
+  busy=true;
+  clearError();
+  statusEl.textContent="Capturing…";
+
+  await new Promise(r=>requestAnimationFrame(r));
+  const img = cropDownscaleBase64();
+  if(!img){
+    showError("Camera not ready");
+    busy=false; return;
+  }
+
+  statusEl.textContent="Reading cards…";
+
+  const payload = {
+    imageBase64: img,
+    mode: modeSel.value,
+    multiplier: Number(fallbackMult.value||1)
+  };
+
+  let data = await callWorker(payload);
+
+  // One retry on rate-limit
+  if(data?.openai_status===429 || /rate limit/i.test(data?.error||"")){
+    await new Promise(r=>setTimeout(r, 2000));
+    data = await callWorker(payload);
+  }
+
+  if(data.error){
+    showError(data.error + (data.openai_status ? ` (HTTP ${data.openai_status})` : "") + (data.detail ? ` — ${data.detail}` : ""));
+    statusEl.textContent="Error";
+  } else {
+    renderHand(data.cards||[], data.hold||[]);
+    statusEl.textContent="Done";
+  }
+
+  startCooldown();
+  busy=false;
+};
 </script>
 </body>
 </html>
