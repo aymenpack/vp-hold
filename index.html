@@ -19,90 +19,73 @@ body{
 .app{
   max-width:900px;
   margin:auto;
-  padding:
-    calc(12px + env(safe-area-inset-top))
-    16px
-    calc(96px + env(safe-area-inset-bottom));
+  padding:calc(12px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
 }
-
-/* Header */
 header{border-bottom:1px solid #1f2937;padding-bottom:10px}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
 
-/* Controls */
-.controls{
-  display:flex;gap:8px;flex-wrap:wrap;margin-top:12px
-}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 select,button,input{
-  background:#020617;color:#e5e7eb;
-  border:1px solid #374151;border-radius:10px;
+  background:#020617;color:#e5e7eb;border:1px solid #374151;border-radius:10px;
   padding:10px 12px;font-size:14px
 }
 button{font-weight:700;cursor:pointer}
 button:active{transform:scale(.98)}
 #multWrap{display:none}
 
-/* Camera */
 .scanner{
-  margin-top:12px;border-radius:16px;overflow:hidden;
-  border:1px solid #374151;
-  box-shadow:0 0 0 6px rgba(34,197,94,.15),0 20px 40px rgba(0,0,0,.6)
+  margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151;
+  box-shadow:0 0 0 6px rgba(34,197,94,.15),0 20px 40px rgba(0,0,0,.6);
 }
 video{width:100%;max-height:260px;object-fit:cover;background:black}
 .status{font-size:12px;color:#9ca3af;margin-top:6px}
 
-/* Hand category */
-#handCategory{
-  margin-top:14px;
+.kpis{
+  margin-top:12px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.kpi{
   padding:8px 12px;
   border-radius:999px;
-  display:inline-block;
-  background:#052e16;
-  border:1px solid #14532d;
-  color:#bbf7d0;
+  border:1px solid #374151;
+  background:#020617;
   font-size:13px;
-  font-weight:700;
+  color:#9ca3af;
 }
+.kpi strong{color:#e5e7eb}
 
-/* Hand */
 #hand{
   display:grid;grid-template-columns:repeat(5,1fr);
-  gap:12px;margin-top:12px
+  gap:12px;margin-top:14px
 }
 .card{
   border:1px solid #374151;border-radius:14px;
   padding:14px 6px;text-align:center;background:#020617
 }
-.card.hold{
-  outline:3px solid #22c55e;
-  box-shadow:0 0 18px rgba(34,197,94,.7);
-  transform:translateY(-4px)
-}
+.card.hold{outline:3px solid #22c55e;box-shadow:0 0 18px rgba(34,197,94,.7);transform:translateY(-4px)}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
 
-/* Explanation */
 #explanationBox{
   margin-top:14px;padding:14px;border-radius:14px;
   border:1px solid #374151;background:#020617;display:none
 }
-#explanationBox h3{
-  margin:0 0 6px;font-size:14px;color:#22c55e
-}
+#explanationBox h3{margin:0 0 6px;font-size:14px;color:#22c55e}
 #explanationText{margin:0;font-size:14px;line-height:1.5}
 #confidence{margin-top:6px;font-size:12px;color:#9ca3af}
+#evNote{margin-top:6px;font-size:12px;color:#9ca3af}
 
-/* Snap */
 footer{
   position:fixed;left:0;right:0;bottom:0;
   padding:12px 16px calc(12px + env(safe-area-inset-bottom));
-  background:linear-gradient(180deg,transparent,#020617 40%)
+  background:linear-gradient(180deg,transparent,#020617 40%);
 }
 #snap{
-  width:100%;padding:14px;font-size:16px;
-  border-radius:14px;
+  width:100%;padding:14px;font-size:16px;border-radius:14px;
   background:linear-gradient(180deg,#22c55e,#16a34a);
   color:#000;font-weight:900;border:none
 }
@@ -114,7 +97,7 @@ footer{
 
 <header>
   <h1>VP Assistant</h1>
-  <div class="subtitle">Deterministic video poker strategy</div>
+  <div class="subtitle">Deterministic video poker strategy + EV (JOB)</div>
 </header>
 
 <div class="controls">
@@ -144,13 +127,18 @@ footer{
 </div>
 <div class="status" id="status">Starting camera…</div>
 
-<div id="handCategory" style="display:none"></div>
+<div class="kpis">
+  <div class="kpi">EV: <strong id="evVal">—</strong></div>
+  <div class="kpi">Multiplier: <strong id="multVal">—</strong></div>
+</div>
+
 <div id="hand"></div>
 
 <div id="explanationBox">
   <h3>Why hold these cards?</h3>
   <p id="explanationText"></p>
   <div id="confidence"></div>
+  <div id="evNote"></div>
 </div>
 
 </div>
@@ -159,7 +147,7 @@ footer{
   <button id="snap">SNAP</button>
 </footer>
 
-<canvas id="canvas" style="display:none"></canvas>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
@@ -173,110 +161,116 @@ const gameSel = document.getElementById("game");
 const paySel = document.getElementById("paytable");
 const multWrap = document.getElementById("multWrap");
 const multInput = document.getElementById("multiplier");
-const handCategoryEl = document.getElementById("handCategory");
+
+const evVal = document.getElementById("evVal");
+const multVal = document.getElementById("multVal");
+
 const explanationBox = document.getElementById("explanationBox");
 const explanationText = document.getElementById("explanationText");
 const confidenceEl = document.getElementById("confidence");
+const evNoteEl = document.getElementById("evNote");
 
 let stream=null, busy=false;
 
-/* Camera */
 async function startCamera(){
   if(stream) return;
   try{
     stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
     video.srcObject = stream;
     statusEl.textContent = "Camera ready";
-  }catch{ statusEl.textContent="Camera permission denied"; }
+  }catch{
+    statusEl.textContent = "Camera permission denied";
+  }
 }
 startCamera();
 
-/* Game change */
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  }else startCamera();
+});
+
 function updateMultUI(){
-  multWrap.style.display = (gameSel.value==="ux"||gameSel.value==="uxp") ? "block":"none";
+  const g = gameSel.value;
+  const show = (g==="ux" || g==="uxp");
+  multWrap.style.display = show ? "block" : "none";
 }
 gameSel.onchange = updateMultUI;
 updateMultUI();
 
-/* Snap */
 snapBtn.onclick = async ()=>{
-  if(busy||!video.videoWidth) return;
+  if(busy || !video.videoWidth) return;
   busy=true;
   statusEl.textContent="Scanning…";
 
   const vw=video.videoWidth, vh=video.videoHeight;
   const bandH=vh*0.35, bandY=(vh-bandH)/2;
+
   canvas.width=vw; canvas.height=bandH;
   canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
-  const img=canvas.toDataURL("image/jpeg",0.7);
+
+  const img = canvas.toDataURL("image/jpeg",0.7);
 
   try{
-    const res=await fetch(WORKER_URL,{
+    const res = await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
-        imageBase64:img,
-        game:gameSel.value,
-        paytable:paySel.value,
-        multiplier:Number(multInput.value||1)
+        imageBase64: img,
+        game: gameSel.value,
+        paytable: paySel.value,
+        multiplier: Number(multInput.value||1)
       })
     });
-    const data=await res.json();
-    renderHand(data.cards||[],data.hold||[]);
-    renderCategory(data.cards||[],data.hold||[]);
-    renderExplanation(data.explanation||"",data.confidence);
-    if((gameSel.value==="ux"||gameSel.value==="uxp")&&data.multiplier){
-      multInput.value=data.multiplier;
-    }
-    statusEl.textContent="Done";
-  }catch{ statusEl.textContent="Scan failed"; }
+    const data = await res.json();
 
+    renderHand(data.cards||[], data.hold||[]);
+    renderExplanation(data.explanation||"", data.confidence, data.ev_note||"");
+    renderEV(data.ev);
+    renderMultiplier(data.multiplier);
+
+    // If worker returned multiplier, reflect it
+    if((gameSel.value==="ux"||gameSel.value==="uxp") && data.multiplier){
+      multInput.value = data.multiplier;
+    }
+
+    statusEl.textContent="Done";
+  }catch{
+    statusEl.textContent="Scan failed";
+  }
   busy=false;
 };
 
-/* Helpers for category */
-function renderCategory(cards, hold){
-  if(!cards.length){ handCategoryEl.style.display="none"; return; }
-
-  const held = cards.filter((_,i)=>hold[i]);
-  let label="No Made Hand";
-
-  if(held.length===5){
-    label="Made Hand";
-  }else if(held.length===4){
-    label="4-card Draw";
-  }else if(held.length===3){
-    const ranks=held.map(c=>c.rank);
-    const royal=["A","K","Q","J","T"];
-    if(ranks.every(r=>royal.includes(r))) label="3 to a Royal Flush";
-    else label="3-card Draw";
-  }else if(held.length===2){
-    label="2 High Cards";
-  }
-
-  handCategoryEl.textContent = label;
-  handCategoryEl.style.display="inline-block";
-}
-
-/* Render */
 function renderHand(cards, hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
     const d=document.createElement("div");
     d.className="card"+(hold[i]?" hold":"");
     const red=c.suit==="H"||c.suit==="D";
-    d.innerHTML=`
-      <div class="rank ${red?"red":""}">${c.rank}</div>
-      <div class="suit ${red?"red":""}">${c.suit}</div>
-    `;
+    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
     handDiv.appendChild(d);
   });
 }
-function renderExplanation(text, conf){
-  if(!text){ explanationBox.style.display="none"; return; }
+
+function renderExplanation(text, confidence, note){
+  if(!text){
+    explanationBox.style.display="none";
+    return;
+  }
   explanationBox.style.display="block";
   explanationText.textContent=text;
-  confidenceEl.textContent = conf!=null ? `Strategy confidence: ${Math.round(conf*100)}%` : "";
+  confidenceEl.textContent = (typeof confidence==="number") ? `Strategy confidence: ${Math.round(confidence*100)}%` : "";
+  evNoteEl.textContent = note || "";
+}
+
+function renderEV(ev){
+  if(typeof ev === "number") evVal.textContent = ev.toFixed(4);
+  else evVal.textContent = "—";
+}
+
+function renderMultiplier(m){
+  if(typeof m === "number") multVal.textContent = m + "×";
+  else multVal.textContent = "—";
 }
 </script>
 </body>
