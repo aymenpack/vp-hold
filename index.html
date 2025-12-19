@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X Assistant – Local Vision</title>
+<title>Ultimate X Assistant – YOLO Vision</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
@@ -13,40 +13,33 @@ body{margin:0;font-family:Inter;background:#020617;color:#e5e7eb}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
 
-.scanner{margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151;position:relative}
+.scanner{margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151}
 video{width:100%;max-height:300px;object-fit:cover;background:black}
 
-.overlay{
-  position:absolute;top:0;bottom:0;
-  border-left:1px dashed rgba(34,197,94,.6);
-  border-right:1px dashed rgba(34,197,94,.6);
-}
-.overlay span{
-  position:absolute;top:4px;left:4px;
-  background:#020617cc;padding:4px 6px;border-radius:6px;
-  font-size:11px;font-weight:800
-}
-
-#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
-.card{border:1px solid #374151;border-radius:14px;padding:14px 6px;text-align:center;background:#020617}
+#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+.card{border:1px solid #374151;border-radius:14px;padding:14px;text-align:center}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
 
+.status{font-size:12px;color:#9ca3af;margin-top:8px}
+
 footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#020617}
 button{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
+button:disabled{opacity:.5}
 </style>
 </head>
 
 <body>
 <div class="app">
   <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">Local vision (no APIs)</div>
+  <div class="subtitle">YOLO pretrained vision (no templates)</div>
 
-  <div class="scanner" id="scanner">
+  <div class="scanner">
     <video id="video" autoplay playsinline muted></video>
   </div>
 
+  <div class="status" id="status">Camera ready</div>
   <div id="hand"></div>
 </div>
 
@@ -55,10 +48,20 @@ button{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c
 </footer>
 
 <script>
+/* =======================
+   🔧 CONFIG – CHANGE THESE
+======================= */
+const ROBOFLOW_API_KEY = "YOUR_API_KEY_HERE";
+const ROBOFLOW_MODEL = "playing-cards/1"; // example
+const ROBOFLOW_URL =
+  `https://detect.roboflow.com/${ROBOFLOW_MODEL}?api_key=${ROBOFLOW_API_KEY}`;
+
+/* ======================= */
+
 const video = document.getElementById("video");
-const scanner = document.getElementById("scanner");
 const snapBtn = document.getElementById("snap");
 const handDiv = document.getElementById("hand");
+const statusEl = document.getElementById("status");
 
 let stream=null;
 
@@ -68,70 +71,82 @@ async function startCamera(){
 }
 startCamera();
 
-/* -------- LOCAL VISION CORE -------- */
+snapBtn.onclick = async ()=>{
+  snapBtn.disabled = true;
+  statusEl.textContent = "Detecting cards…";
 
-// Very simple helpers (Phase 1)
-function avgColor(ctx,x,y,w,h){
-  const d=ctx.getImageData(x,y,w,h).data;
-  let r=0,g=0,b=0;
-  for(let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; }
-  const n=d.length/4;
-  return { r:r/n, g:g/n, b:b/n };
-}
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if(!vw || !vh){
+    statusEl.textContent = "Camera not ready";
+    snapBtn.disabled = false;
+    return;
+  }
 
-function isRed(c){ return c.r>150 && c.g<100 && c.b<100; }
-function suitFromColor(c){ return isRed(c) ? "H" : "S"; } // placeholder
+  // Crop middle band (cards row)
+  const bandH = Math.floor(vh * 0.35);
+  const bandY = Math.floor((vh - bandH) / 2);
 
-function detectCard(ctx, x, w, h){
-  // sample top-left for rank brightness
-  const rankSample = avgColor(ctx, x+10, 10, 30, 30);
-  const suitSample = avgColor(ctx, x+w/2-10, h-40, 20, 20);
+  const canvas = document.createElement("canvas");
+  canvas.width = vw;
+  canvas.height = bandH;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
 
-  const suit = suitFromColor(suitSample);
+  const img = canvas.toDataURL("image/jpeg", 0.8);
 
-  // VERY crude rank heuristic (will refine)
-  let rank="A";
-  const lum = (rankSample.r+rankSample.g+rankSample.b)/3;
-  if(lum<80) rank="K";
-  else if(lum<120) rank="Q";
-  else if(lum<160) rank="J";
-  else rank="A";
+  try{
+    const res = await fetch(ROBOFLOW_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: img.split(",")[1]
+    });
+
+    const data = await res.json();
+    if(!data.predictions){
+      statusEl.textContent = "No cards detected";
+      snapBtn.disabled = false;
+      return;
+    }
+
+    // Sort detections left → right
+    const cards = data.predictions
+      .sort((a,b)=>a.x - b.x)
+      .slice(0,5)
+      .map(p => parseCardLabel(p.class));
+
+    renderHand(cards);
+    statusEl.textContent = "Done";
+
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = "Detection failed";
+  }
+
+  snapBtn.disabled = false;
+};
+
+function parseCardLabel(label){
+  // Examples: "AS", "10H", "QD"
+  let rank = label.slice(0, -1);
+  let suit = label.slice(-1);
+
+  if(rank === "1") rank = "A"; // model quirks
+  if(rank === "10") rank = "T";
 
   return { rank, suit };
 }
 
-snapBtn.onclick=()=>{
-  const vw=video.videoWidth;
-  const vh=video.videoHeight;
-  if(!vw||!vh) return;
-
-  const bandH=Math.floor(vh*0.35);
-  const bandY=Math.floor((vh-bandH)/2);
-
-  const canvas=document.createElement("canvas");
-  canvas.width=vw;
-  canvas.height=bandH;
-  const ctx=canvas.getContext("2d");
-  ctx.drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
-
-  const cardW = Math.floor(vw/5);
-  const cards=[];
-
-  for(let i=0;i<5;i++){
-    const x=i*cardW;
-    cards.push(detectCard(ctx,x,cardW,bandH));
-  }
-
-  renderHand(cards);
-};
-
 function renderHand(cards){
-  handDiv.innerHTML="";
+  handDiv.innerHTML = "";
   cards.forEach(c=>{
-    const d=document.createElement("div");
-    d.className="card";
-    const red = c.suit==="H"||c.suit==="D";
-    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
+    const d = document.createElement("div");
+    d.className = "card";
+    const red = c.suit==="H" || c.suit==="D";
+    d.innerHTML = `
+      <div class="rank ${red?"red":""}">${c.rank}</div>
+      <div class="suit ${red?"red":""}">${c.suit}</div>
+    `;
     handDiv.appendChild(d);
   });
 }
