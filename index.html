@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <style>
-/* ===== BASE THEME ===== */
 body{
   margin:0;
   font-family:Inter,-apple-system,system-ui;
@@ -26,40 +25,22 @@ body{
     calc(96px + env(safe-area-inset-bottom));
 }
 
-/* ===== HEADER ===== */
+/* Header */
 header{
-  padding-bottom:10px;
   border-bottom:1px solid #1f2937;
+  padding-bottom:10px;
 }
-h1{
-  margin:0;
-  font-size:20px;
-  font-weight:900;
-}
-.subtitle{
-  font-size:13px;
-  color:#9ca3af;
-  margin-top:4px;
-}
+h1{margin:0;font-size:20px;font-weight:900}
+.subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
 
-/* ===== STRATEGY BANNER ===== */
-.banner{
-  margin-top:10px;
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid #14532d;
-  background:#052e16;
-  font-size:13px;
-  color:#bbf7d0;
-}
-
-/* ===== CONTROLS ===== */
+/* Controls */
 .controls{
   display:flex;
   gap:8px;
+  flex-wrap:wrap;
   margin-top:12px;
 }
-select,button{
+select,button,input{
   background:#020617;
   color:#e5e7eb;
   border:1px solid #374151;
@@ -67,16 +48,14 @@ select,button{
   padding:10px 12px;
   font-size:14px;
 }
-select option:disabled{
-  color:#6b7280;
-}
-button{
-  font-weight:700;
-  cursor:pointer;
-}
+button{font-weight:700;cursor:pointer}
 button:active{transform:scale(.98)}
 
-/* ===== CAMERA ===== */
+#multWrap{
+  display:none;
+}
+
+/* Camera */
 .scanner{
   margin-top:12px;
   border-radius:16px;
@@ -96,7 +75,7 @@ video{
   margin-top:6px;
 }
 
-/* ===== HAND ===== */
+/* Hand */
 #hand{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -115,16 +94,11 @@ video{
   box-shadow:0 0 18px rgba(34,197,94,.7);
   transform:translateY(-4px);
 }
-.rank{
-  font-size:22px;
-  font-weight:900;
-}
-.suit{
-  font-size:18px;
-}
+.rank{font-size:22px;font-weight:900}
+.suit{font-size:18px}
 .red{color:#ef4444}
 
-/* ===== EXPLANATION ===== */
+/* Explanation */
 #explanationBox{
   margin-top:14px;
   padding:14px;
@@ -143,15 +117,13 @@ video{
   font-size:14px;
   line-height:1.5;
 }
-
-/* ===== CONFIDENCE ===== */
 #confidence{
-  margin-top:8px;
+  margin-top:6px;
   font-size:12px;
   color:#9ca3af;
 }
 
-/* ===== SNAP ===== */
+/* Snap */
 footer{
   position:fixed;
   left:0; right:0; bottom:0;
@@ -179,18 +151,15 @@ footer{
   <div class="subtitle">Deterministic video poker strategy</div>
 </header>
 
-<div class="banner">
-  <strong>Strategy engine:</strong> Deterministic (Jacks or Better, Bonus Poker)
-</div>
-
 <div class="controls">
   <select id="game">
     <option value="job">Jacks or Better</option>
     <option value="bonus">Bonus Poker</option>
-    <option value="double_bonus" disabled>Double Bonus (coming soon)</option>
-    <option value="ddb" disabled>Double Double Bonus (coming soon)</option>
-    <option value="deuces" disabled>Deuces Wild (coming soon)</option>
-    <option value="ux" disabled>Ultimate X (coming soon)</option>
+    <option value="double_bonus">Double Bonus Poker</option>
+    <option value="ddb">Double Double Bonus</option>
+    <option value="deuces">Deuces Wild</option>
+    <option value="ux">Ultimate X</option>
+    <option value="uxp">Ultimate X Progressive</option>
   </select>
 
   <select id="paytable">
@@ -198,6 +167,10 @@ footer{
     <option value="8/5">8/5</option>
     <option value="standard">Standard</option>
   </select>
+
+  <div id="multWrap">
+    <input id="multiplier" type="number" min="1" max="12" step="1" value="1" />
+  </div>
 </div>
 
 <div class="scanner">
@@ -222,10 +195,9 @@ footer{
 <canvas id="canvas" style="display:none;"></canvas>
 
 <script>
-/* ========= CONFIG ========= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ========= ELEMENTS ========= */
+/* Elements */
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const snapBtn = document.getElementById("snap");
@@ -233,21 +205,23 @@ const handDiv = document.getElementById("hand");
 const statusEl = document.getElementById("status");
 const gameSel = document.getElementById("game");
 const paySel = document.getElementById("paytable");
+const multWrap = document.getElementById("multWrap");
+const multInput = document.getElementById("multiplier");
 const explanationBox = document.getElementById("explanationBox");
 const explanationText = document.getElementById("explanationText");
 const confidenceEl = document.getElementById("confidence");
 
-let stream = null;
-let busy = false;
+let stream=null;
+let busy=false;
 
-/* ========= CAMERA ========= */
+/* Camera */
 async function startCamera(){
   if(stream) return;
   try{
     stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
     video.srcObject = stream;
     statusEl.textContent = "Camera ready";
-  }catch(e){
+  }catch{
     statusEl.textContent = "Camera permission denied";
   }
 }
@@ -256,20 +230,22 @@ startCamera();
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden){
     if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  }else{
-    startCamera();
-  }
+  }else startCamera();
 });
 
-/* ========= SNAP ========= */
-snapBtn.onclick = async ()=>{
-  if(busy) return;
-  if(!video.videoWidth){
-    statusEl.textContent="Camera not ready";
-    return;
-  }
+/* Game change */
+function updateMultiplierUI(){
+  const g = gameSel.value;
+  multWrap.style.display = (g==="ux" || g==="uxp") ? "block" : "none";
+}
+gameSel.onchange = updateMultiplierUI;
+updateMultiplierUI();
 
-  busy = true;
+/* Snap */
+snapBtn.onclick = async ()=>{
+  if(busy || !video.videoWidth) return;
+
+  busy=true;
   statusEl.textContent="Scanning…";
 
   const vw = video.videoWidth;
@@ -291,28 +267,31 @@ snapBtn.onclick = async ()=>{
         imageBase64: img,
         game: gameSel.value,
         paytable: paySel.value,
-        multiplier: 1
+        multiplier: Number(multInput.value||1)
       })
     });
 
     const data = await res.json();
     renderHand(data.cards||[], data.hold||[]);
     renderExplanation(data.explanation||"", data.confidence);
+    if(data.multiplier && (gameSel.value==="ux"||gameSel.value==="uxp")){
+      multInput.value = data.multiplier;
+    }
     statusEl.textContent="Done";
-  }catch(e){
+  }catch{
     statusEl.textContent="Scan failed";
   }
 
-  busy = false;
+  busy=false;
 };
 
-/* ========= RENDER ========= */
+/* Render */
 function renderHand(cards, hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
     const d=document.createElement("div");
     d.className="card"+(hold[i]?" hold":"");
-    const red = c.suit==="H"||c.suit==="D";
+    const red=c.suit==="H"||c.suit==="D";
     d.innerHTML=`
       <div class="rank ${red?"red":""}">${c.rank}</div>
       <div class="suit ${red?"red":""}">${c.suit}</div>
@@ -328,12 +307,7 @@ function renderExplanation(text, confidence){
   }
   explanationBox.style.display="block";
   explanationText.textContent=text;
-
-  if(typeof confidence === "number"){
-    confidenceEl.textContent = `Strategy confidence: ${Math.round(confidence*100)}%`;
-  }else{
-    confidenceEl.textContent = "";
-  }
+  confidenceEl.textContent = confidence!=null ? `Strategy confidence: ${Math.round(confidence*100)}%` : "";
 }
 </script>
 </body>
