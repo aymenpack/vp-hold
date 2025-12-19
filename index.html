@@ -1,167 +1,282 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>VP Assistant</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Ultimate X Assistant</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
 <style>
-body{margin:0;font-family:Inter,-apple-system,system-ui;background:#020617;color:#e5e7eb}
-.app{max-width:900px;margin:auto;padding:16px 16px 96px}
-header{border-bottom:1px solid #1f2937;padding-bottom:10px}
+body{
+  margin:0;
+  font-family:Inter,-apple-system,system-ui;
+  background:#020617;
+  color:#e5e7eb;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 120px;
+}
+header{
+  border-bottom:1px solid #1f2937;
+  padding-bottom:10px;
+}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-select,button,input{background:#020617;color:#e5e7eb;border:1px solid #374151;border-radius:10px;padding:10px 12px;font-size:14px}
-button{font-weight:800;cursor:pointer}
-button:active{transform:scale(.98)}
-.scanner{margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151}
-video{width:100%;max-height:260px;object-fit:cover;background:black}
+
+.controls{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:12px;
+}
+select,input{
+  background:#020617;
+  color:#e5e7eb;
+  border:1px solid #374151;
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:14px;
+}
+
+.scanner{
+  margin-top:12px;
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid #374151;
+}
+video{
+  width:100%;
+  max-height:240px;
+  object-fit:cover;
+  background:black;
+}
 .status{font-size:12px;color:#9ca3af;margin-top:6px}
-#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:12px}
-.card{border:1px solid #374151;border-radius:14px;padding:14px 6px;text-align:center;background:#020617}
-.card.hold{outline:3px solid #22c55e;box-shadow:0 0 18px rgba(34,197,94,.7)}
+
+#cooldownBox{
+  margin-top:8px;
+  color:#facc15;
+  font-size:13px;
+  display:none;
+}
+
+.kpis{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.kpi{
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid #374151;
+  background:#020617;
+  font-size:13px;
+}
+.kpi strong{color:#fff}
+
+#hand{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+  margin-top:14px;
+}
+.card{
+  border:1px solid #374151;
+  border-radius:14px;
+  padding:14px 6px;
+  text-align:center;
+  background:#020617;
+}
+.card.hold{
+  outline:3px solid #22c55e;
+  box-shadow:0 0 18px rgba(34,197,94,.7);
+  transform:translateY(-4px);
+}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
-#errorBox{margin-top:12px;padding:12px;border:1px solid #7f1d1d;background:#450a0a;border-radius:12px;display:none}
-#debugBox{margin-top:12px;padding:12px;border:1px solid #374151;background:#020617;border-radius:12px;display:none;font-size:12px;color:#9ca3af;white-space:pre-wrap}
-footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#020617}
-#snap{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
-#snap:disabled{opacity:.6}
+
+#explanation{
+  margin-top:14px;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #374151;
+  background:#020617;
+  font-size:14px;
+  line-height:1.5;
+}
+
+footer{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  padding:12px 16px;
+  background:#020617;
+}
+#snap{
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border-radius:14px;
+  background:#22c55e;
+  color:#000;
+  font-weight:900;
+  border:none;
+}
+#snap:disabled{opacity:.5}
 </style>
 </head>
+
 <body>
 <div class="app">
+
 <header>
-  <h1>VP Assistant</h1>
-  <div class="subtitle">Debug build – shows the real error (no more blind “scan failed”)</div>
+  <h1>Ultimate X Assistant</h1>
+  <div class="subtitle">Multiplier-aware strategy + EV</div>
 </header>
 
 <div class="controls">
-  <select id="game">
-    <option value="job">Jacks or Better</option>
-    <option value="bonus">Bonus Poker</option>
-    <option value="double_bonus">Double Bonus Poker</option>
-    <option value="ddb">Double Double Bonus</option>
-    <option value="deuces">Deuces Wild</option>
+  <select id="mode">
     <option value="ux">Ultimate X</option>
     <option value="uxp">Ultimate X Progressive</option>
   </select>
 
-  <select id="paytable">
-    <option value="9/6">9/6</option>
-    <option value="8/5">8/5</option>
-    <option value="standard">Standard</option>
-  </select>
-
-  <input id="multiplier" type="number" min="1" max="12" value="1">
+  <input id="multiplier" type="number" min="1" max="12" value="1" placeholder="Multiplier (fallback)">
+  <input id="royalPayout" type="number" placeholder="Progressive Royal (per credit)" style="display:none">
 </div>
 
 <div class="scanner">
   <video id="video" playsinline autoplay muted></video>
 </div>
-<div class="status" id="status">Starting camera…</div>
+<div class="status" id="status">Camera ready</div>
+<div id="cooldownBox"></div>
 
-<div id="errorBox"></div>
+<div class="kpis">
+  <div class="kpi">EV (best): <strong id="evBest">—</strong></div>
+  <div class="kpi">EV (draw 5): <strong id="evDraw5">—</strong></div>
+  <div class="kpi">Multiplier: <strong id="multUsed">—</strong></div>
+</div>
+
 <div id="hand"></div>
-<div id="debugBox"></div>
+
+<div id="explanation"></div>
+
 </div>
 
 <footer>
   <button id="snap">SNAP</button>
 </footer>
 
-<canvas id="canvas" style="display:none"></canvas>
-
 <script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const COOLDOWN = 15;
 
-const video=document.getElementById("video");
-const canvas=document.getElementById("canvas");
-const snapBtn=document.getElementById("snap");
-const statusEl=document.getElementById("status");
-const handDiv=document.getElementById("hand");
-const errorBox=document.getElementById("errorBox");
-const debugBox=document.getElementById("debugBox");
+const video = document.getElementById("video");
+const snapBtn = document.getElementById("snap");
+const statusEl = document.getElementById("status");
+const cooldownBox = document.getElementById("cooldownBox");
 
-const gameSel=document.getElementById("game");
-const paySel=document.getElementById("paytable");
-const multInput=document.getElementById("multiplier");
+const modeSel = document.getElementById("mode");
+const multInput = document.getElementById("multiplier");
+const royalInput = document.getElementById("royalPayout");
+
+const evBestEl = document.getElementById("evBest");
+const evDraw5El = document.getElementById("evDraw5");
+const multUsedEl = document.getElementById("multUsed");
+const handDiv = document.getElementById("hand");
+const explanationEl = document.getElementById("explanation");
 
 let stream=null;
-let busy=false;
+let cooldown=0;
+let timer=null;
 
+/* Camera */
 async function startCamera(){
   if(stream) return;
-  stream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:"environment"} });
-  video.srcObject=stream;
-  statusEl.textContent="Camera ready";
+  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
+  video.srcObject = stream;
 }
 startCamera();
 
-snapBtn.onclick=async()=>{
-  if(busy) return;
-  busy=true;
-  snapBtn.disabled=true;
-  errorBox.style.display="none";
-  debugBox.style.display="none";
+/* Mode toggle */
+modeSel.onchange = ()=>{
+  royalInput.style.display = (modeSel.value==="uxp") ? "block" : "none";
+};
+
+/* Cooldown */
+function startCooldown(){
+  cooldown = COOLDOWN;
+  snapBtn.disabled = true;
+  cooldownBox.style.display="block";
+  updateCooldown();
+  timer = setInterval(()=>{
+    cooldown--;
+    updateCooldown();
+    if(cooldown<=0){
+      clearInterval(timer);
+      snapBtn.disabled=false;
+      cooldownBox.style.display="none";
+    }
+  },1000);
+}
+function updateCooldown(){
+  cooldownBox.textContent = `Please wait ${cooldown}s (OpenAI vision limit).`;
+}
+
+/* SNAP */
+snapBtn.onclick = async ()=>{
+  if(snapBtn.disabled) return;
+
   statusEl.textContent="Capturing…";
 
   await new Promise(r=>requestAnimationFrame(r));
 
   const vw=video.videoWidth, vh=video.videoHeight;
-  if(!vw||!vh){ statusEl.textContent="Camera not ready"; busy=false; snapBtn.disabled=false; return; }
+  if(!vw||!vh){ statusEl.textContent="Camera not ready"; return; }
 
+  const canvas=document.createElement("canvas");
   const bandH=Math.floor(vh*0.35);
   const bandY=Math.floor((vh-bandH)/2);
   canvas.width=vw; canvas.height=bandH;
   canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
+
   const img=canvas.toDataURL("image/jpeg",0.7);
 
-  statusEl.textContent="Calling worker…";
-
   try{
+    const payload={
+      imageBase64: img,
+      mode: modeSel.value,
+      multiplier: Number(multInput.value||1),
+      royalPayout: modeSel.value==="uxp" ? Number(royalInput.value||0) : null
+    };
+
     const res=await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        imageBase64: img,
-        game: gameSel.value,
-        paytable: paySel.value,
-        multiplier: Number(multInput.value||1)
-      })
+      body:JSON.stringify(payload)
     });
-
     const data=await res.json();
 
     if(data.error){
-      errorBox.textContent = `Error: ${data.error} (stage: ${data.stage || "?"})`;
-      errorBox.style.display="block";
-      if(data.message || data.why || data.openai_status || data.raw){
-        debugBox.textContent = JSON.stringify(data, null, 2);
-        debugBox.style.display="block";
-      }
-      statusEl.textContent="Error returned";
-    } else {
-      renderHand(data.cards||[], data.hold||[]);
-      debugBox.textContent = JSON.stringify(data.debug || data, null, 2);
-      debugBox.style.display="block";
+      statusEl.textContent=data.error;
+    }else{
+      renderHand(data.cards,data.hold);
+      evBestEl.textContent=data.ev_best?.toFixed(4) ?? data.ev?.toFixed(4) ?? "—";
+      evDraw5El.textContent=data.ev_draw5?.toFixed(4) ?? "—";
+      multUsedEl.textContent=data.multiplier+"×";
+      explanationEl.textContent=data.explanation || "";
       statusEl.textContent="Done";
     }
-
-  }catch(e){
-    errorBox.textContent="Fetch failed (network/cors).";
-    errorBox.style.display="block";
-    debugBox.textContent=String(e);
-    debugBox.style.display="block";
-    statusEl.textContent="Fetch failed";
+  }catch{
+    statusEl.textContent="Network error";
   }
 
-  busy=false;
-  snapBtn.disabled=false;
+  startCooldown();
 };
 
+/* Render */
 function renderHand(cards, hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
