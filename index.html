@@ -17,7 +17,6 @@
   --accent:#22c55e;
   --danger:#ef4444;
 }
-
 *{box-sizing:border-box}
 body{
   margin:0;
@@ -25,34 +24,20 @@ body{
   background:radial-gradient(circle at top,#020617,#000 70%);
   color:var(--text);
 }
-
 .app{
   max-width:900px;
   margin:auto;
   padding:16px 16px 150px;
 }
-
 header{
   padding-bottom:12px;
   border-bottom:1px solid var(--border);
 }
-h1{
-  margin:0;
-  font-size:22px;
-  font-weight:900;
-}
-.subtitle{
-  font-size:13px;
-  color:var(--muted);
-  margin-top:4px;
-}
+h1{margin:0;font-size:22px;font-weight:900}
+.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
 
 /* Tabs */
-.tabs{
-  display:flex;
-  gap:10px;
-  margin-top:14px;
-}
+.tabs{display:flex;gap:10px;margin-top:14px}
 .tab{
   flex:1;
   padding:14px;
@@ -70,12 +55,7 @@ h1{
 }
 
 /* Controls */
-.row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top:14px;
-}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 input,button{
   background:var(--panel);
   color:var(--text);
@@ -84,19 +64,12 @@ input,button{
   padding:12px 14px;
   font-size:14px;
 }
-button{
-  font-weight:900;
-  cursor:pointer;
-}
+button{font-weight:900;cursor:pointer}
 button.primary{
   background:linear-gradient(180deg,#22c55e,#16a34a);
-  color:#000;
-  border:none;
+  color:#000;border:none
 }
-button:disabled{
-  opacity:.5;
-  cursor:not-allowed;
-}
+button:disabled{opacity:.5;cursor:not-allowed}
 
 /* Camera */
 .scanner{
@@ -121,23 +94,7 @@ video{
 }
 
 /* Status */
-.status{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:8px;
-}
-.loading{
-  display:inline-block;
-  width:14px;
-  height:14px;
-  border:2px solid var(--muted);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin .8s linear infinite;
-  margin-right:6px;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
+.status{font-size:12px;color:var(--muted);margin-top:8px}
 #error{
   margin-top:10px;
   padding:12px;
@@ -147,11 +104,7 @@ video{
 }
 
 /* KPI */
-.kpis{
-  display:flex;
-  gap:12px;
-  margin-top:14px;
-}
+.kpis{display:flex;gap:12px;margin-top:14px}
 .kpi{
   padding:10px 14px;
   border-radius:999px;
@@ -181,13 +134,8 @@ video{
   box-shadow:0 0 24px rgba(34,197,94,.7);
   transform:translateY(-6px) scale(1.03);
 }
-.rank{
-  font-size:24px;
-  font-weight:900;
-}
-.suit{
-  font-size:18px;
-}
+.rank{font-size:24px;font-weight:900}
+.suit{font-size:18px}
 .red{color:var(--danger)}
 
 /* Explanation */
@@ -200,11 +148,8 @@ video{
   display:none;
   line-height:1.5;
 }
-#explain strong{
-  color:var(--accent);
-}
+#explain strong{color:var(--accent)}
 
-/* Footer */
 footer{
   position:fixed;
   left:0; right:0; bottom:0;
@@ -234,7 +179,6 @@ footer{
 
 <div class="row">
   <input id="fallbackMult" type="number" min="1" max="12" value="1" placeholder="Multiplier fallback">
-  <button id="toggleCal">Calibrate</button>
 </div>
 
 <div class="scanner">
@@ -242,7 +186,7 @@ footer{
   <div class="band" id="band"></div>
 </div>
 
-<div class="status" id="status">Camera ready</div>
+<div class="status" id="status">Starting camera…</div>
 <div id="error"></div>
 
 <div class="kpis">
@@ -259,9 +203,161 @@ footer{
 </footer>
 
 <script>
-// Keep your existing JS logic here unchanged.
-// This file focuses on UI/UX polish only.
-// (Your previously working logic plugs directly in.)
+/* ================= CONFIG ================= */
+const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const DOWNSCALE_WIDTH = 520;
+const JPEG_QUALITY = 0.6;
+
+/* ================= STATE ================= */
+let mode = "ux";
+let stream = null;
+let busy = false;
+
+/* ================= ELEMENTS ================= */
+const video = document.getElementById("video");
+const band = document.getElementById("band");
+const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
+const snapBtn = document.getElementById("snap");
+const handDiv = document.getElementById("hand");
+const explainDiv = document.getElementById("explain");
+
+const tabUX = document.getElementById("tabUX");
+const tabUXP = document.getElementById("tabUXP");
+const fallbackMult = document.getElementById("fallbackMult");
+const multShow = document.getElementById("multShow");
+const multSrc = document.getElementById("multSrc");
+
+/* ================= TABS ================= */
+tabUX.onclick = () => {
+  mode = "ux";
+  tabUX.classList.add("active");
+  tabUXP.classList.remove("active");
+};
+tabUXP.onclick = () => {
+  mode = "uxp";
+  tabUXP.classList.add("active");
+  tabUX.classList.remove("active");
+};
+
+/* ================= CAMERA ================= */
+async function startCamera(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"environment" }
+    });
+    video.srcObject = stream;
+    statusEl.textContent = "Camera ready";
+    requestAnimationFrame(updateBandOverlay);
+  }catch(e){
+    statusEl.textContent = "Camera permission denied";
+  }
+}
+startCamera();
+
+function updateBandOverlay(){
+  const rect = video.getBoundingClientRect();
+  const center = rect.height * 0.5;
+  const h = rect.height * 0.35;
+  band.style.top = (center - h/2) + "px";
+  band.style.height = h + "px";
+  requestAnimationFrame(updateBandOverlay);
+}
+
+/* ================= HELPERS ================= */
+function showError(msg){
+  errorEl.style.display="block";
+  errorEl.textContent=msg;
+}
+function clearError(){
+  errorEl.style.display="none";
+  errorEl.textContent="";
+}
+
+function cropDownscaleBase64(){
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if(!vw || !vh) return null;
+
+  const bandH = Math.floor(vh * 0.35);
+  const bandY = Math.floor((vh - bandH) / 2);
+
+  const crop = document.createElement("canvas");
+  crop.width = vw;
+  crop.height = bandH;
+  crop.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
+
+  const scale = DOWNSCALE_WIDTH / vw;
+  const outW = DOWNSCALE_WIDTH;
+  const outH = Math.floor(bandH * scale);
+
+  const out = document.createElement("canvas");
+  out.width = outW;
+  out.height = outH;
+  out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
+
+  return out.toDataURL("image/jpeg", JPEG_QUALITY);
+}
+
+function renderHand(cards, hold){
+  handDiv.innerHTML="";
+  cards.forEach((c,i)=>{
+    const d=document.createElement("div");
+    d.className="card"+(hold?.[i]?" hold":"");
+    const red=c.suit==="H"||c.suit==="D";
+    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
+    handDiv.appendChild(d);
+  });
+}
+
+/* ================= SNAP ================= */
+snapBtn.onclick = async()=>{
+  if(busy) return;
+  busy=true;
+  clearError();
+  explainDiv.style.display="none";
+  statusEl.textContent="Capturing…";
+
+  await new Promise(r=>requestAnimationFrame(r));
+  const img = cropDownscaleBase64();
+  if(!img){
+    showError("Camera not ready");
+    busy=false;
+    return;
+  }
+
+  statusEl.textContent="Reading cards + multiplier…";
+
+  try{
+    const res = await fetch(WORKER_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        imageBase64: img,
+        mode,
+        multiplier: Number(fallbackMult.value||1)
+      })
+    });
+
+    const data = await res.json();
+    if(data.error){
+      showError(data.error);
+      statusEl.textContent="Error";
+    }else{
+      renderHand(data.cards||[], data.hold||[]);
+      multShow.textContent = data.multiplier_used + "×";
+      multSrc.textContent = data.multiplier_detected ? "vision" : "manual";
+      explainDiv.style.display="block";
+      explainDiv.textContent = data.explanation || "";
+      statusEl.textContent="Done";
+    }
+  }catch(e){
+    showError("Network error");
+    statusEl.textContent="Error";
+  }
+
+  busy=false;
+};
 </script>
 </body>
 </html>
