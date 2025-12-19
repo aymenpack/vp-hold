@@ -4,97 +4,58 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>VP Assistant</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-
 <style>
-body{
-  margin:0;
-  font-family:Inter,-apple-system,system-ui;
-  background:#020617;
-  color:#e5e7eb;
-}
-.app{
-  max-width:900px;
-  margin:auto;
-  padding:16px 16px 96px;
-}
+body{margin:0;font-family:Inter,-apple-system,system-ui;background:#020617;color:#e5e7eb}
+.app{max-width:900px;margin:auto;padding:16px 16px 96px}
 header{border-bottom:1px solid #1f2937;padding-bottom:10px}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
-
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-select,button,input{
-  background:#020617;
-  color:#e5e7eb;
-  border:1px solid #374151;
-  border-radius:10px;
-  padding:10px 12px;
-  font-size:14px
-}
-button{font-weight:800}
-#multWrap{display:none}
-
-.scanner{
-  margin-top:12px;
-  border-radius:16px;
-  overflow:hidden;
-  border:1px solid #374151;
-}
-video{
-  width:100%;
-  max-height:260px;
-  object-fit:cover;
-  background:black;
-}
-
+select,button,input{background:#020617;color:#e5e7eb;border:1px solid #374151;border-radius:10px;padding:10px 12px;font-size:14px}
+button{font-weight:800;cursor:pointer}
+button:active{transform:scale(.98)}
+.scanner{margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151}
+video{width:100%;max-height:260px;object-fit:cover;background:black}
 .status{font-size:12px;color:#9ca3af;margin-top:6px}
-
 #hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:12px}
-.card{
-  border:1px solid #374151;border-radius:14px;
-  padding:14px 6px;text-align:center;background:#020617
-}
-.card.hold{
-  outline:3px solid #22c55e;
-  box-shadow:0 0 18px rgba(34,197,94,.7)
-}
+.card{border:1px solid #374151;border-radius:14px;padding:14px 6px;text-align:center;background:#020617}
+.card.hold{outline:3px solid #22c55e;box-shadow:0 0 18px rgba(34,197,94,.7)}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
-
-footer{
-  position:fixed;left:0;right:0;bottom:0;
-  padding:12px 16px;
-  background:#020617
-}
-#snap{
-  width:100%;padding:14px;font-size:16px;
-  border-radius:14px;
-  background:#22c55e;color:#000;font-weight:900;border:none
-}
+#errorBox{margin-top:12px;padding:12px;border:1px solid #7f1d1d;background:#450a0a;border-radius:12px;display:none}
+#debugBox{margin-top:12px;padding:12px;border:1px solid #374151;background:#020617;border-radius:12px;display:none;font-size:12px;color:#9ca3af;white-space:pre-wrap}
+footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#020617}
+#snap{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
 #snap:disabled{opacity:.6}
 </style>
 </head>
-
 <body>
 <div class="app">
 <header>
   <h1>VP Assistant</h1>
-  <div class="subtitle">Stable capture + analysis</div>
+  <div class="subtitle">Debug build – shows the real error (no more blind “scan failed”)</div>
 </header>
 
 <div class="controls">
   <select id="game">
     <option value="job">Jacks or Better</option>
+    <option value="bonus">Bonus Poker</option>
+    <option value="double_bonus">Double Bonus Poker</option>
+    <option value="ddb">Double Double Bonus</option>
+    <option value="deuces">Deuces Wild</option>
     <option value="ux">Ultimate X</option>
     <option value="uxp">Ultimate X Progressive</option>
   </select>
-  <div id="multWrap">
-    <input id="multiplier" type="number" min="1" max="12" value="1">
-  </div>
+
+  <select id="paytable">
+    <option value="9/6">9/6</option>
+    <option value="8/5">8/5</option>
+    <option value="standard">Standard</option>
+  </select>
+
+  <input id="multiplier" type="number" min="1" max="12" value="1">
 </div>
 
 <div class="scanner">
@@ -102,87 +63,99 @@ footer{
 </div>
 <div class="status" id="status">Starting camera…</div>
 
+<div id="errorBox"></div>
 <div id="hand"></div>
+<div id="debugBox"></div>
 </div>
 
 <footer>
   <button id="snap">SNAP</button>
 </footer>
 
+<canvas id="canvas" style="display:none"></canvas>
+
 <script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-const video = document.getElementById("video");
-const snapBtn = document.getElementById("snap");
-const handDiv = document.getElementById("hand");
-const statusEl = document.getElementById("status");
-const gameSel = document.getElementById("game");
-const multWrap = document.getElementById("multWrap");
-const multInput = document.getElementById("multiplier");
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const snapBtn=document.getElementById("snap");
+const statusEl=document.getElementById("status");
+const handDiv=document.getElementById("hand");
+const errorBox=document.getElementById("errorBox");
+const debugBox=document.getElementById("debugBox");
+
+const gameSel=document.getElementById("game");
+const paySel=document.getElementById("paytable");
+const multInput=document.getElementById("multiplier");
 
 let stream=null;
 let busy=false;
 
-/* Camera start */
 async function startCamera(){
   if(stream) return;
-  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
-  video.srcObject = stream;
-  statusEl.textContent = "Camera ready";
+  stream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:"environment"} });
+  video.srcObject=stream;
+  statusEl.textContent="Camera ready";
 }
 startCamera();
 
-/* Multiplier toggle */
-gameSel.onchange = ()=>{
-  multWrap.style.display = (gameSel.value==="ux"||gameSel.value==="uxp") ? "block":"none";
-};
-
-/* SNAP — HARD LOCK + SAFE CAPTURE */
-snapBtn.onclick = async ()=>{
+snapBtn.onclick=async()=>{
   if(busy) return;
   busy=true;
   snapBtn.disabled=true;
+  errorBox.style.display="none";
+  debugBox.style.display="none";
   statusEl.textContent="Capturing…";
 
-  // Wait one frame to ensure fresh video buffer
   await new Promise(r=>requestAnimationFrame(r));
 
-  const vw=video.videoWidth;
-  const vh=video.videoHeight;
-  if(!vw||!vh){
-    statusEl.textContent="Camera not ready";
-    busy=false; snapBtn.disabled=false; return;
-  }
+  const vw=video.videoWidth, vh=video.videoHeight;
+  if(!vw||!vh){ statusEl.textContent="Camera not ready"; busy=false; snapBtn.disabled=false; return; }
 
-  // Create a FRESH canvas every snap (key fix)
-  const canvas = document.createElement("canvas");
-  const bandH = Math.floor(vh*0.35);
-  const bandY = Math.floor((vh-bandH)/2);
-  canvas.width = vw;
-  canvas.height = bandH;
+  const bandH=Math.floor(vh*0.35);
+  const bandY=Math.floor((vh-bandH)/2);
+  canvas.width=vw; canvas.height=bandH;
+  canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
+  const img=canvas.toDataURL("image/jpeg",0.7);
 
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
-
-  const img = canvas.toDataURL("image/jpeg",0.7);
+  statusEl.textContent="Calling worker…";
 
   try{
-    const res = await fetch(WORKER_URL,{
+    const res=await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
         imageBase64: img,
         game: gameSel.value,
+        paytable: paySel.value,
         multiplier: Number(multInput.value||1)
       })
     });
 
-    const data = await res.json();
-    renderHand(data.cards||[], data.hold||[]);
-    statusEl.textContent="Done";
+    const data=await res.json();
+
+    if(data.error){
+      errorBox.textContent = `Error: ${data.error} (stage: ${data.stage || "?"})`;
+      errorBox.style.display="block";
+      if(data.message || data.why || data.openai_status || data.raw){
+        debugBox.textContent = JSON.stringify(data, null, 2);
+        debugBox.style.display="block";
+      }
+      statusEl.textContent="Error returned";
+    } else {
+      renderHand(data.cards||[], data.hold||[]);
+      debugBox.textContent = JSON.stringify(data.debug || data, null, 2);
+      debugBox.style.display="block";
+      statusEl.textContent="Done";
+    }
+
   }catch(e){
-    console.error(e);
-    statusEl.textContent="Scan failed";
+    errorBox.textContent="Fetch failed (network/cors).";
+    errorBox.style.display="block";
+    debugBox.textContent=String(e);
+    debugBox.style.display="block";
+    statusEl.textContent="Fetch failed";
   }
 
   busy=false;
