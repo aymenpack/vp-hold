@@ -144,6 +144,13 @@ video{
   line-height:1.5;
 }
 
+/* ===== CONFIDENCE ===== */
+#confidence{
+  margin-top:8px;
+  font-size:12px;
+  color:#9ca3af;
+}
+
 /* ===== SNAP ===== */
 footer{
   position:fixed;
@@ -173,7 +180,7 @@ footer{
 </header>
 
 <div class="banner">
-  <strong>Strategy engine:</strong> Deterministic (Jacks or Better)
+  <strong>Strategy engine:</strong> Deterministic (Jacks or Better, Bonus Poker)
 </div>
 
 <div class="controls">
@@ -189,6 +196,7 @@ footer{
   <select id="paytable">
     <option value="9/6">9/6</option>
     <option value="8/5">8/5</option>
+    <option value="standard">Standard</option>
   </select>
 </div>
 
@@ -202,6 +210,7 @@ footer{
 <div id="explanationBox">
   <h3>Why hold these cards?</h3>
   <p id="explanationText"></p>
+  <div id="confidence"></div>
 </div>
 
 </div>
@@ -213,8 +222,10 @@ footer{
 <canvas id="canvas" style="display:none;"></canvas>
 
 <script>
+/* ========= CONFIG ========= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
+/* ========= ELEMENTS ========= */
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const snapBtn = document.getElementById("snap");
@@ -224,11 +235,12 @@ const gameSel = document.getElementById("game");
 const paySel = document.getElementById("paytable");
 const explanationBox = document.getElementById("explanationBox");
 const explanationText = document.getElementById("explanationText");
+const confidenceEl = document.getElementById("confidence");
 
 let stream = null;
 let busy = false;
 
-/* CAMERA */
+/* ========= CAMERA ========= */
 async function startCamera(){
   if(stream) return;
   try{
@@ -249,10 +261,13 @@ document.addEventListener("visibilitychange",()=>{
   }
 });
 
-/* SNAP */
+/* ========= SNAP ========= */
 snapBtn.onclick = async ()=>{
   if(busy) return;
-  if(!video.videoWidth){ statusEl.textContent="Camera not ready"; return; }
+  if(!video.videoWidth){
+    statusEl.textContent="Camera not ready";
+    return;
+  }
 
   busy = true;
   statusEl.textContent="Scanning…";
@@ -282,7 +297,7 @@ snapBtn.onclick = async ()=>{
 
     const data = await res.json();
     renderHand(data.cards||[], data.hold||[]);
-    renderExplanation(data.explanation||"");
+    renderExplanation(data.explanation||"", data.confidence);
     statusEl.textContent="Done";
   }catch(e){
     statusEl.textContent="Scan failed";
@@ -291,7 +306,7 @@ snapBtn.onclick = async ()=>{
   busy = false;
 };
 
-/* RENDER */
+/* ========= RENDER ========= */
 function renderHand(cards, hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
@@ -306,13 +321,19 @@ function renderHand(cards, hold){
   });
 }
 
-function renderExplanation(text){
+function renderExplanation(text, confidence){
   if(!text){
     explanationBox.style.display="none";
     return;
   }
   explanationBox.style.display="block";
   explanationText.textContent=text;
+
+  if(typeof confidence === "number"){
+    confidenceEl.textContent = `Strategy confidence: ${Math.round(confidence*100)}%`;
+  }else{
+    confidenceEl.textContent = "";
+  }
 }
 </script>
 </body>
