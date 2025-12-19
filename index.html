@@ -1,167 +1,119 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Ultimate X Assistant</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
 <style>
-body{
-  margin:0;
-  font-family:Inter,-apple-system,system-ui;
-  background:#020617;
-  color:#e5e7eb;
-}
-.app{
-  max-width:900px;
-  margin:auto;
-  padding:16px 16px 120px;
-}
-header{
-  border-bottom:1px solid #1f2937;
-  padding-bottom:10px;
-}
+body{margin:0;font-family:Inter,-apple-system,system-ui;background:#020617;color:#e5e7eb}
+.app{max-width:900px;margin:auto;padding:16px 16px 120px}
+header{border-bottom:1px solid #1f2937;padding-bottom:10px}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
 
-.controls{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-top:12px;
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+select,button,input{
+  background:#020617;color:#e5e7eb;border:1px solid #374151;border-radius:10px;
+  padding:10px 12px;font-size:14px
 }
-select,input{
-  background:#020617;
-  color:#e5e7eb;
-  border:1px solid #374151;
-  border-radius:10px;
-  padding:10px 12px;
-  font-size:14px;
-}
+button{font-weight:900;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
 
 .scanner{
-  margin-top:12px;
-  border-radius:16px;
-  overflow:hidden;
-  border:1px solid #374151;
+  margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151;
+  position:relative;background:black;
 }
-video{
-  width:100%;
-  max-height:240px;
-  object-fit:cover;
-  background:black;
+video{width:100%;max-height:320px;object-fit:cover;display:block}
+.scanBand{
+  position:absolute;left:0;right:0;
+  border-top:2px dashed rgba(34,197,94,.8);
+  border-bottom:2px dashed rgba(34,197,94,.8);
+  pointer-events:none;
 }
-.status{font-size:12px;color:#9ca3af;margin-top:6px}
+.status{font-size:12px;color:#9ca3af;margin-top:8px}
 
-#cooldownBox{
-  margin-top:8px;
-  color:#facc15;
-  font-size:13px;
-  display:none;
+.panel{
+  margin-top:12px;padding:12px;border:1px solid #374151;border-radius:12px;background:#020617;
 }
+.panel h3{margin:0 0 8px;font-size:14px;color:#22c55e}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:#9ca3af}
+input[type="range"]{width:100%}
 
-.kpis{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top:12px;
-}
-.kpi{
-  padding:8px 12px;
-  border-radius:999px;
-  border:1px solid #374151;
-  background:#020617;
-  font-size:13px;
-}
-.kpi strong{color:#fff}
+.previewWrap{margin-top:10px}
+canvas{width:100%;border:1px solid #374151;border-radius:12px;background:black}
 
-#hand{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:12px;
-  margin-top:14px;
-}
-.card{
-  border:1px solid #374151;
-  border-radius:14px;
-  padding:14px 6px;
-  text-align:center;
-  background:#020617;
-}
-.card.hold{
-  outline:3px solid #22c55e;
-  box-shadow:0 0 18px rgba(34,197,94,.7);
-  transform:translateY(-4px);
-}
+#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:12px}
+.card{border:1px solid #374151;border-radius:14px;padding:14px 6px;text-align:center;background:#020617}
+.card.hold{outline:3px solid #22c55e;box-shadow:0 0 18px rgba(34,197,94,.7)}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
 
-#explanation{
-  margin-top:14px;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid #374151;
-  background:#020617;
-  font-size:14px;
-  line-height:1.5;
-}
-
-footer{
-  position:fixed;
-  left:0; right:0; bottom:0;
-  padding:12px 16px;
-  background:#020617;
-}
-#snap{
-  width:100%;
-  padding:14px;
-  font-size:16px;
-  border-radius:14px;
-  background:#22c55e;
-  color:#000;
-  font-weight:900;
-  border:none;
-}
-#snap:disabled{opacity:.5}
+footer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px;background:#020617}
+#snap{width:100%;padding:14px;font-size:16px;border-radius:14px;background:#22c55e;color:#000;font-weight:900;border:none}
 </style>
 </head>
 
 <body>
 <div class="app">
-
 <header>
   <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">Multiplier-aware strategy + EV</div>
+  <div class="subtitle">Calibrate crop → then scan</div>
 </header>
 
-<div class="controls">
+<div class="row">
   <select id="mode">
     <option value="ux">Ultimate X</option>
     <option value="uxp">Ultimate X Progressive</option>
   </select>
 
-  <input id="multiplier" type="number" min="1" max="12" value="1" placeholder="Multiplier (fallback)">
-  <input id="royalPayout" type="number" placeholder="Progressive Royal (per credit)" style="display:none">
+  <button id="toggleCal">Calibrate</button>
 </div>
 
-<div class="scanner">
+<div class="scanner" id="scanner">
   <video id="video" playsinline autoplay muted></video>
+  <div class="scanBand" id="scanBand"></div>
 </div>
-<div class="status" id="status">Camera ready</div>
-<div id="cooldownBox"></div>
 
-<div class="kpis">
-  <div class="kpi">EV (best): <strong id="evBest">—</strong></div>
-  <div class="kpi">EV (draw 5): <strong id="evDraw5">—</strong></div>
-  <div class="kpi">Multiplier: <strong id="multUsed">—</strong></div>
+<div class="status" id="status">Starting camera…</div>
+
+<div class="panel" id="calPanel" style="display:none">
+  <h3>Calibration</h3>
+  <div class="grid">
+    <div>
+      <label>Band vertical position</label>
+      <input id="bandY" type="range" min="0.15" max="0.75" step="0.01">
+    </div>
+    <div>
+      <label>Band height</label>
+      <input id="bandH" type="range" min="0.20" max="0.55" step="0.01">
+    </div>
+    <div>
+      <label>Zoom</label>
+      <input id="zoom" type="range" min="1.0" max="2.0" step="0.01">
+    </div>
+    <div>
+      <label>JPEG quality</label>
+      <input id="jpegQ" type="range" min="0.4" max="0.9" step="0.05">
+    </div>
+  </div>
+
+  <div class="previewWrap">
+    <label>Preview of the exact crop we send</label>
+    <canvas id="preview"></canvas>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <button id="saveCal">Save</button>
+    <button id="resetCal">Reset</button>
+  </div>
 </div>
 
 <div id="hand"></div>
-
-<div id="explanation"></div>
 
 </div>
 
@@ -171,112 +123,190 @@ footer{
 
 <script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-const COOLDOWN = 15;
 
 const video = document.getElementById("video");
-const snapBtn = document.getElementById("snap");
 const statusEl = document.getElementById("status");
-const cooldownBox = document.getElementById("cooldownBox");
-
 const modeSel = document.getElementById("mode");
-const multInput = document.getElementById("multiplier");
-const royalInput = document.getElementById("royalPayout");
+const snapBtn = document.getElementById("snap");
 
-const evBestEl = document.getElementById("evBest");
-const evDraw5El = document.getElementById("evDraw5");
-const multUsedEl = document.getElementById("multUsed");
+const calPanel = document.getElementById("calPanel");
+const toggleCal = document.getElementById("toggleCal");
+const scanBand = document.getElementById("scanBand");
+
+const bandY = document.getElementById("bandY");
+const bandH = document.getElementById("bandH");
+const zoom = document.getElementById("zoom");
+const jpegQ = document.getElementById("jpegQ");
+const preview = document.getElementById("preview");
+
+const saveCal = document.getElementById("saveCal");
+const resetCal = document.getElementById("resetCal");
+
 const handDiv = document.getElementById("hand");
-const explanationEl = document.getElementById("explanation");
 
 let stream=null;
-let cooldown=0;
-let timer=null;
+let busy=false;
+let cal = {
+  bandY: 0.50,   // center
+  bandH: 0.35,   // 35% height
+  zoom: 1.0,
+  jpegQ: 0.7
+};
 
-/* Camera */
+function loadCal(){
+  try{
+    const s = localStorage.getItem("ux_cal");
+    if(s) cal = {...cal, ...JSON.parse(s)};
+  }catch{}
+  bandY.value = cal.bandY;
+  bandH.value = cal.bandH;
+  zoom.value  = cal.zoom;
+  jpegQ.value = cal.jpegQ;
+}
+function saveCalToLocal(){
+  localStorage.setItem("ux_cal", JSON.stringify(cal));
+}
+
+loadCal();
+
 async function startCamera(){
   if(stream) return;
   stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
   video.srcObject = stream;
+  statusEl.textContent = "Camera ready";
+  requestAnimationFrame(updateBandOverlay);
+  requestAnimationFrame(updatePreviewLoop);
 }
 startCamera();
 
-/* Mode toggle */
-modeSel.onchange = ()=>{
-  royalInput.style.display = (modeSel.value==="uxp") ? "block" : "none";
+toggleCal.onclick = ()=>{
+  const show = calPanel.style.display === "none";
+  calPanel.style.display = show ? "block" : "none";
+  toggleCal.textContent = show ? "Close Calibration" : "Calibrate";
 };
 
-/* Cooldown */
-function startCooldown(){
-  cooldown = COOLDOWN;
-  snapBtn.disabled = true;
-  cooldownBox.style.display="block";
-  updateCooldown();
-  timer = setInterval(()=>{
-    cooldown--;
-    updateCooldown();
-    if(cooldown<=0){
-      clearInterval(timer);
-      snapBtn.disabled=false;
-      cooldownBox.style.display="none";
+function updateBandOverlay(){
+  const rect = video.getBoundingClientRect();
+  const top = rect.height * cal.bandY;
+  const h = rect.height * cal.bandH;
+  scanBand.style.top = (top - h/2) + "px";
+  scanBand.style.height = h + "px";
+  requestAnimationFrame(updateBandOverlay);
+}
+
+function captureCroppedDataURL(){
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if(!vw || !vh) return null;
+
+  // compute band in video pixel coordinates
+  const bandHeight = Math.floor(vh * cal.bandH);
+  const bandCenterY = Math.floor(vh * cal.bandY);
+  const bandTop = Math.max(0, Math.min(vh - bandHeight, bandCenterY - Math.floor(bandHeight/2)));
+
+  // crop region full width, band height
+  const baseCanvas = document.createElement("canvas");
+  baseCanvas.width = vw;
+  baseCanvas.height = bandHeight;
+  const ctx = baseCanvas.getContext("2d");
+  ctx.drawImage(video, 0, bandTop, vw, bandHeight, 0, 0, vw, bandHeight);
+
+  // zoom by drawing into a second canvas
+  const z = cal.zoom;
+  const out = document.createElement("canvas");
+  out.width = Math.floor(vw / z);
+  out.height = Math.floor(bandHeight / z);
+
+  const ox = Math.floor((vw - out.width*z)/2);
+  const oy = Math.floor((bandHeight - out.height*z)/2);
+
+  out.getContext("2d").drawImage(
+    baseCanvas,
+    ox, oy, out.width*z, out.height*z,
+    0, 0, out.width, out.height
+  );
+
+  return out.toDataURL("image/jpeg", cal.jpegQ);
+}
+
+function updatePreviewLoop(){
+  if(calPanel.style.display !== "none"){
+    const url = captureCroppedDataURL();
+    if(url){
+      const img = new Image();
+      img.onload = ()=>{
+        preview.width = img.width;
+        preview.height = img.height;
+        preview.getContext("2d").drawImage(img,0,0);
+      };
+      img.src = url;
     }
-  },1000);
-}
-function updateCooldown(){
-  cooldownBox.textContent = `Please wait ${cooldown}s (OpenAI vision limit).`;
+  }
+  requestAnimationFrame(updatePreviewLoop);
 }
 
-/* SNAP */
+// sliders update cal live
+[bandY, bandH, zoom, jpegQ].forEach(el=>{
+  el.oninput = ()=>{
+    cal.bandY = Number(bandY.value);
+    cal.bandH = Number(bandH.value);
+    cal.zoom  = Number(zoom.value);
+    cal.jpegQ = Number(jpegQ.value);
+  };
+});
+
+saveCal.onclick = ()=>{
+  saveCalToLocal();
+  statusEl.textContent = "Calibration saved ✅";
+};
+
+resetCal.onclick = ()=>{
+  cal = { bandY:0.50, bandH:0.35, zoom:1.0, jpegQ:0.7 };
+  loadCal();
+  saveCalToLocal();
+  statusEl.textContent = "Calibration reset ✅";
+};
+
 snapBtn.onclick = async ()=>{
-  if(snapBtn.disabled) return;
+  if(busy) return;
+  busy=true;
+  snapBtn.disabled=true;
+  statusEl.textContent="Scanning…";
 
-  statusEl.textContent="Capturing…";
-
-  await new Promise(r=>requestAnimationFrame(r));
-
-  const vw=video.videoWidth, vh=video.videoHeight;
-  if(!vw||!vh){ statusEl.textContent="Camera not ready"; return; }
-
-  const canvas=document.createElement("canvas");
-  const bandH=Math.floor(vh*0.35);
-  const bandY=Math.floor((vh-bandH)/2);
-  canvas.width=vw; canvas.height=bandH;
-  canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
-
-  const img=canvas.toDataURL("image/jpeg",0.7);
+  const img = captureCroppedDataURL();
+  if(!img){
+    statusEl.textContent="Camera not ready";
+    busy=false; snapBtn.disabled=false;
+    return;
+  }
 
   try{
-    const payload={
-      imageBase64: img,
-      mode: modeSel.value,
-      multiplier: Number(multInput.value||1),
-      royalPayout: modeSel.value==="uxp" ? Number(royalInput.value||0) : null
-    };
-
-    const res=await fetch(WORKER_URL,{
+    const res = await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify(payload)
+      body:JSON.stringify({
+        imageBase64: img,
+        mode: modeSel.value,
+        multiplier: 1,
+        royalPayout: null
+      })
     });
-    const data=await res.json();
 
+    const data = await res.json();
     if(data.error){
-      statusEl.textContent=data.error;
+      statusEl.textContent = "Error: " + data.error;
     }else{
-      renderHand(data.cards,data.hold);
-      evBestEl.textContent=data.ev_best?.toFixed(4) ?? data.ev?.toFixed(4) ?? "—";
-      evDraw5El.textContent=data.ev_draw5?.toFixed(4) ?? "—";
-      multUsedEl.textContent=data.multiplier+"×";
-      explanationEl.textContent=data.explanation || "";
+      renderHand(data.cards||[], data.hold||[]);
       statusEl.textContent="Done";
     }
-  }catch{
+  }catch(e){
     statusEl.textContent="Network error";
   }
 
-  startCooldown();
+  busy=false;
+  snapBtn.disabled=false;
 };
 
-/* Render */
 function renderHand(cards, hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
