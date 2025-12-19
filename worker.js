@@ -14,9 +14,9 @@ Read the VIDEO POKER machine screen.
 TASK:
 1) Identify EXACTLY 5 playing cards in the ACTIVE BOTTOM ROW, left to right.
 2) If game is Ultimate X or Ultimate X Progressive:
-   - Read the SINGLE multiplier shown on the LEFT of the card row (2X,4X,8X,10X,12X).
-   - Return it as a number (2,4,8,10,12).
-   - If not clearly visible, return null.
+   - Read the SINGLE multiplier shown on the LEFT (2X,4X,8X,10X,12X)
+   - Return as a number
+   - If unclear, return null
 
 Return STRICT JSON only:
 {
@@ -70,6 +70,7 @@ function extractJson(res) {
 ========================= */
 const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
 const SUITS = ["S","H","D","C"];
+const ROYAL = new Set(["A","K","Q","J","T"]);
 
 function rv(r){
   if(r==="A") return 14;
@@ -92,11 +93,20 @@ function countRanks(cards){
   for(const c of cards) m.set(c.rank,(m.get(c.rank)||0)+1);
   return m;
 }
+function buildIndexMap(cards, keyFn){
+  const m=new Map();
+  cards.forEach((c,i)=>{
+    const k=keyFn(c,i);
+    if(!m.has(k)) m.set(k,[]);
+    m.get(k).push(i);
+  });
+  return m;
+}
 function classifyNonWild(cards){
   const vals=cards.map(c=>rv(c.rank));
   const flush=isFlush(cards);
   const straight=isStraight(vals);
-  const royal = (uniqSorted(vals).join(",")==="10,11,12,13,14");
+  const royal=(uniqSorted(vals).join(",")==="10,11,12,13,14");
 
   const counts=[...countRanks(cards).values()].sort((a,b)=>b-a);
   if(straight && flush && royal) return "RF";
@@ -117,7 +127,6 @@ function hasHighPair(cards){
   }
   return false;
 }
-
 function buildDeck(exclude){
   const used=new Set(exclude.map(c=>c.rank+c.suit));
   const deck=[];
@@ -128,6 +137,17 @@ function buildDeck(exclude){
     }
   }
   return deck;
+}
+
+/* =========================
+   Multiplier selection
+========================= */
+function chooseMultiplier(visionMult, uiMult){
+  const v = Number(visionMult);
+  if(Number.isInteger(v) && v>=2 && v<=12) return v;
+  const u = Number(uiMult);
+  if(Number.isInteger(u) && u>=1 && u<=12) return u;
+  return 1;
 }
 
 /* =========================
@@ -149,7 +169,7 @@ const PT_DDB = {
 const PT_DEUCES = { NRF:800, WRF:25, SF:50, K5:15, K4:4, FH:4, FL:3, ST:2, K3:1 };
 
 /* =========================
-   Payouts
+   Payout functions (per 1 credit)
 ========================= */
 function payout_job(cards, key){
   const pt = ptJOB(key);
@@ -167,8 +187,8 @@ function payout_job(cards, key){
 }
 
 function payout_bonus(cards){
-  const pt = PT_BONUS;
-  const cls = classifyNonWild(cards);
+  const pt=PT_BONUS;
+  const cls=classifyNonWild(cards);
   if(cls==="RF") return pt.RF;
   if(cls==="SF") return pt.SF;
   if(cls==="K4"){
@@ -186,8 +206,8 @@ function payout_bonus(cards){
 }
 
 function payout_double_bonus(cards){
-  const pt = PT_DB;
-  const cls = classifyNonWild(cards);
+  const pt=PT_DB;
+  const cls=classifyNonWild(cards);
   if(cls==="RF") return pt.RF;
   if(cls==="SF") return pt.SF;
   if(cls==="K4"){
@@ -208,8 +228,8 @@ function payout_double_bonus(cards){
 }
 
 function payout_ddb(cards){
-  const pt = PT_DDB;
-  const cls = classifyNonWild(cards);
+  const pt=PT_DDB;
+  const cls=classifyNonWild(cards);
   if(cls==="RF") return pt.RF;
   if(cls==="SF") return pt.SF;
   if(cls==="K4"){
@@ -238,17 +258,15 @@ function payout_ddb(cards){
   return 0;
 }
 
+/* ---- Deuces wild payout (fast best-category) ---- */
 function canMakeFlush(non){
   if(non.length===0) return true;
   return new Set(non.map(c=>c.suit)).size===1;
 }
 function canMakeStraightWithWild(nonVals, d){
   const set=new Set(nonVals);
-  // wheel
-  {
-    const need=[14,2,3,4,5].filter(v=>!set.has(v)).length;
-    if(need<=d) return true;
-  }
+  const needWheel=[14,2,3,4,5].filter(v=>!set.has(v)).length;
+  if(needWheel<=d) return true;
   for(let start=2; start<=10; start++){
     const seq=[start,start+1,start+2,start+3,start+4];
     const need=seq.filter(v=>!set.has(v)).length;
@@ -262,52 +280,115 @@ function bestDeucesPayout(cards){
   const non=cards.filter(c=>c.rank!=="2");
   const nonVals=non.map(c=>rv(c.rank));
 
-  if(deuces===0){
-    if(classifyNonWild(cards)==="RF") return pt.NRF;
-  }
+  // Natural royal (no deuces)
+  if(deuces===0 && classifyNonWild(cards)==="RF") return pt.NRF;
 
   const flushPossible=canMakeFlush(non);
   const straightPossible=canMakeStraightWithWild(nonVals,deuces);
 
   // Wild royal
   if(deuces>0 && flushPossible){
-    const needed=[10,11,12,13,14].filter(v=>!new Set(nonVals).has(v)).length;
-    if(needed<=deuces) return pt.WRF;
+    const need=[10,11,12,13,14].filter(v=>!new Set(nonVals).has(v)).length;
+    if(need<=deuces) return pt.WRF;
   }
 
   // Straight flush
   if(flushPossible && straightPossible) return pt.SF;
 
-  // Five of a kind
-  {
-    const m=countBy(non.map(c=>c.rank), x=>x);
-    const max=m.size?Math.max(...m.values()):0;
-    if(max+deuces>=5) return pt.K5;
-  }
-  // Four of a kind
-  {
-    const m=countBy(non.map(c=>c.rank), x=>x);
-    const max=m.size?Math.max(...m.values()):0;
-    if(max+deuces>=4) return pt.K4;
-  }
+  // Five of a kind / four of a kind / etc.
+  const counts = new Map();
+  for(const c of non) counts.set(c.rank,(counts.get(c.rank)||0)+1);
+  const max = counts.size ? Math.max(...counts.values()) : 0;
 
-  // Full house (approx, but safe)
+  if(max+deuces>=5) return pt.K5;
+  if(max+deuces>=4) return pt.K4;
+
+  // Full house approx
   if(deuces>=2 && non.length>=3) return pt.FH;
 
   if(flushPossible) return pt.FL;
   if(straightPossible) return pt.ST;
 
-  // Three of a kind
-  {
-    const m=countBy(non.map(c=>c.rank), x=>x);
-    const max=m.size?Math.max(...m.values()):0;
-    if(max+deuces>=3) return pt.K3;
-  }
+  if(max+deuces>=3) return pt.K3;
+
   return 0;
 }
 
 /* =========================
-   EV ENGINE (bounded)
+   Hardened deterministic HOLD logic (fast)
+   This chooses the hold; EV computed only for this hold.
+========================= */
+function buildHoldFromIdx(idxs){
+  const hold=[false,false,false,false,false];
+  idxs.forEach(i=>hold[i]=true);
+  return hold;
+}
+function suitMap(cards){ return buildIndexMap(cards,(c)=>c.suit); }
+
+function find4ToRoyal(cards){
+  const sm=suitMap(cards);
+  for(const idx of sm.values()){
+    const r=idx.filter(i=>ROYAL.has(cards[i].rank));
+    if(r.length===4) return r;
+  }
+  return null;
+}
+function find3ToRoyal(cards){
+  const sm=suitMap(cards);
+  for(const idx of sm.values()){
+    const r=idx.filter(i=>ROYAL.has(cards[i].rank));
+    if(r.length===3) return r;
+  }
+  return null;
+}
+
+function decideHold(cards, game, mult){
+  // Hard invariants first:
+  const made = classifyNonWild(cards);
+
+  if(game==="deuces"){
+    const di=cards.map((c,i)=>c.rank==="2"?i:-1).filter(i=>i>=0);
+    if(di.length>=3) return { hold:[true,true,true,true,true], explanation:`${di.length} deuces — hold all.` };
+    if(di.length>0) return { hold: buildHoldFromIdx(di), explanation:`Deuces are wild — never discard a deuce.` };
+    // fallthrough to JOB-like if no deuces
+  }
+
+  // Quads always hold all (all games)
+  if(made==="K4") return { hold:[true,true,true,true,true], explanation:`Four of a kind — hold all five.` };
+  if(made==="FH" || made==="FL" || made==="ST" || made==="SF" || made==="RF") {
+    // Ultimate X high multiplier never breaks; otherwise still keep
+    return { hold:[true,true,true,true,true], explanation:`Made hand — hold all five.` };
+  }
+
+  // Premium draws
+  const r4=find4ToRoyal(cards);
+  if(r4) return { hold: buildHoldFromIdx(r4), explanation:`4 to a Royal Flush.` };
+
+  const r3=find3ToRoyal(cards);
+  if(r3) return { hold: buildHoldFromIdx(r3), explanation:`3 to a Royal Flush (suited).` };
+
+  // Pairs/trips/two pair cannot be missed
+  const rankToIdx=buildIndexMap(cards,(c)=>c.rank);
+  const groups=[...rankToIdx.entries()].map(([r,idx])=>({r,idx,c:idx.length})).sort((a,b)=>b.c-a.c||rv(b.r)-rv(a.r));
+  const trips=groups.find(g=>g.c===3);
+  const pairs=groups.filter(g=>g.c===2);
+
+  if(trips) return { hold: buildHoldFromIdx(trips.idx), explanation:`Three of a kind — hold trips.` };
+  if(pairs.length===2) return { hold: buildHoldFromIdx([...pairs[0].idx,...pairs[1].idx]), explanation:`Two pair — hold both pairs.` };
+  if(pairs.length===1) return { hold: buildHoldFromIdx(pairs[0].idx), explanation:`Pair — hold the pair.` };
+
+  // Ultimate X multiplier override (conservative)
+  if((game==="ux"||game==="uxp") && mult>=8){
+    // At high multiplier, avoid "draw 5" unless truly trash; keep two high cards if present
+    const hiIdx=[0,1,2,3,4].filter(i=>rv(cards[i].rank)>=11);
+    if(hiIdx.length>=2) return { hold: buildHoldFromIdx(hiIdx.slice(0,2)), explanation:`High multiplier ${mult}× — keep two high cards rather than drawing five.` };
+  }
+
+  return { hold:[false,false,false,false,false], explanation:`No premium draw or pair — draw five.` };
+}
+
+/* =========================
+   EV computation for ONE hold
 ========================= */
 function comboIter(arr,k,fn){
   const n=arr.length;
@@ -323,14 +404,6 @@ function comboIter(arr,k,fn){
   }
 }
 
-function chooseMultiplier(visionMult, uiMult){
-  const v=Number(visionMult);
-  if(Number.isInteger(v)&&v>=2&&v<=12) return v;
-  const u=Number(uiMult);
-  if(Number.isInteger(u)&&u>=1&&u<=12) return u;
-  return 1;
-}
-
 function payoutByGame(finalHand, game, paytableKey, mult){
   switch(game){
     case "job": return payout_job(finalHand, paytableKey);
@@ -340,18 +413,19 @@ function payoutByGame(finalHand, game, paytableKey, mult){
     case "deuces": return bestDeucesPayout(finalHand);
     case "ux":
     case "uxp":
-      return payout_job(finalHand, "9/6") * mult; // base job (assumption)
+      // Base assumed JOB 9/6; multiplier applied
+      return payout_job(finalHand, "9/6") * mult;
     default:
       return 0;
   }
 }
 
-function evForHold(cards, holdMask, game, paytableKey, mult){
+function evForChosenHold(cards, holdMask, game, paytableKey, mult){
   const held = cards.filter((_,i)=>holdMask[i]);
   const need = 5-held.length;
   const deck = buildDeck(cards);
 
-  // exact for very small draw
+  // exact for need<=2
   if(need<=2){
     let total=0,count=0;
     comboIter(deck, need, draw=>{
@@ -361,8 +435,7 @@ function evForHold(cards, holdMask, game, paytableKey, mult){
     return total/count;
   }
 
-  // bounded Monte Carlo (safe)
-  // More samples for need=3, fewer for need=5
+  // bounded samples
   const SAMPLES =
     need===3 ? 6000 :
     need===4 ? 4500 :
@@ -380,35 +453,12 @@ function evForHold(cards, holdMask, game, paytableKey, mult){
   return total/SAMPLES;
 }
 
-function bestHoldEV(cards, game, paytableKey, mult){
-  const start = Date.now();
-  const BUDGET_MS = 45; // hard stop for Cloudflare
-  let bestEV=-1e9;
-  let bestMask=0;
-
-  for(let mask=0; mask<32; mask++){
-    if(Date.now()-start > BUDGET_MS) break; // return best so far safely
-
-    const hold = [0,1,2,3,4].map(i=>!!(mask&(1<<i)));
-    const ev = evForHold(cards, hold, game, paytableKey, mult);
-    if(ev > bestEV){
-      bestEV=ev;
-      bestMask=mask;
-    }
-  }
-  const hold = [0,1,2,3,4].map(i=>!!(bestMask&(1<<i)));
-  return { hold, ev: bestEV };
-}
-
-function explain(cards, hold, ev, game, mult){
-  const held = cards.map((c,i)=>hold[i]?`${c.rank}${c.suit}`:null).filter(Boolean).join(" ");
-  const base = held ? `Hold: ${held}.` : `Hold none (draw five).`;
-  const add = (game==="ux"||game==="uxp") ? ` Ultimate X multiplier used: ${mult}×.` : "";
-  return `${base} Best-hold EV: ${ev.toFixed(4)} per 1 credit.${add}`;
+function evDraw5(cards, game, paytableKey, mult){
+  return evForChosenHold(cards, [false,false,false,false,false], game, paytableKey, mult);
 }
 
 /* =========================
-   WORKER
+   Worker
 ========================= */
 export default {
   async fetch(request, env){
@@ -422,21 +472,38 @@ export default {
         return new Response(JSON.stringify({error:"missing fields"}),{status:400,headers:corsHeaders});
       }
 
+      // Vision
       const vision = await callOpenAI(env.OPENAI_API_KEY, visionPrompt(game), imageBase64);
       const vis = extractJson(vision);
       const cards = vis.cards || [];
+
+      // Multiplier used (UX/UXP)
       const multUsed = chooseMultiplier(vis.multiplier, multiplier);
 
-      const payKey = paytable || "standard";
-      const { hold, ev } = bestHoldEV(cards, game, payKey, multUsed);
+      // Deterministic hold
+      const chosen = decideHold(cards, game, multUsed);
+
+      // EV for chosen hold (stable)
+      const ev_best = evForChosenHold(cards, chosen.hold, game, paytable, multUsed);
+
+      // Optional baseline EV for draw 5 (cheap)
+      const ev_draw5 = evDraw5(cards, game, paytable, multUsed);
+
+      const explanation =
+        `${chosen.explanation} ` +
+        `EV(best hold): ${ev_best.toFixed(4)} per 1 credit. ` +
+        `EV(draw 5): ${ev_draw5.toFixed(4)}. ` +
+        ((game==="ux"||game==="uxp") ? `Multiplier used: ${multUsed}×.` : "");
 
       return new Response(JSON.stringify({
         cards,
-        hold,
-        ev,
+        hold: chosen.hold,
+        ev: ev_best,
+        ev_best,
+        ev_draw5,
         multiplier: multUsed,
         confidence: 1.0,
-        explanation: explain(cards, hold, ev, game, multUsed)
+        explanation
       }),{status:200,headers:{...corsHeaders,"Content-Type":"application/json"}});
 
     }catch(e){
