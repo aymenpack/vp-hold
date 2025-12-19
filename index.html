@@ -85,7 +85,6 @@ snapBtn.onclick = async ()=>{
     return;
   }
 
-  // Crop middle band (cards row)
   const bandH = Math.floor(vh * 0.40);
   const bandY = Math.floor((vh - bandH) / 2);
 
@@ -102,9 +101,11 @@ snapBtn.onclick = async ()=>{
   try{
     const res = await fetch(ROBOFLOW_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ROBOFLOW_API_KEY
+      },
       body: JSON.stringify({
-        api_key: ROBOFLOW_API_KEY,
         inputs: {
           image: {
             type: "base64",
@@ -115,6 +116,7 @@ snapBtn.onclick = async ()=>{
     });
 
     const data = await res.json();
+    console.log("Roboflow response:", data);
 
     if(!data.outputs || !data.outputs[0]?.predictions){
       statusEl.textContent = "No cards detected";
@@ -122,10 +124,8 @@ snapBtn.onclick = async ()=>{
       return;
     }
 
-    // Extract predictions from workflow output
     const preds = data.outputs[0].predictions;
 
-    // Sort left → right
     const cards = preds
       .sort((a,b)=>a.x - b.x)
       .slice(0,5)
@@ -143,7 +143,6 @@ snapBtn.onclick = async ()=>{
 };
 
 function parseCardLabel(label){
-  // Examples: "10h", "qs", "ad"
   const suitChar = label.slice(-1).toUpperCase();
   let rank = label.slice(0, -1).toUpperCase();
   if(rank === "10") rank = "T";
