@@ -5,36 +5,51 @@ const corsHeaders = {
 };
 
 /* =========================
-   VISION PROMPT (cards only)
+   VISION PROMPT
+   (cards + multiplier)
 ========================= */
 function visionPrompt(game) {
   return `
-Read the VIDEO POKER machine.
+You are reading a VIDEO POKER machine screen.
 
 TASK:
-- Extract EXACTLY 5 cards from the active/bottom row, left to right.
-- If game is Ultimate X (ux/uxp), also read the SINGLE multiplier shown on the LEFT (e.g., 2x, 4x, 8x, 10x, 12x). If unclear, return null.
+1. Identify EXACTLY 5 playing cards in the ACTIVE (BOTTOM) ROW, left to right.
+2. IF the game is Ultimate X or Ultimate X Progressive:
+   - Read the SINGLE multiplier shown on the LEFT SIDE of the card row (e.g. "2X", "4X", "8X", "10X", "12X").
+   - Return it as a number (2,4,8,10,12).
+   - If the multiplier is NOT clearly visible, return null.
 
-Return STRICT JSON only:
+OUTPUT STRICT JSON ONLY:
 {
-  "cards":[{"rank":"A","suit":"S"}, ... 5],
-  "multiplier": 10
+  "cards": [
+    {"rank":"A","suit":"H"},
+    {"rank":"J","suit":"H"},
+    {"rank":"T","suit":"H"},
+    {"rank":"4","suit":"D"},
+    {"rank":"5","suit":"C"}
+  ],
+  "multiplier": 8
 }
 
-Ranks: A K Q J T 9..2
-Suits: S H D C
+Ranks: A,K,Q,J,T,9..2
+Suits: S,H,D,C
 Game: ${game}
 `;
 }
 
 /* =========================
-   COMMON HELPERS
+   HELPERS
 ========================= */
 const ROYAL = new Set(["A","K","Q","J","T"]);
 function rv(r){ return r==="A"?14:r==="K"?13:r==="Q"?12:r==="J"?11:r==="T"?10:+r; }
 function uniq(a){ return [...new Set(a)].sort((x,y)=>x-y); }
 function countBy(cards, f){
-  const m=new Map(); for(const c of cards){ const k=f(c); m.set(k,(m.get(k)||0)+1); } return m;
+  const m=new Map();
+  for(const c of cards){
+    const k=f(c);
+    m.set(k,(m.get(k)||0)+1);
+  }
+  return m;
 }
 function isFlush(cards){ return new Set(cards.map(c=>c.suit)).size===1; }
 function isStraight(vals){
@@ -62,118 +77,51 @@ function classify(cards){
 }
 function suitedMap(cards){
   const m=new Map();
-  cards.forEach((c,i)=>{ if(!m.has(c.suit)) m.set(c.suit,[]); m.get(c.suit).push(i); });
+  cards.forEach((c,i)=>{
+    if(!m.has(c.suit)) m.set(c.suit,[]);
+    m.get(c.suit).push(i);
+  });
   return m;
 }
 function pairRanks(cards){
   const m=countBy(cards,c=>c.rank);
   return [...m.entries()].filter(e=>e[1]===2).map(e=>e[0]).sort((a,b)=>rv(b)-rv(a));
 }
-function isHighPair(r){ return rv(r)>=11; } // J,Q,K,A
-
-function isFourToStraight(indices, cards){
-  if(indices.length!==4) return false;
-  const vals = indices.map(i=>rv(cards[i].rank));
-  const u=uniq(vals);
-  if(u.length!==4) return false;
-  const ok = arr => (arr[3]-arr[0] <= 4);
-  const alt = u.includes(14) ? uniq(u.map(v=>v===14?1:v)) : null;
-  return ok(u) || (alt && ok(alt));
-}
-function isFourToRoyal(indices, cards){
-  if(indices.length!==4) return false;
-  const suit = cards[indices[0]].suit;
-  if(!indices.every(i=>cards[i].suit===suit)) return false;
-  return indices.filter(i=>ROYAL.has(cards[i].rank)).length===4;
-}
-function isThreeToRoyalSuited(cards){
-  const suitMap = suitedMap(cards);
-  for(const [s, idx] of suitMap){
-    const royalIdx = idx.filter(i=>ROYAL.has(cards[i].rank));
-    if(royalIdx.length===3) return royalIdx;
-  }
-  return null;
-}
-function isFourToFlush(cards){
-  const suitMap=suitedMap(cards);
-  for(const [s, idx] of suitMap) if(idx.length===4) return idx;
-  return null;
-}
-function findFourToStraightFlush(cards){
-  // try any suit with >=4 cards; check 4-to-straight within that suit
-  const suitMap = suitedMap(cards);
-  for(const [s, idx] of suitMap){
-    if(idx.length<4) continue;
-    // check all 4-card subsets by dropping each one (cheap)
-    for(let drop=-1; drop<idx.length; drop++){
-      const pick = idx.filter((_,k)=>k!==drop).slice(0,4);
-      if(pick.length!==4) continue;
-      if(isFourToStraight(pick, cards)){
-        return pick;
-      }
-    }
-  }
-  return null;
-}
-function findFourToStraight(cards){
-  for(let drop=0; drop<5; drop++){
-    const pick=[0,1,2,3,4].filter(i=>i!==drop);
-    if(isFourToStraight(pick,cards)) return pick;
-  }
-  return null;
-}
-function twoSuitedHigh(cards){
-  const suitMap = suitedMap(cards);
-  for(const [s, idx] of suitMap){
-    const hi = idx.filter(i=>rv(cards[i].rank)>=11).sort((a,b)=>rv(cards[b].rank)-rv(cards[a].rank));
-    if(hi.length>=2) return [hi[0], hi[1]];
-  }
-  return null;
-}
-function twoHigh(cards){
-  const hi=[0,1,2,3,4].filter(i=>rv(cards[i].rank)>=11).sort((a,b)=>rv(cards[b].rank)-rv(cards[a].rank));
-  if(hi.length>=2) return [hi[0], hi[1]];
-  return null;
-}
+function isHighPair(r){ return rv(r)>=11; }
 
 /* =========================
-   JOB-like deterministic strategy
-   Applies to: JOB, Bonus, Double Bonus
-   Key correction included:
-   - 3-to-Royal suited is HIGH PRIORITY (before low pair and many weaker lines)
+   BASE STRATEGY (JOB-LIKE)
 ========================= */
 function solveJobLike(cards, gameName){
   const hold=[false,false,false,false,false];
-  const made = classify(cards);
+  const made=classify(cards);
 
-  // Made hands: straight or better
   if(["ROYAL","STFL","QUADS","FULL","FLUSH","STRAIGHT"].includes(made)){
     return { hold:[true,true,true,true,true], explanation:`Made hand (${made}). Never break it in ${gameName}.` };
   }
 
-  // 4 to Royal (suited)
-  for(const [s, idx] of suitedMap(cards)){
-    const royalIdx = idx.filter(i=>ROYAL.has(cards[i].rank));
-    if(royalIdx.length===4){
-      royalIdx.forEach(i=>hold[i]=true);
-      return { hold, explanation:`Hold 4 to a Royal Flush (highest value draw) in ${gameName}.` };
+  // 4 to Royal
+  for(const [s,idx] of suitedMap(cards)){
+    const r=idx.filter(i=>ROYAL.has(cards[i].rank));
+    if(r.length===4){
+      r.forEach(i=>hold[i]=true);
+      return { hold, explanation:`Hold 4 to a Royal Flush.` };
     }
   }
 
-  // ✅ CORRECTION: 3-to-Royal suited must be high priority
-  {
-    const r3 = isThreeToRoyalSuited(cards);
-    if(r3){
-      r3.forEach(i=>hold[i]=true);
-      return { hold, explanation:`Hold 3 to a Royal Flush (suited). This premium draw has higher EV than weak holds (e.g., random high cards).` };
+  // 3 to Royal (HIGH PRIORITY)
+  for(const [s,idx] of suitedMap(cards)){
+    const r=idx.filter(i=>ROYAL.has(cards[i].rank));
+    if(r.length===3){
+      r.forEach(i=>hold[i]=true);
+      return { hold, explanation:`Hold 3 to a Royal Flush (suited).` };
     }
   }
 
-  // Trips / Two pair / High pair
   if(made==="TRIPS"){
     const r=[...countBy(cards,c=>c.rank)].find(e=>e[1]===3)[0];
     cards.forEach((c,i)=>{ if(c.rank===r) hold[i]=true; });
-    return { hold, explanation:`Hold three of a kind (${r}s).` };
+    return { hold, explanation:`Hold three of a kind.` };
   }
 
   if(made==="TWOPAIR"){
@@ -192,137 +140,43 @@ function solveJobLike(cards, gameName){
     lowPair=p;
   }
 
-  // 4 to Straight Flush
-  {
-    const sf = findFourToStraightFlush(cards);
-    if(sf){
-      sf.forEach(i=>hold[i]=true);
-      return { hold, explanation:`Hold 4 to a Straight Flush (premium draw).` };
-    }
-  }
-
-  // 4 to Flush
-  {
-    const f = isFourToFlush(cards);
-    if(f){
-      f.forEach(i=>hold[i]=true);
-      return { hold, explanation:`Hold 4 to a Flush (strong draw).` };
-    }
-  }
-
-  // Low pair (after premium draws)
   if(lowPair){
     cards.forEach((c,i)=>{ if(c.rank===lowPair) hold[i]=true; });
-    return { hold, explanation:`Hold low pair (${lowPair}${lowPair}).` };
-  }
-
-  // 4 to Straight
-  {
-    const st = findFourToStraight(cards);
-    if(st){
-      st.forEach(i=>hold[i]=true);
-      return { hold, explanation:`Hold 4 to a Straight.` };
-    }
-  }
-
-  // Two suited high cards
-  {
-    const t = twoSuitedHigh(cards);
-    if(t){
-      t.forEach(i=>hold[i]=true);
-      return { hold, explanation:`Hold two suited high cards.` };
-    }
-  }
-
-  // Two high cards
-  {
-    const t = twoHigh(cards);
-    if(t){
-      t.forEach(i=>hold[i]=true);
-      return { hold, explanation:`Hold two high cards.` };
-    }
+    return { hold, explanation:`Hold low pair.` };
   }
 
   return { hold:[false,false,false,false,false], explanation:`No strong hand or premium draw — draw five.` };
 }
 
 /* =========================
-   DDB (Double Double Bonus)
-   - Correct quads/kicker handling for payouts
-   - Deterministic strategy fallback = job-like
+   ULTIMATE X STRATEGY
 ========================= */
-function solveDDB(cards){
+function solveUltimateX(cards, multiplier){
   const made=classify(cards);
-  if(made==="QUADS"){
-    // Always hold all 5 on quads in DDB
-    const counts=countBy(cards,c=>c.rank);
-    const quad=[...counts].find(e=>e[1]===4)[0];
-    const kicker=cards.find(c=>c.rank!==quad);
-    const k = kicker ? kicker.rank : "?";
 
-    // Qualifying kicker logic: only A/2/3/4 matter for bonus categories (explanation only)
-    const kickerQual = ["A","2","3","4"].includes(k);
+  // High multiplier: preserve made hands
+  if(multiplier>=8 && ["STRAIGHT","FLUSH","FULL","QUADS","STFL","ROYAL"].includes(made)){
     return {
       hold:[true,true,true,true,true],
-      explanation: kickerQual
-        ? `Four ${quad}s with qualifying kicker (${k}). Enhanced DDB payout — hold all five.`
-        : `Four ${quad}s. Always hold all five in Double Double Bonus.`
+      explanation:`High Ultimate X multiplier (${multiplier}×). Preserve made hand for future value.`
     };
   }
-  return solveJobLike(cards, "Double Double Bonus");
-}
 
-/* =========================
-   Deuces Wild
-   Core-correct deterministic behavior:
-   - never discard deuces
-   - hold all 5 with 3+ deuces
-   - otherwise use conservative draws
-========================= */
-function solveDeuces(cards){
-  const hold=[false,false,false,false,false];
-  const deuces = cards.filter(c=>c.rank==="2").length;
-
-  if(deuces>0){
-    cards.forEach((c,i)=>{ if(c.rank==="2") hold[i]=true; });
-
-    if(deuces>=3){
-      return { hold:[true,true,true,true,true], explanation:`${deuces} deuces (wild). Always hold all five.` };
-    }
-    return { hold, explanation:`Deuces are wild. Never discard a deuce; draw the rest.` };
-  }
-
-  // No deuces: treat like job-like but labeled
-  return solveJobLike(cards, "Deuces Wild (no deuces)");
-}
-
-/* =========================
-   Ultimate X / Ultimate X Progressive
-   Deterministic & safe:
-   - Start with base job-like strategy
-   - Apply multiplier-aware overrides
-========================= */
-function solveUltimateX(cards, mult){
-  const base = solveJobLike(cards, `Ultimate X (${mult}x)`);
-  const made = classify(cards);
-
-  // Never break straight or better at high multiplier
-  if(mult>=8 && ["STRAIGHT","FLUSH","FULL","QUADS","STFL","ROYAL"].includes(made)){
-    return { hold:[true,true,true,true,true], explanation:`High multiplier (${mult}x). Preserve made hand (straight or better).` };
-  }
-
-  // If multiplier is high and base says “draw five”, still keep 3-to-royal suited if present (already in base)
-  base.explanation += ` Multiplier: ${mult}x.`;
+  const base=solveJobLike(cards, `Ultimate X (${multiplier}×)`);
+  base.explanation += ` Multiplier applied: ${multiplier}×.`;
   return base;
 }
 
 /* =========================
-   OpenAI call + JSON extraction
+   OPENAI HELPERS
 ========================= */
 async function callOpenAI(apiKey, prompt, imageBase64){
   const res=await fetch("https://api.openai.com/v1/chat/completions",{
     method:"POST",
-    headers:{ "Authorization":`Bearer ${apiKey}`, "Content-Type":"application/json" },
+    headers:{
+      "Authorization":`Bearer ${apiKey}`,
+      "Content-Type":"application/json"
+    },
     body:JSON.stringify({
       model:"gpt-4.1-mini",
       temperature:0,
@@ -355,30 +209,34 @@ export default {
 
     try{
       const { imageBase64, game, paytable, multiplier=1 } = await request.json();
-      if(!imageBase64 || !game || !paytable) return new Response(JSON.stringify({error:"missing fields"}),{status:400,headers:corsHeaders});
+      if(!imageBase64 || !game){
+        return new Response(JSON.stringify({error:"missing fields"}),{status:400,headers:corsHeaders});
+      }
 
       const vision=await callOpenAI(env.OPENAI_API_KEY, visionPrompt(game), imageBase64);
       const vis=extractJson(vision);
       const cards=vis.cards||[];
 
-      // multiplier: prefer visible from vision; else use provided
-      const detMult = (vis.multiplier ?? null) ? vis.multiplier : multiplier;
+      // Trust vision multiplier if valid
+      let usedMult = Number.isInteger(vis.multiplier) && vis.multiplier>=2 && vis.multiplier<=12
+        ? vis.multiplier
+        : Number(multiplier)||1;
 
       let out, conf=1.0;
 
-      if(game==="job") out = solveJobLike(cards, `Jacks or Better (${paytable})`);
-      else if(game==="bonus") out = solveJobLike(cards, `Bonus Poker (${paytable})`);
-      else if(game==="double_bonus") out = solveJobLike(cards, `Double Bonus Poker (${paytable})`);
-      else if(game==="ddb") out = solveDDB(cards);
-      else if(game==="deuces") out = solveDeuces(cards);
-      else if(game==="ux" || game==="uxp") out = solveUltimateX(cards, detMult);
+      if(game==="job") out=solveJobLike(cards, "Jacks or Better");
+      else if(game==="bonus") out=solveJobLike(cards, "Bonus Poker");
+      else if(game==="double_bonus") out=solveJobLike(cards, "Double Bonus Poker");
+      else if(game==="ddb") out=solveDDB(cards);
+      else if(game==="deuces") out=solveDeuces(cards);
+      else if(game==="ux"||game==="uxp") out=solveUltimateX(cards, usedMult);
       else { out={hold:[false,false,false,false,false], explanation:`Unknown game.`}; conf=0.6; }
 
       return new Response(JSON.stringify({
         cards,
-        hold:out.hold,
-        explanation:out.explanation,
-        multiplier: detMult,
+        hold: out.hold,
+        explanation: out.explanation,
+        multiplier: usedMult,
         confidence: conf
       }),{status:200,headers:{...corsHeaders,"Content-Type":"application/json"}});
 
