@@ -19,27 +19,55 @@ body{
 .app{
   max-width:900px;
   margin:auto;
-  padding:calc(12px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
+  padding:
+    calc(12px + env(safe-area-inset-top))
+    16px
+    calc(96px + env(safe-area-inset-bottom));
 }
-header{border-bottom:1px solid #1f2937;padding-bottom:10px}
+
+header{
+  border-bottom:1px solid #1f2937;
+  padding-bottom:10px;
+}
 h1{margin:0;font-size:20px;font-weight:900}
 .subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
 
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-select,button,input{
-  background:#020617;color:#e5e7eb;border:1px solid #374151;border-radius:10px;
-  padding:10px 12px;font-size:14px
+.controls{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
 }
-button{font-weight:700;cursor:pointer}
+select,button,input{
+  background:#020617;
+  color:#e5e7eb;
+  border:1px solid #374151;
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:14px;
+}
+button{font-weight:800;cursor:pointer}
 button:active{transform:scale(.98)}
 #multWrap{display:none}
 
 .scanner{
-  margin-top:12px;border-radius:16px;overflow:hidden;border:1px solid #374151;
+  margin-top:12px;
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid #374151;
   box-shadow:0 0 0 6px rgba(34,197,94,.15),0 20px 40px rgba(0,0,0,.6);
 }
-video{width:100%;max-height:260px;object-fit:cover;background:black}
-.status{font-size:12px;color:#9ca3af;margin-top:6px}
+video{
+  width:100%;
+  max-height:260px;
+  object-fit:cover;
+  background:black;
+}
+.status{
+  font-size:12px;
+  color:#9ca3af;
+  margin-top:6px;
+}
 
 .kpis{
   margin-top:12px;
@@ -57,38 +85,82 @@ video{width:100%;max-height:260px;object-fit:cover;background:black}
 }
 .kpi strong{color:#e5e7eb}
 
+#handCategory{
+  margin-top:12px;
+  display:none;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid #14532d;
+  background:#052e16;
+  color:#bbf7d0;
+  font-weight:800;
+  font-size:13px;
+}
+
 #hand{
-  display:grid;grid-template-columns:repeat(5,1fr);
-  gap:12px;margin-top:14px
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+  margin-top:12px;
 }
 .card{
-  border:1px solid #374151;border-radius:14px;
-  padding:14px 6px;text-align:center;background:#020617
+  border:1px solid #374151;
+  border-radius:14px;
+  padding:14px 6px;
+  text-align:center;
+  background:#020617;
+  position:relative;
 }
-.card.hold{outline:3px solid #22c55e;box-shadow:0 0 18px rgba(34,197,94,.7);transform:translateY(-4px)}
+.card.hold{
+  outline:3px solid #22c55e;
+  box-shadow:0 0 18px rgba(34,197,94,.7);
+  transform:translateY(-4px);
+}
 .rank{font-size:22px;font-weight:900}
 .suit{font-size:18px}
 .red{color:#ef4444}
 
 #explanationBox{
-  margin-top:14px;padding:14px;border-radius:14px;
-  border:1px solid #374151;background:#020617;display:none
+  margin-top:14px;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #374151;
+  background:#020617;
+  display:none;
 }
-#explanationBox h3{margin:0 0 6px;font-size:14px;color:#22c55e}
-#explanationText{margin:0;font-size:14px;line-height:1.5}
-#confidence{margin-top:6px;font-size:12px;color:#9ca3af}
-#evNote{margin-top:6px;font-size:12px;color:#9ca3af}
+#explanationBox h3{
+  margin:0 0 6px;
+  font-size:14px;
+  color:#22c55e;
+}
+#explanationText{
+  margin:0;
+  font-size:14px;
+  line-height:1.5;
+}
+#confidence{
+  margin-top:6px;
+  font-size:12px;
+  color:#9ca3af;
+}
 
 footer{
-  position:fixed;left:0;right:0;bottom:0;
+  position:fixed;
+  left:0; right:0; bottom:0;
   padding:12px 16px calc(12px + env(safe-area-inset-bottom));
   background:linear-gradient(180deg,transparent,#020617 40%);
 }
 #snap{
-  width:100%;padding:14px;font-size:16px;border-radius:14px;
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border-radius:14px;
   background:linear-gradient(180deg,#22c55e,#16a34a);
-  color:#000;font-weight:900;border:none
+  color:#000;
+  font-weight:900;
+  border:none;
 }
+#snap:disabled{opacity:.6;cursor:not-allowed}
 </style>
 </head>
 
@@ -97,7 +169,7 @@ footer{
 
 <header>
   <h1>VP Assistant</h1>
-  <div class="subtitle">Deterministic video poker strategy + EV (JOB)</div>
+  <div class="subtitle">EV-driven holds (vision reads cards, backend computes best hold)</div>
 </header>
 
 <div class="controls">
@@ -129,16 +201,16 @@ footer{
 
 <div class="kpis">
   <div class="kpi">EV: <strong id="evVal">—</strong></div>
-  <div class="kpi">Multiplier: <strong id="multVal">—</strong></div>
+  <div class="kpi">Multiplier used: <strong id="multUsed">—</strong></div>
 </div>
 
+<div id="handCategory"></div>
 <div id="hand"></div>
 
 <div id="explanationBox">
   <h3>Why hold these cards?</h3>
   <p id="explanationText"></p>
   <div id="confidence"></div>
-  <div id="evNote"></div>
 </div>
 
 </div>
@@ -150,127 +222,186 @@ footer{
 <canvas id="canvas" style="display:none;"></canvas>
 
 <script>
+/* ========= CONFIG ========= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
+/* ========= ELEMENTS ========= */
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const snapBtn = document.getElementById("snap");
 const handDiv = document.getElementById("hand");
 const statusEl = document.getElementById("status");
+
 const gameSel = document.getElementById("game");
 const paySel = document.getElementById("paytable");
 const multWrap = document.getElementById("multWrap");
 const multInput = document.getElementById("multiplier");
 
 const evVal = document.getElementById("evVal");
-const multVal = document.getElementById("multVal");
+const multUsed = document.getElementById("multUsed");
 
+const handCategoryEl = document.getElementById("handCategory");
 const explanationBox = document.getElementById("explanationBox");
 const explanationText = document.getElementById("explanationText");
 const confidenceEl = document.getElementById("confidence");
-const evNoteEl = document.getElementById("evNote");
 
-let stream=null, busy=false;
+let stream = null;
+let busy = false;
 
+/* ========= CAMERA ========= */
 async function startCamera(){
   if(stream) return;
   try{
-    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
     video.srcObject = stream;
     statusEl.textContent = "Camera ready";
-  }catch{
+  }catch(e){
     statusEl.textContent = "Camera permission denied";
+    console.error(e);
   }
 }
-startCamera();
 
-document.addEventListener("visibilitychange",()=>{
+document.addEventListener("visibilitychange", ()=>{
   if(document.hidden){
-    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  }else startCamera();
+    if(stream){
+      stream.getTracks().forEach(t=>t.stop());
+      stream = null;
+    }
+  } else {
+    startCamera();
+  }
 });
 
-function updateMultUI(){
+startCamera();
+
+/* ========= UI LOGIC ========= */
+function updateMultiplierUI(){
   const g = gameSel.value;
-  const show = (g==="ux" || g==="uxp");
-  multWrap.style.display = show ? "block" : "none";
+  multWrap.style.display = (g==="ux" || g==="uxp") ? "block" : "none";
 }
-gameSel.onchange = updateMultUI;
-updateMultUI();
+gameSel.onchange = updateMultiplierUI;
+updateMultiplierUI();
 
+/* ========= SNAP ========= */
 snapBtn.onclick = async ()=>{
-  if(busy || !video.videoWidth) return;
-  busy=true;
-  statusEl.textContent="Scanning…";
+  if(busy) return;
+  if(!video.videoWidth){
+    statusEl.textContent = "Camera not ready";
+    return;
+  }
 
-  const vw=video.videoWidth, vh=video.videoHeight;
-  const bandH=vh*0.35, bandY=(vh-bandH)/2;
+  busy = true;
+  snapBtn.disabled = true;
+  statusEl.textContent = "Computing EV…";
 
-  canvas.width=vw; canvas.height=bandH;
-  canvas.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
+  // Capture horizontal band (cards row)
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const bandH = vh * 0.35;
+  const bandY = (vh - bandH) / 2;
 
-  const img = canvas.toDataURL("image/jpeg",0.7);
+  canvas.width = vw;
+  canvas.height = bandH;
+  canvas.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
+
+  const img = canvas.toDataURL("image/jpeg", 0.7);
 
   try{
-    const res = await fetch(WORKER_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        imageBase64: img,
-        game: gameSel.value,
-        paytable: paySel.value,
-        multiplier: Number(multInput.value||1)
-      })
+    const payload = {
+      imageBase64: img,
+      game: gameSel.value,
+      paytable: paySel.value,
+      multiplier: Number(multInput.value || 1)
+    };
+
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
+
     const data = await res.json();
+    if(data.error){
+      throw new Error(data.error);
+    }
 
-    renderHand(data.cards||[], data.hold||[]);
-    renderExplanation(data.explanation||"", data.confidence, data.ev_note||"");
-    renderEV(data.ev);
-    renderMultiplier(data.multiplier);
+    // Render everything from worker response
+    renderHand(data.cards || [], data.hold || []);
+    renderHandCategory(data.cards || [], data.hold || []);
+    renderExplanation(data.explanation || "", data.confidence);
 
-    // If worker returned multiplier, reflect it
-    if((gameSel.value==="ux"||gameSel.value==="uxp") && data.multiplier){
+    if(typeof data.ev === "number") evVal.textContent = data.ev.toFixed(4);
+    else evVal.textContent = "—";
+
+    if(typeof data.multiplier === "number") multUsed.textContent = data.multiplier + "×";
+    else multUsed.textContent = "—";
+
+    // If worker detected multiplier, reflect it in UI for UX/UXP
+    if((gameSel.value==="ux" || gameSel.value==="uxp") && typeof data.multiplier === "number"){
       multInput.value = data.multiplier;
     }
 
-    statusEl.textContent="Done";
-  }catch{
-    statusEl.textContent="Scan failed";
+    statusEl.textContent = "Done";
+  }catch(e){
+    statusEl.textContent = "Scan failed";
+    console.error(e);
   }
-  busy=false;
+
+  busy = false;
+  snapBtn.disabled = false;
 };
 
+/* ========= RENDER ========= */
 function renderHand(cards, hold){
-  handDiv.innerHTML="";
-  cards.forEach((c,i)=>{
-    const d=document.createElement("div");
-    d.className="card"+(hold[i]?" hold":"");
-    const red=c.suit==="H"||c.suit==="D";
-    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
+  handDiv.innerHTML = "";
+  for(let i=0;i<cards.length;i++){
+    const c = cards[i];
+    const d = document.createElement("div");
+    d.className = "card" + (hold[i] ? " hold" : "");
+    const red = c.suit==="H" || c.suit==="D";
+    d.innerHTML = `
+      <div class="rank ${red ? "red":""}">${c.rank}</div>
+      <div class="suit ${red ? "red":""}">${c.suit}</div>
+    `;
     handDiv.appendChild(d);
-  });
+  }
 }
 
-function renderExplanation(text, confidence, note){
-  if(!text){
-    explanationBox.style.display="none";
+function renderHandCategory(cards, hold){
+  if(!cards || cards.length!==5){
+    handCategoryEl.style.display="none";
     return;
   }
-  explanationBox.style.display="block";
-  explanationText.textContent=text;
-  confidenceEl.textContent = (typeof confidence==="number") ? `Strategy confidence: ${Math.round(confidence*100)}%` : "";
-  evNoteEl.textContent = note || "";
+  const held = cards.filter((_,i)=>hold[i]);
+  let label = "Draw Five";
+
+  if(held.length===5) label = "Hold All (Made Hand / Best)";
+  else if(held.length===4) label = "4-card Hold (Draw)";
+  else if(held.length===3) label = "3-card Hold (Draw)";
+  else if(held.length===2) label = "2-card Hold";
+  else if(held.length===1) label = "1-card Hold";
+
+  handCategoryEl.textContent = "Hand category: " + label;
+  handCategoryEl.style.display="inline-block";
 }
 
-function renderEV(ev){
-  if(typeof ev === "number") evVal.textContent = ev.toFixed(4);
-  else evVal.textContent = "—";
-}
-
-function renderMultiplier(m){
-  if(typeof m === "number") multVal.textContent = m + "×";
-  else multVal.textContent = "—";
+function renderExplanation(text, confidence){
+  if(!text){
+    explanationBox.style.display = "none";
+    explanationText.textContent = "";
+    confidenceEl.textContent = "";
+    return;
+  }
+  explanationBox.style.display = "block";
+  explanationText.textContent = text;
+  if(typeof confidence === "number"){
+    confidenceEl.textContent = `Confidence: ${Math.round(confidence*100)}%`;
+  }else{
+    confidenceEl.textContent = "";
+  }
 }
 </script>
 </body>
