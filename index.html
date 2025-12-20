@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Ultimate X Assistant</title>
+<title>Ultimate X Triple Play</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 
@@ -17,187 +17,61 @@
   --green:#22c55e;
   --blue:#38bdf8;
   --danger:#ef4444;
+  --gold:#facc15;
 }
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Inter,-apple-system,system-ui;
-  background:radial-gradient(circle at top,#020617,#000 70%);
-  color:var(--text);
-}
-.app{
-  max-width:920px;
-  margin:auto;
-  padding:18px 16px 180px;
-}
-
-/* Header */
-header{
-  border-bottom:1px solid var(--border);
-  padding-bottom:12px;
-}
+body{margin:0;font-family:Inter;background:radial-gradient(circle at top,#020617,#000 70%);color:var(--text)}
+.app{max-width:920px;margin:auto;padding:18px 16px 190px}
+header{border-bottom:1px solid var(--border);padding-bottom:12px}
 h1{margin:0;font-size:26px;font-weight:900}
-.subtitle{font-size:13px;color:var(--muted)}
+.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
 
-/* Tabs */
 .tabs{display:flex;gap:12px;margin-top:14px}
-.tab{
-  flex:1;
-  padding:16px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  text-align:center;
-  font-weight:900;
-  cursor:pointer;
-}
-.tab.active{
-  outline:3px solid var(--green);
-  box-shadow:0 0 30px rgba(34,197,94,.6);
-}
+.tab{flex:1;padding:16px;border-radius:16px;border:1px solid var(--border);background:var(--panel);text-align:center;font-weight:900;cursor:pointer}
+.tab.active{outline:3px solid var(--green);box-shadow:0 0 30px rgba(34,197,94,.6)}
 
-/* Controls */
-.row{display:flex;gap:12px;margin-top:16px}
-input,button{
-  background:var(--panel);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:14px;
-  font-size:15px;
-}
-input{flex:1}
-button.primary{
-  background:linear-gradient(180deg,var(--green),#16a34a);
-  color:#000;
-  border:none;
-  font-weight:900;
-}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+input,button{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:14px}
+button.primary{background:linear-gradient(180deg,var(--green),#16a34a);color:#000;border:none;font-weight:900}
 
-/* Camera */
-.scanner{
-  margin-top:18px;
-  border-radius:22px;
-  overflow:hidden;
-  border:1px solid var(--border);
-  position:relative;
-}
+.scanner{margin-top:18px;border-radius:22px;overflow:hidden;border:1px solid var(--border);position:relative}
 video{width:100%;max-height:320px;object-fit:cover;background:black}
-.band{
-  position:absolute;left:0;right:0;
-  border-top:2px dashed var(--blue);
-  border-bottom:2px dashed var(--blue);
-}
+.band{position:absolute;left:0;right:0;border-top:2px dashed var(--blue);border-bottom:2px dashed var(--blue);pointer-events:none}
+.status{font-size:12px;color:var(--muted);margin-top:8px}
+#error{margin-top:10px;padding:12px;border-radius:14px;background:#7f1d1d;display:none}
 
-/* KPIs */
-.kpis{display:flex;gap:12px;margin-top:16px}
-.kpi{
-  padding:12px 18px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  font-size:14px;
-}
+.kpis{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+.kpi{padding:10px 14px;border-radius:999px;border:1px solid var(--border);background:var(--panel);font-size:13px;color:var(--muted)}
 .kpi strong{color:#fff}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:900}
+.badge.weighted{background:rgba(56,189,248,.18);border:1px solid rgba(56,189,248,.5)}
+.badge.conv{background:rgba(250,204,21,.18);border:1px solid rgba(250,204,21,.6)}
 
-/* Hand */
-#hand{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:16px;
-  margin-top:22px;
-}
-.card{
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:20px 6px;
-  text-align:center;
-  background:var(--panel);
-  position:relative;
-}
-.card.hold{
-  outline:3px solid var(--green);
-  box-shadow:0 0 30px rgba(34,197,94,.7);
-  transform:translateY(-8px);
-}
-.card.hold::after{
-  content:"HOLD";
-  position:absolute;
-  top:-10px;
-  left:50%;
-  transform:translateX(-50%);
-  background:var(--green);
-  color:#000;
-  font-size:11px;
-  padding:4px 10px;
-  border-radius:999px;
-  font-weight:900;
-}
+#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:22px}
+.card{border:1px solid var(--border);border-radius:18px;padding:20px 6px;text-align:center;background:var(--panel);position:relative}
+.card.hold{outline:3px solid var(--green);box-shadow:0 0 30px rgba(34,197,94,.7);transform:translateY(-8px)}
+.card.hold::after{content:"HOLD";position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-size:11px;padding:4px 10px;border-radius:999px;font-weight:900}
 .rank{font-size:28px;font-weight:900}
 .suit{font-size:20px}
 .red{color:var(--danger)}
 
-/* Explanation */
-#explain{
-  margin-top:18px;
-  padding:16px;
-  border-radius:18px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  display:none;
-}
+#explain{margin-top:18px;padding:16px;border-radius:18px;border:1px solid var(--border);background:var(--panel);display:none;line-height:1.6}
 
-/* History */
-#historyBtn{
-  position:fixed;
-  bottom:96px;
-  right:18px;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:999px;
-  padding:14px;
-  font-size:18px;
-  cursor:pointer;
-}
-#historyDrawer{
-  position:fixed;
-  left:0;right:0;bottom:0;
-  height:60%;
-  background:var(--panel);
-  border-top:2px solid var(--border);
-  border-radius:20px 20px 0 0;
-  padding:16px;
-  transform:translateY(100%);
-  transition:.3s;
-  overflow:auto;
-}
+#historyBtn{position:fixed;bottom:108px;right:18px;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:14px;font-size:18px;cursor:pointer}
+#historyDrawer{position:fixed;left:0;right:0;bottom:0;height:60%;background:var(--panel);border-top:2px solid var(--border);border-radius:20px 20px 0 0;padding:16px;transform:translateY(100%);transition:.3s;overflow:auto}
 #historyDrawer.open{transform:translateY(0)}
-.historyItem{
-  padding:10px;
-  border-bottom:1px solid var(--border);
-  font-size:14px;
-}
+.historyItem{padding:10px;border-bottom:1px solid var(--border);font-size:14px}
 
-/* Footer */
-footer{
-  position:fixed;left:0;right:0;bottom:0;
-  padding:16px;
-  background:linear-gradient(180deg,transparent,#000 50%);
-}
-#snap{
-  width:100%;
-  padding:18px;
-  font-size:20px;
-  border-radius:24px;
-}
+footer{position:fixed;left:0;right:0;bottom:0;padding:16px;background:linear-gradient(180deg,transparent,#000 50%)}
+#snap{width:100%;padding:18px;font-size:20px;border-radius:24px}
 </style>
 </head>
 
 <body>
 <div class="app">
 <header>
-  <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">Vision · Multiplier · Strategy</div>
+  <h1>Ultimate X Triple Play</h1>
+  <div class="subtitle">6/5 Bonus Poker · Vision reads cards + 3 multipliers</div>
 </header>
 
 <div class="tabs">
@@ -206,17 +80,29 @@ footer{
 </div>
 
 <div class="row">
-  <input id="fallbackMult" type="number" min="1" max="12" value="1">
+  <input id="m1" type="number" min="1" max="12" value="1" placeholder="Hand 1 mult">
+  <input id="m2" type="number" min="1" max="12" value="1" placeholder="Hand 2 mult">
+  <input id="m3" type="number" min="1" max="12" value="1" placeholder="Hand 3 mult">
 </div>
 
 <div class="scanner">
   <video id="video" autoplay playsinline muted></video>
-  <div class="band"></div>
+  <div class="band" id="band"></div>
+</div>
+
+<div class="status" id="status">Camera ready</div>
+<div id="error"></div>
+
+<div class="kpis">
+  <div class="kpi">Detected: <strong id="detShow">—</strong></div>
+  <div class="kpi">Used: <strong id="usedShow">—</strong></div>
+  <div class="kpi">Total: <strong id="totalShow">—</strong></div>
+  <div class="kpi">Mode: <strong id="modeBadge">—</strong></div>
 </div>
 
 <div class="kpis">
-  <div class="kpi">Multiplier: <strong id="multShow">—</strong></div>
-  <div class="kpi">Source: <strong id="multSrc">—</strong></div>
+  <div class="kpi">EV single: <strong id="evSingle">—</strong></div>
+  <div class="kpi">EV total: <strong id="evTotal">—</strong></div>
 </div>
 
 <div id="hand"></div>
@@ -234,53 +120,114 @@ footer{
 </footer>
 
 <script>
-/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 const DOWNSCALE_WIDTH = 520;
 const JPEG_QUALITY = 0.6;
 
-/* ================= STATE ================= */
-let mode = "ux";
-let stream = null;
-let busy = false;
-const history = [];
+let mode="ux";
+let stream=null;
+let busy=false;
 
-/* ================= ELEMENTS ================= */
-const video = document.getElementById("video");
-const snapBtn = document.getElementById("snap");
-const handDiv = document.getElementById("hand");
-const explainDiv = document.getElementById("explain");
-const fallbackMult = document.getElementById("fallbackMult");
-const multShow = document.getElementById("multShow");
-const multSrc = document.getElementById("multSrc");
+const history=[];
 
-/* ================= TABS ================= */
-document.getElementById("tabUX").onclick = ()=>{
-  mode="ux";
-  tabUX.classList.add("active");
-  tabUXP.classList.remove("active");
-};
-document.getElementById("tabUXP").onclick = ()=>{
-  mode="uxp";
-  tabUXP.classList.add("active");
-  tabUX.classList.remove("active");
-};
+const video=document.getElementById("video");
+const band=document.getElementById("band");
+const statusEl=document.getElementById("status");
+const errorEl=document.getElementById("error");
+const snapBtn=document.getElementById("snap");
+const handDiv=document.getElementById("hand");
+const explainDiv=document.getElementById("explain");
 
-/* ================= CAMERA ================= */
-async function startCamera(){
-  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
-  video.srcObject = stream;
-}
-startCamera();
+const m1=document.getElementById("m1");
+const m2=document.getElementById("m2");
+const m3=document.getElementById("m3");
 
-/* ================= HAPTICS ================= */
+const detShow=document.getElementById("detShow");
+const usedShow=document.getElementById("usedShow");
+const totalShow=document.getElementById("totalShow");
+const modeBadge=document.getElementById("modeBadge");
+const evSingle=document.getElementById("evSingle");
+const evTotal=document.getElementById("evTotal");
+
+const tabUX=document.getElementById("tabUX");
+const tabUXP=document.getElementById("tabUXP");
+
+tabUX.onclick=()=>{ mode="ux"; tabUX.classList.add("active"); tabUXP.classList.remove("active"); };
+tabUXP.onclick=()=>{ mode="uxp"; tabUXP.classList.add("active"); tabUX.classList.remove("active"); };
+
 function haptic(type="light"){
   if(!navigator.vibrate) return;
   const map={ light:[10], medium:[20], success:[30,20,30], warning:[60] };
   navigator.vibrate(map[type]||[10]);
 }
 
-/* ================= HISTORY ================= */
+async function startCamera(){
+  if(stream) return;
+  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
+  video.srcObject = stream;
+  requestAnimationFrame(updateBandOverlay);
+}
+startCamera();
+
+function updateBandOverlay(){
+  const rect = video.getBoundingClientRect();
+  const center = rect.height*0.5;
+  const h = rect.height*0.38;
+  band.style.top = (center-h/2) + "px";
+  band.style.height = h + "px";
+  requestAnimationFrame(updateBandOverlay);
+}
+
+function cropDownscaleBase64(){
+  const vw=video.videoWidth, vh=video.videoHeight;
+  if(!vw||!vh) return null;
+
+  const bandH=Math.floor(vh*0.38);
+  const bandY=Math.floor((vh-bandH)/2);
+
+  const crop=document.createElement("canvas");
+  crop.width=vw; crop.height=bandH;
+  crop.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
+
+  const scale=DOWNSCALE_WIDTH/vw;
+  const out=document.createElement("canvas");
+  out.width=DOWNSCALE_WIDTH;
+  out.height=Math.max(1, Math.floor(bandH*scale));
+  out.getContext("2d").drawImage(crop,0,0,out.width,out.height);
+
+  return out.toDataURL("image/jpeg", JPEG_QUALITY);
+}
+
+function showError(msg){
+  errorEl.style.display="block";
+  errorEl.textContent=msg;
+}
+function clearError(){
+  errorEl.style.display="none";
+  errorEl.textContent="";
+}
+
+function renderHand(cards, hold){
+  handDiv.innerHTML="";
+  cards.forEach((c,i)=>{
+    const d=document.createElement("div");
+    d.className="card"+(hold?.[i]?" hold":"");
+    const red=c.suit==="H"||c.suit==="D";
+    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
+    handDiv.appendChild(d);
+  });
+}
+
+function setModeBadge(txt){
+  if(txt==="WEIGHTED"){
+    modeBadge.innerHTML = `<span class="badge weighted">WEIGHTED</span>`;
+  } else if(txt==="CONVENTIONAL"){
+    modeBadge.innerHTML = `<span class="badge conv">CONVENTIONAL</span>`;
+  } else {
+    modeBadge.textContent = txt || "—";
+  }
+}
+
 function addHistory(entry){
   history.unshift(entry);
   if(history.length>10) history.pop();
@@ -292,8 +239,12 @@ function renderHistory(){
   history.forEach(h=>{
     const d=document.createElement("div");
     d.className="historyItem";
-    d.textContent=`${h.mode.toUpperCase()} · ${h.multiplier}× · ${h.cards.map(c=>c.rank+c.suit).join(" ")}`;
-    d.onclick=()=>renderHand(h.cards,h.hold);
+    d.textContent=`${h.mode.toUpperCase()} · ${h.total}× · ${h.cards.map(c=>c.rank+c.suit).join(" ")}`;
+    d.onclick=()=>{
+      renderHand(h.cards,h.hold);
+      explainDiv.style.display="block";
+      explainDiv.textContent=h.explanation;
+    };
     list.appendChild(d);
   });
 }
@@ -302,68 +253,70 @@ document.getElementById("historyBtn").onclick=()=>{
   haptic("light");
 };
 
-/* ================= HELPERS ================= */
-function cropBase64(){
-  const vw=video.videoWidth, vh=video.videoHeight;
-  const bandH=Math.floor(vh*0.35);
-  const bandY=Math.floor((vh-bandH)/2);
-  const c=document.createElement("canvas");
-  c.width=vw; c.height=bandH;
-  c.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
-  const out=document.createElement("canvas");
-  const scale=DOWNSCALE_WIDTH/vw;
-  out.width=DOWNSCALE_WIDTH;
-  out.height=Math.floor(bandH*scale);
-  out.getContext("2d").drawImage(c,0,0,out.width,out.height);
-  return out.toDataURL("image/jpeg",JPEG_QUALITY);
-}
-function renderHand(cards,hold){
-  handDiv.innerHTML="";
-  cards.forEach((c,i)=>{
-    const d=document.createElement("div");
-    d.className="card"+(hold[i]?" hold":"");
-    const red=c.suit==="H"||c.suit==="D";
-    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
-    handDiv.appendChild(d);
-  });
-}
-
-/* ================= SNAP ================= */
-snapBtn.onclick = async ()=>{
+snapBtn.onclick = async()=>{
   if(busy) return;
   busy=true;
+  snapBtn.disabled=true;
   haptic("light");
+  clearError();
+  statusEl.textContent="Scanning…";
 
-  const img=cropBase64();
-  const res=await fetch(WORKER_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      imageBase64: img,
-      mode,
-      multiplier:Number(fallbackMult.value||1)
-    })
-  });
-  const data=await res.json();
-
-  if(!data.error){
-    haptic("medium");
-    renderHand(data.cards,data.hold);
-    multShow.textContent=data.multiplier_used+"×";
-    multSrc.textContent=data.multiplier_detected?"vision":"manual";
-    explainDiv.style.display="block";
-    explainDiv.textContent=data.explanation;
-    haptic("success");
-    addHistory({
-      cards:data.cards,
-      hold:data.hold,
-      multiplier:data.multiplier_used,
-      mode
-    });
-  }else{
-    haptic("warning");
+  const img=cropDownscaleBase64();
+  if(!img){
+    showError("Camera not ready");
+    busy=false; snapBtn.disabled=false;
+    return;
   }
+
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
+        imageBase64: img,
+        mode,
+        multipliers_fallback: [Number(m1.value||1), Number(m2.value||1), Number(m3.value||1)]
+      })
+    });
+    const data=await res.json();
+
+    if(data.error){
+      showError(data.error + (data.detail?(" — "+data.detail):""));
+      haptic("warning");
+      statusEl.textContent="Error";
+    } else {
+      haptic("medium");
+      renderHand(data.cards,data.hold);
+      detShow.textContent = (data.multipliers_detected||[]).map(x=>x??"—").join(" / ");
+      usedShow.textContent = (data.multipliers_used||[]).join(" / ");
+      totalShow.textContent = data.multiplier_total + "×";
+      setModeBadge(data.mode_badge);
+
+      evSingle.textContent = (typeof data.ev_single==="number") ? data.ev_single.toFixed(4) : "—";
+      evTotal.textContent = (typeof data.ev_total==="number") ? data.ev_total.toFixed(4) : "—";
+
+      explainDiv.style.display="block";
+      explainDiv.textContent=data.explanation;
+
+      haptic("success");
+      addHistory({
+        mode,
+        total: data.multiplier_total,
+        cards: data.cards,
+        hold: data.hold,
+        explanation: data.explanation
+      });
+
+      statusEl.textContent="Done";
+    }
+  }catch(e){
+    showError("Network error");
+    haptic("warning");
+    statusEl.textContent="Error";
+  }
+
   busy=false;
+  snapBtn.disabled=false;
 };
 </script>
 </body>
