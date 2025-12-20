@@ -4,40 +4,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-function json(obj, status=200){
+function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" }
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 
 /* =========================
-   Vision prompt (UX/UXP)
+   Vision prompt: cards + 3 multipliers (Triple Play)
 ========================= */
-function visionPrompt(mode){
+function visionPrompt(mode) {
   return `
-You are reading an IGT Ultimate X / Ultimate X Progressive video poker machine screen.
+You are reading an IGT Ultimate X / Ultimate X Progressive TRIPLE PLAY screen.
 
-TASK A (cards):
-- Extract EXACTLY 5 playing cards from the ACTIVE BOTTOM ROW (left to right).
-- Return rank and suit for each.
+TASK A — Cards:
+- Extract EXACTLY 5 playing cards from the ACTIVE BOTTOM ROW, left to right.
 
-TASK B (multiplier):
-- Read the SINGLE multiplier shown on the LEFT side of the card row.
-- Valid multipliers: 2, 4, 8, 10, 12.
-- Return it as a number.
-- If you cannot read it confidently, return null.
+TASK B — Multipliers (Triple Play):
+- Read the THREE multipliers for the three hands (Hand1, Hand2, Hand3).
+- If a hand shows no multiplier, treat it as 1.
+- Return multipliers as integers in [1..12] (commonly 1,2,3,4,5,6,8,10,12).
+- If you cannot read a multiplier, return null for that slot.
 
 OUTPUT STRICT JSON ONLY:
 {
   "cards":[
-    {"rank":"A","suit":"H"},
-    {"rank":"J","suit":"H"},
-    {"rank":"T","suit":"H"},
-    {"rank":"4","suit":"D"},
-    {"rank":"5","suit":"C"}
+    {"rank":"K","suit":"S"},
+    {"rank":"K","suit":"D"},
+    {"rank":"5","suit":"C"},
+    {"rank":"5","suit":"H"},
+    {"rank":"6","suit":"D"}
   ],
-  "multiplier": 8
+  "multipliers":[2,1,4]
 }
 
 Ranks: A,K,Q,J,T,9..2
@@ -50,77 +49,102 @@ Return JSON only.
 /* =========================
    OpenAI helpers
 ========================= */
-async function callOpenAI(apiKey, prompt, imageBase64, timeoutMs=9000){
+async function callOpenAI(apiKey, prompt, imageBase64, timeoutMs = 9000) {
   const controller = new AbortController();
-  const to = setTimeout(()=>controller.abort(), timeoutMs);
-
-  try{
-    const res = await fetch("https://api.openai.com/v1/chat/completions",{
-      method:"POST",
+  const to = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       signal: controller.signal,
-      headers:{
+      headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type":"application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
         temperature: 0,
         messages: [
-          { role:"system", content:"Return STRICT JSON only." },
-          { role:"user", content:[
-            { type:"text", text: prompt },
-            { type:"image_url", image_url:{ url:imageBase64 } }
-          ]}
-        ]
-      })
+          { role: "system", content: "Return STRICT JSON only." },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: imageBase64 } },
+            ],
+          },
+        ],
+      }),
     });
 
     const text = await res.text();
-    let j=null; try{ j=JSON.parse(text);}catch{}
+    let j = null;
+    try { j = JSON.parse(text); } catch {}
     return { ok: res.ok, status: res.status, json: j, raw: text };
-  } catch(e){
-    return { ok:false, status:0, json:null, raw:String(e) };
+  } catch (e) {
+    return { ok: false, status: 0, json: null, raw: String(e) };
   } finally {
     clearTimeout(to);
   }
 }
 
-function extractJsonFromModel(openaiJson){
+function extractJsonFromModel(openaiJson) {
   const content = openaiJson?.choices?.[0]?.message?.content || "";
   const m = content.match(/\{[\s\S]*\}/);
-  if(!m) return null;
-  try{ return JSON.parse(m[0]); } catch { return null; }
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch { return null; }
 }
 
-function validateCards(cards){
-  if(!Array.isArray(cards) || cards.length!==5) return "Expected exactly 5 cards";
+function validateCards(cards) {
+  if (!Array.isArray(cards) || cards.length !== 5) return "Expected exactly 5 cards";
   const R = new Set(["A","K","Q","J","T","9","8","7","6","5","4","3","2"]);
   const S = new Set(["S","H","D","C"]);
   const seen = new Set();
-  for(const c of cards){
-    if(!c || typeof c!=="object") return "Invalid card object";
-    if(!R.has(c.rank)) return `Invalid rank ${c.rank}`;
-    if(!S.has(c.suit)) return `Invalid suit ${c.suit}`;
-    const k=c.rank+c.suit;
-    if(seen.has(k)) return "Duplicate cards detected";
+  for (const c of cards) {
+    if (!c || typeof c !== "object") return "Invalid card object";
+    if (!R.has(c.rank)) return `Invalid rank ${c.rank}`;
+    if (!S.has(c.suit)) return `Invalid suit ${c.suit}`;
+    const k = c.rank + c.suit;
+    if (seen.has(k)) return "Duplicate cards detected";
     seen.add(k);
   }
   return null;
 }
 
-function chooseMultiplier(visionMult, fallback){
-  const v = Number(visionMult);
-  if(Number.isInteger(v) && [2,4,8,10,12].includes(v)) return { used:v, detected:true };
-  const u = Number(fallback);
-  if(Number.isInteger(u) && u>=1 && u<=12) return { used:u, detected:false };
-  return { used:1, detected:false };
+function sanitizeMultiplier(x) {
+  const v = Number(x);
+  if (!Number.isFinite(v)) return null;
+  const i = Math.round(v);
+  if (i < 1 || i > 12) return null;
+  return i;
+}
+
+function chooseMultipliers(visionArr, fallbackArr) {
+  const detected = [null,null,null];
+  const used = [1,1,1];
+
+  for (let i=0;i<3;i++){
+    const v = Array.isArray(visionArr) ? sanitizeMultiplier(visionArr[i]) : null;
+    const f = Array.isArray(fallbackArr) ? sanitizeMultiplier(fallbackArr[i]) : null;
+
+    if (v != null) {
+      detected[i] = v;
+      used[i] = v;
+    } else if (f != null) {
+      used[i] = f;
+    } else {
+      used[i] = 1;
+    }
+  }
+  return { detected, used, total: used[0]+used[1]+used[2] };
 }
 
 /* =========================
-   Ultimate X deterministic hold logic (multiplier-aware)
-   NOTE: This is a stable, practical strategy engine.
+   6/5 Bonus Poker payout (per 1 credit)
+   - RF 800, SF 50, 4K Aces 80, other 4K 40
+   - FH 6, FL 5, ST 4, 3K 3, 2P 2, Jacks+ 1
 ========================= */
-const ROYAL = new Set(["A","K","Q","J","T"]);
+const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
+const SUITS = ["S","H","D","C"];
 function rv(r){
   if(r==="A") return 14;
   if(r==="K") return 13;
@@ -132,10 +156,10 @@ function rv(r){
 function uniqSorted(vals){ return [...new Set(vals)].sort((a,b)=>a-b); }
 function isFlush(cards){ return new Set(cards.map(c=>c.suit)).size===1; }
 function isStraight(cards){
-  const vals = uniqSorted(cards.map(c=>rv(c.rank)));
-  if(vals.length!==5) return false;
-  if(vals.join(",")==="2,3,4,5,14") return true;
-  return vals[4]-vals[0]===4;
+  const v = uniqSorted(cards.map(c=>rv(c.rank)));
+  if(v.length!==5) return false;
+  if(v.join(",")==="2,3,4,5,14") return true;
+  return v[4]-v[0]===4;
 }
 function countRanks(cards){
   const m={};
@@ -143,106 +167,141 @@ function countRanks(cards){
   return m;
 }
 function classify(cards){
-  const flush=isFlush(cards);
-  const straight=isStraight(cards);
   const vals = uniqSorted(cards.map(c=>rv(c.rank)));
+  const flush = isFlush(cards);
+  const straight = isStraight(cards);
   const royal = vals.join(",")==="10,11,12,13,14";
-  const counts=Object.values(countRanks(cards)).sort((a,b)=>b-a);
+  const freq = Object.values(countRanks(cards)).sort((a,b)=>b-a);
 
   if(straight && flush && royal) return "RF";
   if(straight && flush) return "SF";
-  if(counts[0]===4) return "K4";
-  if(counts[0]===3 && counts[1]===2) return "FH";
+  if(freq[0]===4) return "K4";
+  if(freq[0]===3 && freq[1]===2) return "FH";
   if(flush) return "FL";
   if(straight) return "ST";
-  if(counts[0]===3) return "K3";
-  if(counts[0]===2 && counts[1]===2) return "TP";
-  if(counts[0]===2) return "P2";
+  if(freq[0]===3) return "K3";
+  if(freq[0]===2 && freq[1]===2) return "TP";
+  if(freq[0]===2) return "P2";
   return "HC";
 }
-
-function suitedMap(cards){
-  const m=new Map();
-  cards.forEach((c,i)=>{
-    if(!m.has(c.suit)) m.set(c.suit,[]);
-    m.get(c.suit).push(i);
-  });
-  return m;
-}
-function find4ToRoyal(cards){
-  for(const idx of suitedMap(cards).values()){
-    const r=idx.filter(i=>ROYAL.has(cards[i].rank));
-    if(r.length===4) return r;
-  }
-  return null;
-}
-function find3ToRoyal(cards){
-  for(const idx of suitedMap(cards).values()){
-    const r=idx.filter(i=>ROYAL.has(cards[i].rank));
-    if(r.length===3) return r;
-  }
-  return null;
-}
-function find4ToFlush(cards){
-  for(const idx of suitedMap(cards).values()){
-    if(idx.length===4) return idx;
-  }
-  return null;
-}
-
-function holdMaskFromIdx(idxs){
-  const hold=[false,false,false,false,false];
-  idxs.forEach(i=>hold[i]=true);
-  return hold;
-}
-
-function decideHoldUltimateX(cards, mult, mode){
-  const made = classify(cards);
-
-  // Never break made straight+
-  if(["RF","SF","K4","FH","FL","ST"].includes(made)){
-    return { hold:[true,true,true,true,true], why:`Made hand (${made}). Always hold all 5.` };
-  }
-
-  // Premium draws
-  const r4 = find4ToRoyal(cards);
-  if(r4) return { hold: holdMaskFromIdx(r4), why:`Hold 4 to a Royal Flush.` };
-
-  const f4 = find4ToFlush(cards);
-  if(f4) return { hold: holdMaskFromIdx(f4), why:`Hold 4 to a Flush.` };
-
-  const r3 = find3ToRoyal(cards);
-  if(r3) return { hold: holdMaskFromIdx(r3), why:`Hold 3 to a Royal Flush (suited).` };
-
-  // Pairs are valuable, especially under multiplier pressure
+function hasJacksOrBetterPair(cards){
   const counts = countRanks(cards);
-  const pairRanks = Object.keys(counts).filter(r=>counts[r]===2);
-
-  if(pairRanks.length){
-    const pr = pairRanks.sort((a,b)=>rv(b)-rv(a))[0];
-    const hold=[false,false,false,false,false];
-    cards.forEach((c,i)=>{ if(c.rank===pr) hold[i]=true; });
-
-    if(mult>=4){
-      return { hold, why:`Multiplier ${mult}×: keep the pair (${pr}${pr}) instead of drawing five.` };
-    }
-    return { hold, why:`Keep the pair (${pr}${pr}).` };
-  }
-
-  // High multiplier: keep two high cards rather than full redraw
-  if(mult>=8){
-    const hi = [0,1,2,3,4].filter(i=>rv(cards[i].rank)>=11).sort((a,b)=>rv(cards[b].rank)-rv(cards[a].rank));
-    if(hi.length>=2){
-      return { hold: holdMaskFromIdx([hi[0],hi[1]]), why:`Multiplier ${mult}×: keep two high cards rather than drawing five.` };
+  for(const r in counts){
+    if(counts[r]===2){
+      const v = rv(r);
+      if(v>=11) return true; // J,Q,K,A
     }
   }
+  return false;
+}
+function quadRank(cards){
+  const counts = countRanks(cards);
+  for(const r in counts) if(counts[r]===4) return r;
+  return null;
+}
+function payout65Bonus(cards){
+  const cls = classify(cards);
+  if(cls==="RF") return 800;
+  if(cls==="SF") return 50;
+  if(cls==="K4"){
+    const q = quadRank(cards);
+    return (q==="A") ? 80 : 40;
+  }
+  if(cls==="FH") return 6;
+  if(cls==="FL") return 5;
+  if(cls==="ST") return 4;
+  if(cls==="K3") return 3;
+  if(cls==="TP") return 2;
+  if(cls==="P2") return hasJacksOrBetterPair(cards) ? 1 : 0;
+  return 0;
+}
 
-  const suffix = (mode==="uxp") ? " (Progressive)" : "";
-  return { hold:[false,false,false,false,false], why:`No premium draw or pair${suffix} — draw five.` };
+function buildDeck(exclude){
+  const used=new Set(exclude.map(c=>c.rank+c.suit));
+  const deck=[];
+  for(const r of RANKS){
+    for(const s of SUITS){
+      const k=r+s;
+      if(!used.has(k)) deck.push({rank:r,suit:s});
+    }
+  }
+  return deck;
+}
+
+function comboIter(arr,k,fn){
+  const n=arr.length;
+  if(k===0){ fn([]); return; }
+  const idx=Array.from({length:k},(_,i)=>i);
+  while(true){
+    fn(idx.map(i=>arr[i]));
+    let i=k-1;
+    while(i>=0 && idx[i]===i+n-k) i--;
+    if(i<0) break;
+    idx[i]++;
+    for(let j=i+1;j<k;j++) idx[j]=idx[j-1]+1;
+  }
+}
+
+function evForHold(cards, holdMask){
+  const held = cards.filter((_,i)=>holdMask[i]);
+  const need = 5-held.length;
+  const deck = buildDeck(cards);
+
+  // exact for <=2 draws
+  if(need<=2){
+    let total=0,count=0;
+    comboIter(deck, need, draw=>{
+      total += payout65Bonus(held.concat(draw));
+      count++;
+    });
+    return total/count;
+  }
+
+  // bounded Monte Carlo for stability
+  const SAMPLES = need===3 ? 7000 : need===4 ? 5000 : 3500;
+  let total=0;
+  const d=deck.slice();
+  for(let t=0;t<SAMPLES;t++){
+    for(let i=0;i<need;i++){
+      const j=i+((Math.random()*(d.length-i))|0);
+      [d[i],d[j]]=[d[j],d[i]];
+    }
+    total += payout65Bonus(held.concat(d.slice(0,need)));
+  }
+  return total/SAMPLES;
+}
+
+function bestHoldEV(cards){
+  let bestEV=-1e9;
+  let bestMask=0;
+  // 32 holds
+  for(let mask=0; mask<32; mask++){
+    const hold = [0,1,2,3,4].map(i=>!!(mask&(1<<i)));
+    const ev = evForHold(cards, hold);
+    if(ev>bestEV){
+      bestEV=ev;
+      bestMask=mask;
+    }
+  }
+  return {
+    hold: [0,1,2,3,4].map(i=>!!(bestMask&(1<<i))),
+    ev: bestEV
+  };
 }
 
 /* =========================
-   Worker
+   Strategy mode badge (from chart)
+========================= */
+function strategyModeFromTotal(total){
+  // As described in your chart:
+  // 3–13 => Weighted (UX deviations matter more)
+  // 14–36 => Conventional
+  if(total>=14) return "CONVENTIONAL";
+  return "WEIGHTED";
+}
+
+/* =========================
+   Worker main
 ========================= */
 export default {
   async fetch(request, env){
@@ -252,15 +311,18 @@ export default {
 
     try{
       const body = await request.json();
-      const { imageBase64, mode="ux", multiplier=1 } = body || {};
-      if(!imageBase64) return json({error:"Missing imageBase64"});
+      const {
+        imageBase64,
+        mode="ux",                    // ux / uxp
+        multipliers_fallback=[1,1,1]  // [m1,m2,m3]
+      } = body || {};
+
+      if(!imageBase64) return json({error:"Missing imageBase64"},200);
 
       const r = await callOpenAI(env.OPENAI_API_KEY, visionPrompt(mode), imageBase64, 9000);
-
       if(!r.ok){
-        // expose rate limit message when available
         const detail = r.json?.error?.message || r.raw?.slice(0,200);
-        return json({ error:"Vision request failed", openai_status:r.status, detail }, 200);
+        return json({ error:"Vision request failed", openai_status:r.status, detail },200);
       }
 
       const parsed = extractJsonFromModel(r.json);
@@ -270,23 +332,33 @@ export default {
       const err = validateCards(cards);
       if(err) return json({error:"Invalid cards", why:err, cards},200);
 
-      const multInfo = chooseMultiplier(parsed.multiplier, multiplier);
-      const decision = decideHoldUltimateX(cards, multInfo.used, mode);
+      const multInfo = chooseMultipliers(parsed.multipliers, multipliers_fallback);
+      const modeBadge = strategyModeFromTotal(multInfo.total);
+
+      // EV: best hold under 6/5 Bonus (current-hand EV)
+      const best = bestHoldEV(cards);
+
+      // Scale EV by total multiplier for Triple Play payout weighting
+      const ev_single = best.ev;
+      const ev_total = ev_single * multInfo.total;
 
       const explanation =
-        `${decision.why} ` +
-        (multInfo.detected
-          ? `Multiplier detected: ${multInfo.used}×.`
-          : `Multiplier used (manual fallback): ${multInfo.used}×.`);
+        `6/5 Bonus Poker · Triple Play total multiplier = ${multInfo.total}× (${modeBadge}). ` +
+        `Best-hold EV (single hand): ${ev_single.toFixed(4)}. ` +
+        `Weighted by total multiplier: ${ev_total.toFixed(4)}.`;
 
       return json({
         cards,
-        hold: decision.hold,
-        multiplier_detected: multInfo.detected ? multInfo.used : null,
-        multiplier_used: multInfo.used,
+        hold: best.hold,
+        multipliers_detected: multInfo.detected,
+        multipliers_used: multInfo.used,
+        multiplier_total: multInfo.total,
+        mode_badge: modeBadge,
+        ev_single,
+        ev_total,
         explanation,
         confidence: 1.0
-      }, 200);
+      },200);
 
     }catch(e){
       return json({error:"Worker exception", message:String(e?.message||e)},200);
