@@ -10,58 +10,37 @@
 <style>
 :root{
   --bg:#020617;
-  --panel:rgba(2,6,23,.75);
+  --panel:rgba(2,6,23,.85);
   --border:#1f2937;
   --text:#e5e7eb;
   --muted:#9ca3af;
-  --accent:#22c55e;
-  --accent2:#38bdf8;
+  --green:#22c55e;
+  --blue:#38bdf8;
   --danger:#ef4444;
-  --glow:0 0 30px rgba(34,197,94,.6);
 }
 *{box-sizing:border-box}
-
 body{
   margin:0;
   font-family:Inter,-apple-system,system-ui;
+  background:radial-gradient(circle at top,#020617,#000 70%);
   color:var(--text);
-  background:
-    radial-gradient(circle at 20% 10%, #0f172a, transparent 40%),
-    radial-gradient(circle at 80% 0%, #022c22, transparent 45%),
-    radial-gradient(circle at bottom, #000, #020617 70%);
 }
-
 .app{
   max-width:920px;
   margin:auto;
-  padding:18px 16px 160px;
+  padding:18px 16px 180px;
 }
 
+/* Header */
 header{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-end;
-  padding-bottom:12px;
   border-bottom:1px solid var(--border);
+  padding-bottom:12px;
 }
-h1{
-  margin:0;
-  font-size:24px;
-  font-weight:900;
-  letter-spacing:.5px;
-}
-.subtitle{
-  font-size:13px;
-  color:var(--muted);
-  margin-top:4px;
-}
+h1{margin:0;font-size:26px;font-weight:900}
+.subtitle{font-size:13px;color:var(--muted)}
 
 /* Tabs */
-.tabs{
-  display:flex;
-  gap:12px;
-  margin-top:16px;
-}
+.tabs{display:flex;gap:12px;margin-top:14px}
 .tab{
   flex:1;
   padding:16px;
@@ -71,46 +50,29 @@ h1{
   text-align:center;
   font-weight:900;
   cursor:pointer;
-  transition:.25s;
-  backdrop-filter: blur(10px);
 }
-.tab span{opacity:.7}
 .tab.active{
-  outline:3px solid var(--accent);
-  box-shadow:var(--glow);
-  transform:translateY(-2px) scale(1.02);
+  outline:3px solid var(--green);
+  box-shadow:0 0 30px rgba(34,197,94,.6);
 }
-.tab.active span{opacity:1}
 
 /* Controls */
-.row{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  margin-top:16px;
-}
+.row{display:flex;gap:12px;margin-top:16px}
 input,button{
   background:var(--panel);
   color:var(--text);
   border:1px solid var(--border);
   border-radius:14px;
-  padding:14px 16px;
+  padding:14px;
   font-size:15px;
-  backdrop-filter: blur(10px);
 }
 input{flex:1}
-button{
-  font-weight:900;
-  cursor:pointer;
-}
 button.primary{
-  background:linear-gradient(180deg,var(--accent),#16a34a);
+  background:linear-gradient(180deg,var(--green),#16a34a);
   color:#000;
   border:none;
-  box-shadow:0 10px 30px rgba(34,197,94,.4);
+  font-weight:900;
 }
-button.primary:active{transform:scale(.98)}
-button:disabled{opacity:.5}
 
 /* Camera */
 .scanner{
@@ -119,56 +81,16 @@ button:disabled{opacity:.5}
   overflow:hidden;
   border:1px solid var(--border);
   position:relative;
-  box-shadow:0 30px 60px rgba(0,0,0,.6);
 }
-video{
-  width:100%;
-  max-height:320px;
-  object-fit:cover;
-  background:black;
-}
+video{width:100%;max-height:320px;object-fit:cover;background:black}
 .band{
-  position:absolute;
-  left:0; right:0;
-  border-top:2px dashed var(--accent2);
-  border-bottom:2px dashed var(--accent2);
-  pointer-events:none;
+  position:absolute;left:0;right:0;
+  border-top:2px dashed var(--blue);
+  border-bottom:2px dashed var(--blue);
 }
 
-/* Status */
-.status{
-  font-size:13px;
-  color:var(--muted);
-  margin-top:10px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.loader{
-  width:14px;
-  height:14px;
-  border:2px solid var(--muted);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin .8s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-#error{
-  margin-top:12px;
-  padding:14px;
-  border-radius:16px;
-  background:#7f1d1d;
-  box-shadow:0 0 20px rgba(239,68,68,.4);
-  display:none;
-}
-
-/* KPI */
-.kpis{
-  display:flex;
-  gap:14px;
-  margin-top:18px;
-}
+/* KPIs */
+.kpis{display:flex;gap:12px;margin-top:16px}
 .kpi{
   padding:12px 18px;
   border-radius:999px;
@@ -176,12 +98,7 @@ video{
   background:var(--panel);
   font-size:14px;
 }
-.kpi strong{
-  color:#fff;
-}
-.kpi.mult{
-  box-shadow:0 0 25px rgba(56,189,248,.5);
-}
+.kpi strong{color:#fff}
 
 /* Hand */
 #hand{
@@ -192,17 +109,16 @@ video{
 }
 .card{
   border:1px solid var(--border);
-  border-radius:20px;
-  padding:22px 6px;
+  border-radius:18px;
+  padding:20px 6px;
   text-align:center;
   background:var(--panel);
   position:relative;
-  transition:.3s;
 }
 .card.hold{
-  outline:3px solid var(--accent);
+  outline:3px solid var(--green);
   box-shadow:0 0 30px rgba(34,197,94,.7);
-  transform:translateY(-10px) scale(1.05);
+  transform:translateY(-8px);
 }
 .card.hold::after{
   content:"HOLD";
@@ -210,45 +126,67 @@ video{
   top:-10px;
   left:50%;
   transform:translateX(-50%);
-  background:var(--accent);
+  background:var(--green);
   color:#000;
-  font-weight:900;
   font-size:11px;
   padding:4px 10px;
   border-radius:999px;
-  box-shadow:0 6px 20px rgba(34,197,94,.6);
-}
-.rank{
-  font-size:28px;
   font-weight:900;
 }
-.suit{
-  font-size:20px;
-}
+.rank{font-size:28px;font-weight:900}
+.suit{font-size:20px}
 .red{color:var(--danger)}
 
 /* Explanation */
 #explain{
-  margin-top:20px;
-  padding:18px;
-  border-radius:20px;
+  margin-top:18px;
+  padding:16px;
+  border-radius:18px;
   border:1px solid var(--border);
-  background:linear-gradient(180deg,rgba(2,6,23,.9),rgba(2,6,23,.7));
+  background:var(--panel);
   display:none;
-  line-height:1.6;
-  box-shadow:0 20px 40px rgba(0,0,0,.5);
 }
-#explain strong{color:var(--accent)}
 
-footer{
+/* History */
+#historyBtn{
   position:fixed;
-  left:0; right:0; bottom:0;
-  padding:16px 18px;
-  background:linear-gradient(180deg,transparent,#000 45%);
+  bottom:96px;
+  right:18px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:14px;
+  font-size:18px;
+  cursor:pointer;
+}
+#historyDrawer{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  height:60%;
+  background:var(--panel);
+  border-top:2px solid var(--border);
+  border-radius:20px 20px 0 0;
+  padding:16px;
+  transform:translateY(100%);
+  transition:.3s;
+  overflow:auto;
+}
+#historyDrawer.open{transform:translateY(0)}
+.historyItem{
+  padding:10px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+}
+
+/* Footer */
+footer{
+  position:fixed;left:0;right:0;bottom:0;
+  padding:16px;
+  background:linear-gradient(180deg,transparent,#000 50%);
 }
 #snap{
   width:100%;
-  padding:20px;
+  padding:18px;
   font-size:20px;
   border-radius:24px;
 }
@@ -258,36 +196,37 @@ footer{
 <body>
 <div class="app">
 <header>
-  <div>
-    <h1>Ultimate X Assistant</h1>
-    <div class="subtitle">🎰 Vision-powered strategy · Multiplier aware</div>
-  </div>
+  <h1>Ultimate X Assistant</h1>
+  <div class="subtitle">Vision · Multiplier · Strategy</div>
 </header>
 
 <div class="tabs">
-  <div class="tab active" id="tabUX">♠ Ultimate X<br><span>Base Game</span></div>
-  <div class="tab" id="tabUXP">💎 Ultimate X<br><span>Progressive</span></div>
+  <div class="tab active" id="tabUX">Ultimate X</div>
+  <div class="tab" id="tabUXP">Ultimate X Progressive</div>
 </div>
 
 <div class="row">
-  <input id="fallbackMult" type="number" min="1" max="12" value="1" placeholder="Multiplier fallback">
+  <input id="fallbackMult" type="number" min="1" max="12" value="1">
 </div>
 
 <div class="scanner">
   <video id="video" autoplay playsinline muted></video>
-  <div class="band" id="band"></div>
+  <div class="band"></div>
 </div>
 
-<div class="status" id="status">Camera ready</div>
-<div id="error"></div>
-
 <div class="kpis">
-  <div class="kpi mult">Multiplier: <strong id="multShow">—</strong></div>
+  <div class="kpi">Multiplier: <strong id="multShow">—</strong></div>
   <div class="kpi">Source: <strong id="multSrc">—</strong></div>
 </div>
 
 <div id="hand"></div>
 <div id="explain"></div>
+</div>
+
+<div id="historyBtn">🧾</div>
+<div id="historyDrawer">
+  <h3>Hand History</h3>
+  <div id="historyList"></div>
 </div>
 
 <footer>
@@ -304,98 +243,85 @@ const JPEG_QUALITY = 0.6;
 let mode = "ux";
 let stream = null;
 let busy = false;
+const history = [];
 
 /* ================= ELEMENTS ================= */
 const video = document.getElementById("video");
-const band = document.getElementById("band");
-const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
 const snapBtn = document.getElementById("snap");
 const handDiv = document.getElementById("hand");
 const explainDiv = document.getElementById("explain");
-
-const tabUX = document.getElementById("tabUX");
-const tabUXP = document.getElementById("tabUXP");
 const fallbackMult = document.getElementById("fallbackMult");
 const multShow = document.getElementById("multShow");
 const multSrc = document.getElementById("multSrc");
 
 /* ================= TABS ================= */
-tabUX.onclick = () => {
-  mode = "ux";
+document.getElementById("tabUX").onclick = ()=>{
+  mode="ux";
   tabUX.classList.add("active");
   tabUXP.classList.remove("active");
 };
-tabUXP.onclick = () => {
-  mode = "uxp";
+document.getElementById("tabUXP").onclick = ()=>{
+  mode="uxp";
   tabUXP.classList.add("active");
   tabUX.classList.remove("active");
 };
 
 /* ================= CAMERA ================= */
 async function startCamera(){
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"environment" }
-    });
-    video.srcObject = stream;
-    statusEl.textContent = "Camera ready";
-    requestAnimationFrame(updateBandOverlay);
-  }catch(e){
-    statusEl.textContent = "Camera permission denied";
-  }
+  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
+  video.srcObject = stream;
 }
 startCamera();
 
-function updateBandOverlay(){
-  const rect = video.getBoundingClientRect();
-  const center = rect.height * 0.5;
-  const h = rect.height * 0.35;
-  band.style.top = (center - h/2) + "px";
-  band.style.height = h + "px";
-  requestAnimationFrame(updateBandOverlay);
+/* ================= HAPTICS ================= */
+function haptic(type="light"){
+  if(!navigator.vibrate) return;
+  const map={ light:[10], medium:[20], success:[30,20,30], warning:[60] };
+  navigator.vibrate(map[type]||[10]);
 }
+
+/* ================= HISTORY ================= */
+function addHistory(entry){
+  history.unshift(entry);
+  if(history.length>10) history.pop();
+  renderHistory();
+}
+function renderHistory(){
+  const list=document.getElementById("historyList");
+  list.innerHTML="";
+  history.forEach(h=>{
+    const d=document.createElement("div");
+    d.className="historyItem";
+    d.textContent=`${h.mode.toUpperCase()} · ${h.multiplier}× · ${h.cards.map(c=>c.rank+c.suit).join(" ")}`;
+    d.onclick=()=>renderHand(h.cards,h.hold);
+    list.appendChild(d);
+  });
+}
+document.getElementById("historyBtn").onclick=()=>{
+  document.getElementById("historyDrawer").classList.toggle("open");
+  haptic("light");
+};
 
 /* ================= HELPERS ================= */
-function showError(msg){
-  errorEl.style.display="block";
-  errorEl.textContent=msg;
+function cropBase64(){
+  const vw=video.videoWidth, vh=video.videoHeight;
+  const bandH=Math.floor(vh*0.35);
+  const bandY=Math.floor((vh-bandH)/2);
+  const c=document.createElement("canvas");
+  c.width=vw; c.height=bandH;
+  c.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
+  const out=document.createElement("canvas");
+  const scale=DOWNSCALE_WIDTH/vw;
+  out.width=DOWNSCALE_WIDTH;
+  out.height=Math.floor(bandH*scale);
+  out.getContext("2d").drawImage(c,0,0,out.width,out.height);
+  return out.toDataURL("image/jpeg",JPEG_QUALITY);
 }
-function clearError(){
-  errorEl.style.display="none";
-  errorEl.textContent="";
-}
-
-function cropDownscaleBase64(){
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if(!vw || !vh) return null;
-
-  const bandH = Math.floor(vh * 0.35);
-  const bandY = Math.floor((vh - bandH) / 2);
-
-  const crop = document.createElement("canvas");
-  crop.width = vw;
-  crop.height = bandH;
-  crop.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
-
-  const scale = DOWNSCALE_WIDTH / vw;
-  const outW = DOWNSCALE_WIDTH;
-  const outH = Math.floor(bandH * scale);
-
-  const out = document.createElement("canvas");
-  out.width = outW;
-  out.height = outH;
-  out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
-
-  return out.toDataURL("image/jpeg", JPEG_QUALITY);
-}
-
-function renderHand(cards, hold){
+function renderHand(cards,hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
     const d=document.createElement("div");
-    d.className="card"+(hold?.[i]?" hold":"");
+    d.className="card"+(hold[i]?" hold":"");
     const red=c.suit==="H"||c.suit==="D";
     d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
     handDiv.appendChild(d);
@@ -403,51 +329,40 @@ function renderHand(cards, hold){
 }
 
 /* ================= SNAP ================= */
-snapBtn.onclick = async()=>{
+snapBtn.onclick = async ()=>{
   if(busy) return;
   busy=true;
-  clearError();
-  explainDiv.style.display="none";
-  statusEl.textContent="Capturing…";
+  haptic("light");
 
-  await new Promise(r=>requestAnimationFrame(r));
-  const img = cropDownscaleBase64();
-  if(!img){
-    showError("Camera not ready");
-    busy=false;
-    return;
-  }
+  const img=cropBase64();
+  const res=await fetch(WORKER_URL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      imageBase64: img,
+      mode,
+      multiplier:Number(fallbackMult.value||1)
+    })
+  });
+  const data=await res.json();
 
-  statusEl.textContent="Reading cards + multiplier…";
-
-  try{
-    const res = await fetch(WORKER_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        imageBase64: img,
-        mode,
-        multiplier: Number(fallbackMult.value||1)
-      })
+  if(!data.error){
+    haptic("medium");
+    renderHand(data.cards,data.hold);
+    multShow.textContent=data.multiplier_used+"×";
+    multSrc.textContent=data.multiplier_detected?"vision":"manual";
+    explainDiv.style.display="block";
+    explainDiv.textContent=data.explanation;
+    haptic("success");
+    addHistory({
+      cards:data.cards,
+      hold:data.hold,
+      multiplier:data.multiplier_used,
+      mode
     });
-
-    const data = await res.json();
-    if(data.error){
-      showError(data.error);
-      statusEl.textContent="Error";
-    }else{
-      renderHand(data.cards||[], data.hold||[]);
-      multShow.textContent = data.multiplier_used + "×";
-      multSrc.textContent = data.multiplier_detected ? "vision" : "manual";
-      explainDiv.style.display="block";
-      explainDiv.textContent = data.explanation || "";
-      statusEl.textContent="Done";
-    }
-  }catch(e){
-    showError("Network error");
-    statusEl.textContent="Error";
+  }else{
+    haptic("warning");
   }
-
   busy=false;
 };
 </script>
