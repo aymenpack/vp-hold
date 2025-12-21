@@ -2,54 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Ultimate X Wizard Assistant</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ultimate X Wizard</title>
 
 <style>
-body{margin:0;font-family:Inter;background:#020617;color:#fff}
-.app{max-width:900px;margin:auto;padding:16px 16px 140px}
-h1{margin:0;font-size:24px;font-weight:900}
-.subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
-
-video{width:100%;max-height:320px;object-fit:cover;border-radius:16px;border:1px solid #1f2937;background:#000}
-.band{position:absolute;left:0;right:0;border-top:2px dashed #22c55e;border-bottom:2px dashed #22c55e;pointer-events:none}
-
-.row{display:flex;gap:10px;margin-top:14px}
-input,button{padding:12px;border-radius:12px;border:none;font-size:14px}
-input{flex:1;background:#020617;color:#fff;border:1px solid #1f2937}
-button{background:#22c55e;color:#000;font-weight:900;cursor:pointer}
-button:disabled{opacity:.5}
-
-#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:20px}
-.card{border:1px solid #1f2937;border-radius:14px;padding:16px;text-align:center}
-.card.hold{outline:3px solid #22c55e;transform:translateY(-6px)}
-.rank{font-size:26px;font-weight:900}
-.suit{font-size:18px}
-.red{color:#ef4444}
-
-#info{margin-top:14px;padding:14px;border-radius:14px;border:1px solid #1f2937}
-#error{margin-top:10px;color:#f87171;display:none}
-
-footer{position:fixed;left:0;right:0;bottom:0;padding:16px;background:linear-gradient(180deg,transparent,#000 60%)}
+body { margin:0; font-family:system-ui; background:#020617; color:#fff; }
+.app { max-width:900px; margin:auto; padding:16px 16px 120px; }
+video { width:100%; max-height:320px; border-radius:16px; background:#000; }
+.band { position:absolute; left:0; right:0; border-top:2px dashed #22c55e; border-bottom:2px dashed #22c55e; }
+.row { display:flex; gap:10px; margin-top:12px; }
+input,button { padding:12px; font-size:16px; border-radius:10px; border:none; }
+input { background:#020617; color:#fff; border:1px solid #333; flex:1; }
+button { background:#22c55e; color:#000; font-weight:bold; cursor:pointer; }
+.card { display:inline-block; width:18%; margin:1%; padding:14px; border:1px solid #333; text-align:center; }
+.hold { outline:3px solid #22c55e; transform:translateY(-6px); }
+#error { color:#f87171; margin-top:10px; }
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h1>Ultimate X Wizard</h1>
-  <div class="subtitle">Wizard of Odds · Triple Play · 6/5 Bonus Poker</div>
+  <h2>Ultimate X Wizard</h2>
+  <p>Triple Play · 6/5 Bonus Poker</p>
 
-  <div style="position:relative;margin-top:16px">
+  <div style="position:relative">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
   <div class="row">
-    <input id="m1" type="number" min="1" max="12" value="1" placeholder="Hand 1 mult">
-    <input id="m2" type="number" min="1" max="12" value="1" placeholder="Hand 2 mult">
-    <input id="m3" type="number" min="1" max="12" value="1" placeholder="Hand 3 mult">
+    <input id="m1" value="1" placeholder="Hand 1 mult">
+    <input id="m2" value="1" placeholder="Hand 2 mult">
+    <input id="m3" value="1" placeholder="Hand 3 mult">
   </div>
 
   <div class="row">
@@ -57,112 +41,65 @@ footer{position:fixed;left:0;right:0;bottom:0;padding:16px;background:linear-gra
   </div>
 
   <div id="error"></div>
-
-  <div id="hand"></div>
+  <div id="cards"></div>
   <div id="info"></div>
 </div>
 
-<footer></footer>
-
 <script>
-/* ================= CONFIG ================= */
-const OPENAI_KEY = "PUT_YOUR_OPENAI_KEY_HERE";
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const video = document.getElementById("video");
+navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
+  .then(s => video.srcObject = s);
 
-/* ================= CAMERA ================= */
-const video=document.getElementById("video");
-navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-.then(s=>video.srcObject=s);
+function capture() {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const bandH = Math.floor(vh * 0.3);
+  const top = Math.floor(vh * 0.5 - bandH / 2);
 
-function captureImage(){
-  const vw=video.videoWidth, vh=video.videoHeight;
-  const bandH=Math.floor(vh*0.30);
-  const top=Math.floor(vh*0.50 - bandH/2);
+  const c = document.createElement("canvas");
+  c.width = vw;
+  c.height = bandH;
+  c.getContext("2d").drawImage(video, 0, top, vw, bandH, 0, 0, vw, bandH);
 
-  const crop=document.createElement("canvas");
-  crop.width=vw;
-  crop.height=bandH;
-  crop.getContext("2d").drawImage(video,0,top,vw,bandH,0,0,vw,bandH);
+  const out = document.createElement("canvas");
+  out.width = 360;
+  out.height = Math.floor(bandH * (360 / vw));
+  out.getContext("2d").drawImage(c, 0, 0, out.width, out.height);
 
-  const out=document.createElement("canvas");
-  out.width=360;
-  out.height=Math.floor(bandH*(360/vw));
-  out.getContext("2d").drawImage(crop,0,0,out.width,out.height);
-
-  return out.toDataURL("image/jpeg",0.5);
+  return out.toDataURL("image/jpeg", 0.5);
 }
 
-/* ================= VISION ================= */
-async function readVision(image){
-  const prompt = `
-Extract exactly 5 cards (left to right) and 3 multipliers (one per hand).
-Return JSON only:
-{
- "cards":[{"rank":"K","suit":"S"},...],
- "multipliers":[2,1,1]
-}
-Ranks: A,K,Q,J,T,9..2
-Suits: S,H,D,C
-`;
+snap.onclick = async () => {
+  error.textContent = "";
+  cards.innerHTML = "";
+  info.textContent = "";
 
-  const r = await fetch("https://api.openai.com/v1/chat/completions",{
-    method:"POST",
-    headers:{
-      "Authorization":"Bearer "+OPENAI_KEY,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({
-      model:"gpt-4.1-mini",
-      temperature:0,
-      messages:[
-        {role:"system",content:"Return STRICT JSON only."},
-        {role:"user",content:[
-          {type:"text",text:prompt},
-          {type:"image_url",image_url:{url:image}}
-        ]}
-      ]
-    })
-  });
-
-  const txt=await r.text();
-  return JSON.parse(txt.match(/\{[\s\S]*\}/)[0]);
-}
-
-/* ================= RENDER ================= */
-function renderHand(cards,hold){
-  hand.innerHTML="";
-  cards.forEach((c,i)=>{
-    const d=document.createElement("div");
-    d.className="card"+(hold[i]?" hold":"");
-    const red=c.suit==="H"||c.suit==="D";
-    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
-    hand.appendChild(d);
-  });
-}
-
-/* ================= SNAP FLOW ================= */
-snap.onclick=async()=>{
-  error.style.display="none";
-  try{
-    const img=captureImage();
-    const vision=await readVision(img);
-
-    const res=await fetch(WORKER_URL,{
+  try {
+    const img = capture();
+    const res = await fetch(WORKER_URL, {
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
-        cards: vision.cards,
-        multipliers: vision.multipliers,
-        progressive: false
+        imageBase64: img,
+        multipliers_fallback:[m1.value,m2.value,m3.value],
+        progressive:false
       })
     });
-    const data=await res.json();
 
-    renderHand(data.cards,data.hold);
-    info.textContent=`EV(single): ${data.ev_single.toFixed(4)} | EV(total): ${data.ev_total.toFixed(4)} | ${data.explanation}`;
-  }catch(e){
-    error.style.display="block";
-    error.textContent="Vision or network error";
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    data.cards.forEach((c,i)=>{
+      const d=document.createElement("div");
+      d.className="card"+(data.hold[i]?" hold":"");
+      d.textContent=c.rank+c.suit;
+      cards.appendChild(d);
+    });
+
+    info.textContent = `Total ${data.multiplier_total}× | EV ${data.ev_total.toFixed(2)}`;
+
+  } catch(e) {
+    error.textContent = "Scan failed. Try again.";
   }
 };
 </script>
