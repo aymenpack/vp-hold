@@ -36,41 +36,6 @@ header{
 h1{margin:0;font-size:22px;font-weight:900}
 .subtitle{font-size:13px;color:var(--muted);margin-top:4px}
 
-/* Tabs */
-.tabs{display:flex;gap:10px;margin-top:14px}
-.tab{
-  flex:1;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  text-align:center;
-  font-weight:800;
-  cursor:pointer;
-  background:var(--panel);
-  transition:all .2s ease;
-}
-.tab.active{
-  outline:3px solid var(--accent);
-  transform:translateY(-2px);
-}
-
-/* Controls */
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-input,button{
-  background:var(--panel);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:12px 14px;
-  font-size:14px;
-}
-button{font-weight:900;cursor:pointer}
-button.primary{
-  background:linear-gradient(180deg,#22c55e,#16a34a);
-  color:#000;border:none
-}
-button:disabled{opacity:.5;cursor:not-allowed}
-
 /* Camera */
 .scanner{
   margin-top:16px;
@@ -93,28 +58,20 @@ video{
   pointer-events:none;
 }
 
-/* Status */
-.status{font-size:12px;color:var(--muted);margin-top:8px}
-#error{
-  margin-top:10px;
-  padding:12px;
-  border-radius:14px;
-  background:#7f1d1d;
-  display:none;
-}
-
-/* KPI */
-.kpis{display:flex;gap:12px;margin-top:14px}
-.kpi{
-  padding:10px 14px;
-  border-radius:999px;
-  border:1px solid var(--border);
+.row{display:flex;gap:10px;margin-top:14px}
+input,button{
   background:var(--panel);
-  font-size:13px;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px 14px;
+  font-size:14px;
 }
-.kpi strong{color:#fff}
+button.primary{
+  background:linear-gradient(180deg,#22c55e,#16a34a);
+  color:#000;border:none;font-weight:900
+}
 
-/* Hand */
 #hand{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -127,28 +84,14 @@ video{
   padding:18px 6px;
   text-align:center;
   background:var(--panel);
-  transition:all .2s ease;
 }
 .card.hold{
   outline:3px solid var(--accent);
-  box-shadow:0 0 24px rgba(34,197,94,.7);
-  transform:translateY(-6px) scale(1.03);
+  transform:translateY(-6px);
 }
 .rank{font-size:24px;font-weight:900}
 .suit{font-size:18px}
 .red{color:var(--danger)}
-
-/* Explanation */
-#explain{
-  margin-top:16px;
-  padding:16px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  display:none;
-  line-height:1.5;
-}
-#explain strong{color:var(--accent)}
 
 footer{
   position:fixed;
@@ -169,148 +112,88 @@ footer{
 <div class="app">
 <header>
   <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">Reads cards & multiplier · Wizard strategy</div>
+  <div class="subtitle">Vision-powered · Wizard strategy</div>
 </header>
-
-<div class="tabs">
-  <div class="tab active" id="tabUX">Ultimate X</div>
-  <div class="tab" id="tabUXP">Ultimate X Progressive</div>
-</div>
-
-<div class="row">
-  <input id="m1" type="number" min="1" max="12" value="1" placeholder="Hand 1 mult">
-  <input id="m2" type="number" min="1" max="12" value="1" placeholder="Hand 2 mult">
-  <input id="m3" type="number" min="1" max="12" value="1" placeholder="Hand 3 mult">
-</div>
 
 <div class="scanner">
   <video id="video" autoplay playsinline muted></video>
   <div class="band" id="band"></div>
 </div>
 
-<div class="status" id="status">Starting camera…</div>
-<div id="error"></div>
-
-<div class="kpis">
-  <div class="kpi">Multiplier total: <strong id="multShow">—</strong></div>
+<div class="row">
+  <input id="m1" value="1" placeholder="Hand 1 mult">
+  <input id="m2" value="1" placeholder="Hand 2 mult">
+  <input id="m3" value="1" placeholder="Hand 3 mult">
 </div>
 
 <div id="hand"></div>
-<div id="explain"></div>
 </div>
 
 <footer>
   <button id="snap" class="primary">SNAP</button>
 </footer>
 
+<!-- ===============================
+     CLASSIC SCRIPT — AUTO CAMERA
+     =============================== -->
+<script>
+const video = document.getElementById("video");
+const band  = document.getElementById("band");
+
+navigator.mediaDevices.getUserMedia({
+  video:{ facingMode:"environment" }
+}).then(stream=>{
+  video.srcObject = stream;
+  requestAnimationFrame(updateBand);
+});
+
+function updateBand(){
+  const r = video.getBoundingClientRect();
+  const h = r.height * 0.35;
+  band.style.top = (r.height*0.5 - h/2) + "px";
+  band.style.height = h + "px";
+  requestAnimationFrame(updateBand);
+}
+</script>
+
+<!-- ===============================
+     MODULE SCRIPT — VISION LOGIC
+     =============================== -->
 <script type="module">
-/* ================= IMPORT ISOLATED VISION ================= */
 import { captureAndAnalyze } from "./visionCapture.js";
 
-/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-
-/* ================= STATE ================= */
-let mode = "ux";
-let stream = null;
-let busy = false;
-
-/* ================= ELEMENTS ================= */
-const video = document.getElementById("video");
-const band = document.getElementById("band");
-const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
 const snapBtn = document.getElementById("snap");
 const handDiv = document.getElementById("hand");
-const explainDiv = document.getElementById("explain");
-const multShow = document.getElementById("multShow");
 
-const m1=document.getElementById("m1");
-const m2=document.getElementById("m2");
-const m3=document.getElementById("m3");
-
-const tabUX=document.getElementById("tabUX");
-const tabUXP=document.getElementById("tabUXP");
-
-/* ================= TABS ================= */
-tabUX.onclick=()=>{ mode="ux"; tabUX.classList.add("active"); tabUXP.classList.remove("active"); };
-tabUXP.onclick=()=>{ mode="uxp"; tabUXP.classList.add("active"); tabUX.classList.remove("active"); };
-
-/* ================= CAMERA ================= */
-async function startCamera(){
+snapBtn.onclick = async()=>{
   try{
-    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
-    video.srcObject = stream;
-    statusEl.textContent = "Align cards between green lines";
-    requestAnimationFrame(updateBandOverlay);
-  }catch(e){
-    statusEl.textContent = "Camera permission denied";
-  }
-}
-startCamera();
-
-function updateBandOverlay(){
-  const rect = video.getBoundingClientRect();
-  const center = rect.height * 0.5;
-  const h = rect.height * 0.35;
-  band.style.top = (center - h/2) + "px";
-  band.style.height = h + "px";
-  requestAnimationFrame(updateBandOverlay);
-}
-
-/* ================= HELPERS ================= */
-function showError(msg){
-  errorEl.style.display="block";
-  errorEl.textContent=msg;
-}
-function clearError(){
-  errorEl.style.display="none";
-  errorEl.textContent="";
-}
-function renderHand(cards, hold){
-  handDiv.innerHTML="";
-  cards.forEach((c,i)=>{
-    const d=document.createElement("div");
-    d.className="card"+(hold?.[i]?" hold":"");
-    const red=c.suit==="H"||c.suit==="D";
-    d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
-    handDiv.appendChild(d);
-  });
-}
-
-/* ================= SNAP ================= */
-snapBtn.onclick = async () => {
-  if (busy) return;
-  busy = true;
-  clearError();
-  explainDiv.style.display="none";
-  statusEl.textContent = "Capturing…";
-
-  try {
     const data = await captureAndAnalyze({
-      videoEl: video,
+      videoEl: document.getElementById("video"),
       workerUrl: WORKER_URL,
-      multipliersFallback: [
-        Number(m1.value || 1),
-        Number(m2.value || 1),
-        Number(m3.value || 1)
+      multipliersFallback:[
+        Number(m1.value||1),
+        Number(m2.value||1),
+        Number(m3.value||1)
       ],
-      progressive: mode === "uxp"
+      progressive:false
     });
 
-    renderHand(data.cards, data.hold);
-    multShow.textContent = data.multiplier_total + "×";
-    explainDiv.style.display = "block";
-    explainDiv.textContent = data.explanation;
-    statusEl.textContent = "Done";
+    handDiv.innerHTML="";
+    data.cards.forEach((c,i)=>{
+      const d=document.createElement("div");
+      d.className="card"+(data.hold[i]?" hold":"");
+      const red=c.suit==="H"||c.suit==="D";
+      d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div>
+                   <div class="suit ${red?"red":""}">${c.suit}</div>`;
+      handDiv.appendChild(d);
+    });
 
-  } catch (e) {
-    showError(e.message);
-    statusEl.textContent = "Error";
+  }catch(e){
+    alert("Vision failed: "+e.message);
   }
-
-  busy = false;
 };
 </script>
+
 </body>
 </html>
