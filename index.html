@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture (Locked)</title>
+<title>Ultimate X – Vision Debug</title>
 
+<!-- LOCKED CAMERA + FRAME STYLES -->
 <link rel="stylesheet" href="./capture/camera.css">
 
 <style>
@@ -46,16 +47,19 @@ button{
   border:1px solid #333;
 }
 
-<pre id="visionDebug" style="
-  margin-top:12px;
+/* DEBUG PANEL */
+#visionDebug{
+  margin-top:14px;
   padding:12px;
   border-radius:12px;
   background:#020617;
   border:1px solid #333;
   color:#9ca3af;
   font-size:12px;
+  max-height:240px;
   overflow:auto;
-"></pre>
+  white-space:pre-wrap;
+}
 
 #status{
   margin-top:10px;
@@ -67,52 +71,73 @@ button{
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture</h2>
+  <h2>Ultimate X – Vision Debug</h2>
   <div class="subtitle">
-    Align ALL 3 rows inside the green frame
+    Camera & capture are locked. This page only debugs Vision.
   </div>
 
+  <!-- CAMERA (LOCKED) -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
-  <button id="snap">SNAP</button>
+  <button id="snap">SNAP → Vision</button>
 
-  <img id="preview">
+  <img id="preview" alt="Captured preview">
+
+  <pre id="visionDebug"></pre>
+
   <div id="status">Starting camera…</div>
 </div>
 
 <script type="module">
+/* ===============================
+   IMPORT LOCKED CAPTURE SYSTEM
+   =============================== */
 import {
   positionGreenFrame,
   captureFromGreenFrame
 } from "./capture/capture.js";
 
+/* ===============================
+   CONFIG
+   =============================== */
+const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+
+/* ===============================
+   ELEMENTS
+   =============================== */
 const video   = document.getElementById("video");
 const band    = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snap    = document.getElementById("snap");
 const preview = document.getElementById("preview");
+const debug   = document.getElementById("visionDebug");
 const statusEl = document.getElementById("status");
 
-/* START CAMERA */
+/* ===============================
+   START CAMERA (LOCKED)
+   =============================== */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject = stream;
   statusEl.textContent = "Camera ready — align machine";
   requestAnimationFrame(() => positionGreenFrame(scanner, band));
 })
-.catch(e=>{
-  statusEl.textContent = "Camera error: " + e.message;
+.catch(err=>{
+  statusEl.textContent = "Camera error: " + err.message;
 });
 
-/* SNAP — REAL CAPTURE */
+/* ===============================
+   SNAP → CAPTURE → VISION
+   =============================== */
 snap.onclick = async () => {
   statusEl.textContent = "Capturing…";
+  debug.textContent = "";
 
   try {
-    // 1) Capture using LOCKED capture
+    /* 1️⃣ Capture image (LOCKED capture) */
     const img = await captureFromGreenFrame({
       video,
       band,
@@ -122,25 +147,31 @@ snap.onclick = async () => {
     preview.src = img;
     statusEl.textContent = "Sending to Vision…";
 
-    // 2) Send to worker (vision only)
-    const res = await fetch("/vision", {
+    /* 2️⃣ Call worker */
+    const res = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageBase64: img })
     });
 
-    const data = await res.json();
+    const rawText = await res.text();
 
-    // 3) Show raw vision result
-    document.getElementById("visionDebug").textContent =
-      JSON.stringify(data, null, 2);
+    /* 3️⃣ Show FULL response */
+    debug.textContent =
+      `HTTP ${res.status}\n\n${rawText}`;
 
-    statusEl.textContent = "Vision parsed";
+    /* 4️⃣ Attempt JSON parse (for visibility only) */
+    try {
+      JSON.parse(rawText);
+      statusEl.textContent = "Vision response received";
+    } catch {
+      statusEl.textContent = "Vision returned non-JSON";
+    }
 
   } catch (err) {
-    statusEl.textContent = "Vision error";
-    document.getElementById("visionDebug").textContent =
-      "ERROR:\n" + err.message;
+    statusEl.textContent = "Client error";
+    debug.textContent =
+      "CLIENT ERROR:\n" + err.message;
   }
 };
 </script>
