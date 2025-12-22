@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture (Final)</title>
+<title>Ultimate X – Vision Capture v6.1 (Locked)</title>
 
 <style>
 body{
@@ -24,7 +24,7 @@ h2{margin:0}
   margin-bottom:12px;
 }
 
-/* CAMERA CONTAINER — UNCHANGED */
+/* CAMERA CONTAINER — LOCKED */
 .scanner{
   position:relative;
   width:100%;
@@ -36,15 +36,17 @@ h2{margin:0}
   background:#000;
 }
 
-/* VIDEO — NO CSS SCALE */
+/* VIDEO — LOCKED */
 video{
   width:100%;
   height:100%;
   object-fit:contain;
   background:#000;
+  transform:scale(1.4);
+  transform-origin:center;
 }
 
-/* GREEN FRAME — UNCHANGED */
+/* GREEN FRAME — LOCKED */
 .band{
   position:absolute;
   left:8%;
@@ -77,6 +79,7 @@ button{
   border:1px solid #333;
 }
 
+/* STATUS */
 #status{
   margin-top:10px;
   font-size:14px;
@@ -87,7 +90,7 @@ button{
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture v11</h2>
+  <h2>Ultimate X – Vision Capture v12</h2>
   <div class="subtitle">Align ALL 3 rows inside the green frame</div>
 
   <div class="scanner" id="scanner">
@@ -113,38 +116,34 @@ const statusEl = document.getElementById("status");
 const OUTPUT_WIDTH = 1100;
 const JPEG_QUALITY = 0.85;
 
-/* FRAME SCALE (visual only) */
+/* FRAME — LOCKED */
 const FRAME_SCALE = 0.58;
 
-/* START CAMERA + REAL ZOOM */
+/* CAPTURE MICRO-ADJUST (ONLY CHANGE) */
+const CAPTURE_Y_ADJUST = 0.03;  // shift down 3%
+const CAPTURE_H_ADJUST = 0.94;  // slightly shorter
+
+/* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject = stream;
-
-  const track = stream.getVideoTracks()[0];
-  const caps = track.getCapabilities?.();
-  if (caps?.zoom) {
-    track.applyConstraints({
-      advanced: [{ zoom: Math.min(2, caps.zoom.max) }]
-    });
-  }
-
   statusEl.textContent = "Camera ready — align machine";
   requestAnimationFrame(positionBand);
 })
 .catch(e=>{
-  statusEl.textContent = "Camera error: " + e.message;
+  statusEl.textContent = "Camera error";
 });
 
-/* CENTER GREEN FRAME */
+/* CENTER GREEN FRAME (LOCKED) */
 function positionBand(){
-  const h = scanner.getBoundingClientRect().height * FRAME_SCALE;
-  band.style.top = (scanner.getBoundingClientRect().height/2 - h/2) + "px";
-  band.style.height = h + "px";
+  const containerH = scanner.getBoundingClientRect().height;
+  const bandH = containerH * FRAME_SCALE;
+  band.style.top = (containerH / 2 - bandH / 2) + "px";
+  band.style.height = bandH + "px";
   requestAnimationFrame(positionBand);
 }
 
-/* SNAP — EXACT FRAME CAPTURE */
+/* SNAP — ADJUSTED CAPTURE */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
@@ -162,9 +161,11 @@ snap.onclick = async ()=>{
   const scaleY = vh / videoRect.height;
 
   const cropX = (bandRect.left - videoRect.left) * scaleX;
-  const cropY = (bandRect.top  - videoRect.top)  * scaleY;
-  const cropW = bandRect.width  * scaleX;
-  const cropH = bandRect.height * scaleY;
+  const cropY = ((bandRect.top - videoRect.top) * scaleY)
+              + (bandRect.height * CAPTURE_Y_ADJUST * scaleY);
+
+  const cropW = bandRect.width * scaleX;
+  const cropH = bandRect.height * CAPTURE_H_ADJUST * scaleY;
 
   const raw = document.createElement("canvas");
   raw.width  = cropW;
