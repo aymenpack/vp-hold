@@ -1,108 +1,93 @@
-// Cloudflare Worker — Vision + Wizard Strategy
 import { wizardBestHold } from "./strategy/wizard.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type"
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Content-Type": "application/json"
 };
 
+function j(obj){ return new Response(JSON.stringify(obj), { headers: cors }); }
+
 export default {
-  async fetch(req, env) {
-    if (req.method === "OPTIONS") {
-      return new Response(null, { headers: cors });
-    }
+  async fetch(req, env){
+    if(req.method==="OPTIONS") return new Response(null,{headers:cors});
+    if(req.method!=="POST") return j({ error:"Method Not Allowed", stage:"method" });
 
-    if (req.method !== "POST") {
-      return new Response("Method Not Allowed", { status: 405, headers: cors });
-    }
+    try{
+      const body = await req.json();
+      const { imageBase64, multipliers_fallback=[1,1,1], progressive=false } = body || {};
+      if(!imageBase64) return j({ error:"Missing imageBase64", stage:"input" });
 
-    try {
-      const { imageBase64, multipliers_fallback = [1,1,1], progressive = false } = await req.json();
-      if (!imageBase64) {
-        return json({ error: "Missing image" });
-      }
+      // Vision
+      const prompt = `Return JSON only: {"cards":[{"rank":"A","suit":"S"}...5], "multipliers":[m1,m2,m3]}. 
+Cards are the bottom row left->right. Multipliers are 3 values (null if unreadable). Ranks A K Q J T 9..2. Suits S H D C.`;
 
-      // ===== OpenAI Vision (SERVER SIDE ONLY) =====
-      const prompt = `
-Extract exactly 5 playing cards (left to right, bottom row)
-and exactly 3 multipliers (one per hand).
-
-Return JSON ONLY:
-{
-  "cards":[{"rank":"K","suit":"S"},...],
-  "multipliers":[2,1,4]
-}
-
-Rules:
-- If multiplier unreadable, return null
-- Blank multiplier = 1
-- Ranks: A,K,Q,J,T,9..2
-- Suits: S,H,D,C
-`;
-
-      const ai = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
+      const ai = await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{
           "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
+          "Content-Type":"application/json"
         },
         body: JSON.stringify({
-          model: "gpt-4.1-mini",
-          temperature: 0,
-          messages: [
-            { role: "system", content: "Return STRICT JSON only." },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt },
-                { type: "image_url", image_url: { url: imageBase64 } }
-              ]
-            }
+          model:"gpt-4.1-mini",
+          temperature:0,
+          messages:[
+            { role:"system", content:"Return STRICT JSON only." },
+            { role:"user", content:[
+              { type:"text", text: prompt },
+              { type:"image_url", image_url:{ url:imageBase64 } }
+            ]}
           ]
         })
       });
 
       const raw = await ai.text();
-      const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)[0]);
+      if(!ai.ok){
+        return j({ error:"OpenAI vision failed", stage:"openai", detail: raw.slice(0,800), http: ai.status });
+      }
+
+      let parsed;
+      try{
+        parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)[0]);
+      }catch(e){
+        return j({ error:"Could not parse model JSON", stage:"parse", detail: raw.slice(0,800) });
+      }
 
       const cards = parsed.cards;
       const visionMults = parsed.multipliers || [];
 
-      // ===== Multiplier resolution =====
-      const used = [0,1,2].map(i => {
+      if(!Array.isArray(cards) || cards.length!==5){
+        return j({ error:"Vision did not return 5 cards", stage:"vision_cards", detail: JSON.stringify(parsed).slice(0,800) });
+      }
+
+      // Multipliers: fill from vision else fallback else 1
+      const used = [0,1,2].map(i=>{
         const v = Number(visionMults[i]);
-        if (v >= 1 && v <= 12) return v;
+        if(v>=1 && v<=12) return v;
         const f = Number(multipliers_fallback[i]);
-        if (f >= 1 && f <= 12) return f;
+        if(f>=1 && f<=12) return f;
         return 1;
       });
 
       const total = used.reduce((a,b)=>a+b,0);
 
-      // ===== Wizard Strategy =====
+      // Strategy (Wizard)
       const result = wizardBestHold(cards, total, progressive);
 
-      return new Response(JSON.stringify({
+      return j({
         cards,
         hold: result.hold,
         multipliers_used: used,
         multiplier_total: total,
         ev_single: result.ev_single,
         ev_total: result.ev_total,
-        explanation: "Wizard of Odds Ultimate X strategy",
+        explanation: "Wizard of Odds Ultimate X strategy (locked strategy module).",
         confidence: 1.0
-      }), { headers: { ...cors, "Content-Type": "application/json" } });
+      });
 
-    } catch (e) {
-      return new Response(JSON.stringify({
-        error: "Vision or strategy error",
-        detail: String(e.message || e)
-      }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }catch(e){
+      return j({ error:"Worker exception", stage:"exception", detail: String(e?.message||e) });
     }
   }
 };
-
-function json(obj) {
-  return new Response(JSON.stringify(obj), { headers: { ...cors, "Content-Type": "application/json" } });
-}
