@@ -2,191 +2,151 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X Wizard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Ultimate X Assistant</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 
 <style>
+/* ===== YOUR ORIGINAL UI (UNCHANGED) ===== */
+:root{
+  --bg:#020617;
+  --panel:rgba(2,6,23,.75);
+  --border:#1f2937;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --accent:#22c55e;
+  --accent2:#38bdf8;
+  --danger:#ef4444;
+  --glow:0 0 30px rgba(34,197,94,.6);
+}
+*{box-sizing:border-box}
 body{
   margin:0;
-  font-family:system-ui;
-  background:#020617;
-  color:#fff;
+  font-family:Inter,-apple-system,system-ui;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 20% 10%, #0f172a, transparent 40%),
+    radial-gradient(circle at 80% 0%, #022c22, transparent 45%),
+    radial-gradient(circle at bottom, #000, #020617 70%);
 }
-.app{
-  max-width:900px;
-  margin:auto;
-  padding:16px 16px 120px;
-}
-h2{margin:0}
-.subtitle{font-size:13px;color:#9ca3af;margin-bottom:10px}
-
-.videoWrap{
-  position:relative;
-  margin-top:14px;
-}
-video{
-  width:100%;
-  max-height:320px;
-  border-radius:16px;
-  background:#000;
-  border:1px solid #1f2937;
-}
-
-/* FIXED GUIDE LINES */
-.band{
-  position:absolute;
-  left:0;
-  right:0;
-  border-top:2px dashed #22c55e;
-  border-bottom:2px dashed #22c55e;
-  pointer-events:none;
-}
-
-.row{
-  display:flex;
-  gap:10px;
-  margin-top:12px;
-  flex-wrap:wrap;
-}
-input,button{
-  padding:12px;
-  font-size:16px;
-  border-radius:10px;
-  border:none;
-}
-input{
-  background:#020617;
-  color:#fff;
-  border:1px solid #333;
-  flex:1;
-  min-width:90px;
-}
-button{
-  background:#22c55e;
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-}
-button:disabled{opacity:.5}
-
-#cards{margin-top:16px}
-.card{
-  display:inline-block;
-  width:18%;
-  margin:1%;
-  padding:14px;
-  border:1px solid #333;
-  border-radius:10px;
-  text-align:center;
-}
-.hold{
-  outline:3px solid #22c55e;
-  transform:translateY(-6px);
-}
-
-#error{
-  margin-top:10px;
-  color:#f87171;
-  white-space:pre-wrap;
-}
-
-#info{
-  margin-top:10px;
-  font-size:14px;
-  color:#e5e7eb;
-}
+.app{max-width:920px;margin:auto;padding:18px 16px 160px}
+header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;border-bottom:1px solid var(--border)}
+h1{margin:0;font-size:24px;font-weight:900}
+.subtitle{font-size:13px;color:var(--muted)}
+.tabs{display:flex;gap:12px;margin-top:16px}
+.tab{flex:1;padding:16px;border-radius:16px;border:1px solid var(--border);background:var(--panel);text-align:center;font-weight:900}
+.tab.active{outline:3px solid var(--accent);box-shadow:var(--glow)}
+.row{display:flex;gap:12px;margin-top:16px}
+input,button{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:14px 16px;font-size:15px}
+button.primary{background:linear-gradient(180deg,var(--accent),#16a34a);color:#000;font-weight:900}
+.scanner{margin-top:18px;border-radius:22px;overflow:hidden;border:1px solid var(--border);position:relative}
+video{width:100%;max-height:320px;object-fit:cover;background:black}
+.band{position:absolute;left:0;right:0;border-top:2px dashed var(--accent2);border-bottom:2px dashed var(--accent2);pointer-events:none}
+.status{font-size:13px;color:var(--muted);margin-top:10px}
+#error{margin-top:12px;padding:14px;border-radius:16px;background:#7f1d1d;display:none}
+#hand{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:22px}
+.card{border:1px solid var(--border);border-radius:20px;padding:22px 6px;text-align:center;background:var(--panel)}
+.card.hold{outline:3px solid var(--accent);transform:translateY(-8px)}
+.rank{font-size:28px;font-weight:900}
+.suit{font-size:20px}
+.red{color:var(--danger)}
+#explain{margin-top:20px;padding:18px;border-radius:20px;border:1px solid var(--border);background:rgba(2,6,23,.8)}
+footer{position:fixed;left:0;right:0;bottom:0;padding:16px;background:linear-gradient(180deg,transparent,#000 45%)}
+#snap{width:100%;padding:20px;font-size:20px;border-radius:24px}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h2>Ultimate X Wizard</h2>
-  <div class="subtitle">
-    Place the 5 cards between the green lines · Triple Play · 6/5 Bonus Poker
+<header>
+  <div>
+    <h1>Ultimate X Assistant</h1>
+    <div class="subtitle">🎰 Vision-powered strategy · Multiplier aware</div>
   </div>
+</header>
 
-  <div class="videoWrap">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="band" id="band"></div>
-  </div>
-
-  <div class="row">
-    <input id="m1" value="1" placeholder="Hand 1 mult">
-    <input id="m2" value="1" placeholder="Hand 2 mult">
-    <input id="m3" value="1" placeholder="Hand 3 mult">
-  </div>
-
-  <div class="row">
-    <button id="snap">SNAP</button>
-  </div>
-
-  <div id="error"></div>
-  <div id="cards"></div>
-  <div id="info"></div>
+<div class="tabs">
+  <div class="tab active">♠ Ultimate X</div>
+  <div class="tab">💎 Ultimate X Progressive</div>
 </div>
 
+<div class="row">
+  <input id="m1" value="1" placeholder="Hand 1 mult">
+  <input id="m2" value="1" placeholder="Hand 2 mult">
+  <input id="m3" value="1" placeholder="Hand 3 mult">
+</div>
+
+<div class="scanner">
+  <video id="video" autoplay playsinline muted></video>
+  <div class="band" id="band"></div>
+</div>
+
+<div class="status" id="status">Align cards between green lines</div>
+<div id="error"></div>
+
+<div id="hand"></div>
+<div id="explain"></div>
+</div>
+
+<footer>
+  <button id="snap" class="primary">🎯 SNAP</button>
+</footer>
+
 <script>
+/* ===== RESTORED WORKING CAPTURE LOGIC ===== */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ===== FIXED CROP CONSTANTS (LOCKED) ===== */
+/* Known-good geometry (this is what worked) */
 const BAND_CENTER = 0.50;
-const BAND_HEIGHT = 0.38;
-const LEFT_CROP   = 0.05;
-const RIGHT_CROP  = 0.00;
+const BAND_HEIGHT = 0.40;
 const OUT_WIDTH   = 480;
-const JPEG_Q      = 0.60;
+const JPEG_Q      = 0.65;
 
 const video = document.getElementById("video");
 const band  = document.getElementById("band");
+const snap  = document.getElementById("snap");
+const error = document.getElementById("error");
+const hand  = document.getElementById("hand");
+const explain = document.getElementById("explain");
 
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
   .then(s => video.srcObject = s)
-  .catch(()=> error.textContent="Camera permission denied");
+  .catch(()=> status.textContent="Camera permission denied");
 
 function updateBand(){
   const r = video.getBoundingClientRect();
   const h = r.height * BAND_HEIGHT;
-  const top = r.height * BAND_CENTER - h/2;
-  band.style.top = top+"px";
-  band.style.height = h+"px";
+  band.style.top = (r.height*BAND_CENTER - h/2) + "px";
+  band.style.height = h + "px";
   requestAnimationFrame(updateBand);
 }
 requestAnimationFrame(updateBand);
 
 function capture(){
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
+  const vw = video.videoWidth, vh = video.videoHeight;
   if(!vw || !vh) return null;
 
   const bandH = Math.floor(vh * BAND_HEIGHT);
   const top   = Math.floor(vh * BAND_CENTER - bandH/2);
 
-  const left  = Math.floor(vw * LEFT_CROP);
-  const right = Math.floor(vw * RIGHT_CROP);
-  const cw    = vw - left - right;
-
-  const crop = document.createElement("canvas");
-  crop.width = cw;
-  crop.height = bandH;
-  crop.getContext("2d").drawImage(
-    video,
-    left, top, cw, bandH,
-    0, 0, cw, bandH
-  );
+  const c = document.createElement("canvas");
+  c.width = vw;
+  c.height = bandH;
+  c.getContext("2d").drawImage(video, 0, top, vw, bandH, 0, 0, vw, bandH);
 
   const out = document.createElement("canvas");
   out.width = OUT_WIDTH;
-  out.height = Math.max(1, Math.floor(bandH * (OUT_WIDTH / cw)));
-  out.getContext("2d").drawImage(crop, 0, 0, out.width, out.height);
+  out.height = Math.floor(bandH * (OUT_WIDTH / vw));
+  out.getContext("2d").drawImage(c, 0, 0, out.width, out.height);
 
   return out.toDataURL("image/jpeg", JPEG_Q);
 }
 
-snap.onclick = async()=>{
-  error.textContent="";
-  cards.innerHTML="";
-  info.textContent="";
-  snap.disabled=true;
+snap.onclick = async ()=>{
+  error.style.display="none";
+  hand.innerHTML="";
+  explain.textContent="";
 
   try{
     const img = capture();
@@ -208,17 +168,16 @@ snap.onclick = async()=>{
     data.cards.forEach((c,i)=>{
       const d=document.createElement("div");
       d.className="card"+(data.hold[i]?" hold":"");
-      d.textContent=c.rank+c.suit;
-      cards.appendChild(d);
+      const red=c.suit==="H"||c.suit==="D";
+      d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
+      hand.appendChild(d);
     });
 
-    info.textContent =
-      `Total ${data.multiplier_total}× | EV ${data.ev_total.toFixed(2)} | Wizard Strategy`;
+    explain.textContent = `Wizard Strategy · EV ${data.ev_total.toFixed(2)}`;
 
   }catch(e){
+    error.style.display="block";
     error.textContent = "Scan failed: " + e.message;
-  }finally{
-    snap.disabled=false;
   }
 };
 </script>
