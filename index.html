@@ -36,37 +36,59 @@ button{
 }
 button:disabled{opacity:.6;cursor:not-allowed}
 
-#preview{
-  margin-top:16px;
-  width:100%;
-  border-radius:14px;
-  border:1px solid #333;
-  background:#000;
-}
-
 /* MULTIPLIERS */
-.multipliers{display:flex;gap:12px;margin-top:16px}
-.mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
+.multipliers{
+  display:flex;
+  gap:12px;
+  margin-top:16px;
+}
+.mult{
+  flex:1;
+  padding:14px;
+  border:1px solid #333;
+  border-radius:14px;
+  background:#020617;
+  text-align:center;
+}
 .mult .label{font-size:12px;color:#9ca3af}
 .mult .value{font-size:22px;font-weight:900;margin-top:6px}
 
 /* EV */
-#evBox{
+.ev-compare{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
   margin-top:16px;
+}
+.ev-box{
   padding:14px;
   border-radius:14px;
   background:#020617;
   border:1px solid #333;
   text-align:center;
-  display:none;
 }
-#evValue{margin-top:6px;font-size:26px;font-weight:900;color:#22c55e}
+.ev-box .label{font-size:12px;color:#9ca3af}
+.ev-box .value{
+  margin-top:6px;
+  font-size:24px;
+  font-weight:900;
+}
+.ev-box.ux .value{ color:#22c55e; }
 
 /* REAL CARDS */
-.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
+.cards{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+  margin-top:18px;
+}
 .card{
-  position:relative;background:#fff;color:#000;border-radius:14px;
-  padding:14px 6px 10px;text-align:center;
+  position:relative;
+  background:#fff;
+  color:#000;
+  border-radius:14px;
+  padding:14px 6px 10px;
+  text-align:center;
   box-shadow:0 8px 18px rgba(0,0,0,.35);
 }
 .card .rank{font-size:28px;font-weight:900}
@@ -78,24 +100,41 @@ button:disabled{opacity:.6;cursor:not-allowed}
 }
 .card.held::after{
   content:"HOLD";
-  position:absolute;top:-10px;left:50%;transform:translateX(-50%);
-  background:#22c55e;color:#000;font-size:11px;font-weight:900;
-  padding:4px 10px;border-radius:999px
+  position:absolute;
+  top:-10px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#22c55e;
+  color:#000;
+  font-size:11px;
+  font-weight:900;
+  padding:4px 10px;
+  border-radius:999px;
 }
 
 /* WHY */
 #whyBox{
-  margin-top:16px;padding:16px;border-radius:14px;
-  background:#020617;border:1px solid #333;display:none
+  margin-top:16px;
+  padding:16px;
+  border-radius:14px;
+  background:#020617;
+  border:1px solid #333;
 }
 #whyTitle{font-size:14px;font-weight:900;color:#22c55e}
 #whyText{margin-top:8px;font-size:14px;color:#e5e7eb;line-height:1.4}
 
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{
-  margin-top:14px;padding:12px;border-radius:12px;border:1px solid #333;
-  background:#020617;color:#9ca3af;font-size:12px;
-  white-space:pre-wrap;max-height:260px;overflow:auto
+  margin-top:14px;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #333;
+  background:#020617;
+  color:#9ca3af;
+  font-size:12px;
+  white-space:pre-wrap;
+  max-height:260px;
+  overflow:auto;
 }
 </style>
 </head>
@@ -103,18 +142,26 @@ button:disabled{opacity:.6;cursor:not-allowed}
 <body>
 <div class="app">
   <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Wizard-style EV, holds, and reasoning</div>
+  <div class="subtitle">Wizard-style EV comparison</div>
 
+  <!-- CAMERA -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
+  <!-- PAYTABLE -->
   <div style="margin-top:16px">
     <label style="font-size:13px;color:#9ca3af">Paytable</label>
     <select id="paytableSelect" style="
-      width:100%;margin-top:6px;padding:12px;border-radius:12px;
-      background:#020617;color:#fff;border:1px solid #333;font-size:14px
+      width:100%;
+      margin-top:6px;
+      padding:12px;
+      border-radius:12px;
+      background:#020617;
+      color:#fff;
+      border:1px solid #333;
+      font-size:14px
     ">
       <option value="DDB_9_6">Double Double Bonus 9/6</option>
     </select>
@@ -122,21 +169,29 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
   <button id="snap">SNAP</button>
 
-  <img id="preview">
-
+  <!-- MULTIPLIERS -->
   <div class="multipliers">
     <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
     <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
     <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
   </div>
 
-  <div id="evBox">
-    <div style="font-size:12px;color:#9ca3af">Expected Value (per coin)</div>
-    <div id="evValue">—</div>
+  <!-- EV COMPARISON -->
+  <div class="ev-compare">
+    <div class="ev-box">
+      <div class="label">Base EV (no multiplier)</div>
+      <div class="value" id="evBase">—</div>
+    </div>
+    <div class="ev-box ux">
+      <div class="label">Ultimate X EV</div>
+      <div class="value" id="evUX">—</div>
+    </div>
   </div>
 
+  <!-- CARDS -->
   <div class="cards" id="cardsBox"></div>
 
+  <!-- WHY -->
   <div id="whyBox">
     <div id="whyTitle">Why this hold?</div>
     <div id="whyText"></div>
@@ -150,12 +205,12 @@ button:disabled{opacity:.6;cursor:not-allowed}
 import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const BASE_EV = 0.9861; // Wizard DDB 9/6
 
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snap = document.getElementById("snap");
-const preview = document.getElementById("preview");
 const paytableSelect = document.getElementById("paytableSelect");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
@@ -163,12 +218,11 @@ const debugEl = document.getElementById("debug");
 const multTop = document.getElementById("multTop");
 const multMid = document.getElementById("multMid");
 const multBot = document.getElementById("multBot");
+
+const evBaseEl = document.getElementById("evBase");
+const evUXEl = document.getElementById("evUX");
+
 const cardsBox = document.getElementById("cardsBox");
-
-const evBox = document.getElementById("evBox");
-const evValue = document.getElementById("evValue");
-
-const whyBox = document.getElementById("whyBox");
 const whyText = document.getElementById("whyText");
 
 let snapInProgress = false;
@@ -178,11 +232,13 @@ function renderMultipliers(m){
   multMid.textContent = "×" + m.middle;
   multBot.textContent = "×" + m.bottom;
 }
-function renderEV(ev){
-  if(typeof ev !== "number") return;
-  evValue.textContent = ev.toFixed(4);
-  evBox.style.display = "block";
+
+function renderEVs(evUX, multiplier){
+  const evBase = evUX - (multiplier * BASE_EV);
+  evBaseEl.textContent = evBase.toFixed(4);
+  evUXEl.textContent = evUX.toFixed(4);
 }
+
 function renderCards(cards, bestHold){
   cardsBox.innerHTML = "";
   const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
@@ -195,17 +251,17 @@ function renderCards(cards, bestHold){
     cardsBox.appendChild(el);
   });
 }
+
 function explainHold(cards, bestHold){
-  const held=cards.filter((_,i)=>bestHold[i]);
-  const counts={};
+  const held = cards.filter((_,i)=>bestHold[i]);
+  const counts = {};
   held.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
-  const vals=Object.values(counts);
+  const vals = Object.values(counts);
   if(vals.includes(4)) whyText.textContent="Four of a kind maximizes EV in Double Double Bonus.";
   else if(vals.filter(v=>v===2).length===2) whyText.textContent="Holding both pairs preserves strong full house and quad outs.";
   else if(vals.includes(3)) whyText.textContent="Trips keep full house and quad possibilities.";
   else if(vals.includes(2)) whyText.textContent="Holding the pair maximizes expected value.";
   else whyText.textContent="This draw has the highest expected value.";
-  whyBox.style.display="block";
 }
 
 /* CAMERA */
@@ -221,10 +277,10 @@ snap.onclick = async ()=>{
   if(snapInProgress) return;
   snapInProgress=true;
   snap.disabled=true;
+
   try{
     statusEl.textContent="Capturing…";
     const img=await captureFromGreenFrame({video,band,scanner});
-    preview.src=img;
 
     const res=await fetch(WORKER_URL,{
       method:"POST",
@@ -233,14 +289,11 @@ snap.onclick = async ()=>{
     });
 
     const raw=await res.text();
-    let data;
-    try{ data=JSON.parse(raw); }
-    catch{ throw new Error("Worker returned non-JSON:\n"+raw); }
-
+    const data=JSON.parse(raw);
     debugEl.textContent=JSON.stringify(data,null,2);
 
     renderMultipliers(data.multipliers);
-    renderEV(data.ev_best);
+    renderEVs(data.ev_best, data.multipliers.bottom);
     renderCards(data.cards, data.best_hold);
     explainHold(data.cards, data.best_hold);
 
