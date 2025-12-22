@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Ultimate X Assistant</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#020617;
+  --panel:#020617cc;
+  --border:#1f2937;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --accent:#22c55e;
+  --danger:#ef4444;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,-apple-system,system-ui;
+  background:radial-gradient(circle at top,#020617,#000 70%);
+  color:var(--text);
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 150px;
+}
+header{
+  padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+h1{margin:0;font-size:22px;font-weight:900}
+.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* Tabs */
+.tabs{display:flex;gap:10px;margin-top:14px}
+.tab{
+  flex:1;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  text-align:center;
+  font-weight:800;
+  cursor:pointer;
+  background:var(--panel);
+  transition:all .2s ease;
+}
+.tab.active{
+  outline:3px solid var(--accent);
+  transform:translateY(-2px);
+}
+
+/* Controls */
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+input,button{
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px 14px;
+  font-size:14px;
+}
+button{font-weight:900;cursor:pointer}
+button.primary{
+  background:linear-gradient(180deg,#22c55e,#16a34a);
+  color:#000;border:none
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Camera */
+.scanner{
+  margin-top:16px;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  position:relative;
+}
+video{
+  width:100%;
+  max-height:320px;
+  object-fit:cover;
+  background:black;
+}
+.band{
+  position:absolute;
+  left:0; right:0;
+  border-top:2px dashed var(--accent);
+  border-bottom:2px dashed var(--accent);
+  pointer-events:none;
+}
+
+/* Status */
+.status{font-size:12px;color:var(--muted);margin-top:8px}
+#error{
+  margin-top:10px;
+  padding:12px;
+  border-radius:14px;
+  background:#7f1d1d;
+  display:none;
+}
+
+/* KPI */
+.kpis{display:flex;gap:12px;margin-top:14px}
+.kpi{
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  font-size:13px;
+}
+.kpi strong{color:#fff}
+
+/* Hand */
+#hand{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+  margin-top:18px;
+}
+.card{
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:18px 6px;
+  text-align:center;
+  background:var(--panel);
+  transition:all .2s ease;
+}
+.card.hold{
+  outline:3px solid var(--accent);
+  box-shadow:0 0 24px rgba(34,197,94,.7);
+  transform:translateY(-6px) scale(1.03);
+}
+.rank{font-size:24px;font-weight:900}
+.suit{font-size:18px}
+.red{color:var(--danger)}
+
+/* Explanation */
+#explain{
+  margin-top:16px;
+  padding:16px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  display:none;
+  line-height:1.5;
+}
+#explain strong{color:var(--accent)}
+
+footer{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  padding:14px 16px;
+  background:linear-gradient(180deg,transparent,#000 40%);
+}
+#snap{
+  width:100%;
+  padding:16px;
+  font-size:18px;
+  border-radius:18px;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+<header>
+  <h1>Ultimate X Assistant</h1>
+  <div class="subtitle">Reads cards & multiplier · tells you what to hold</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tabUX">Ultimate X</div>
+  <div class="tab" id="tabUXP">Ultimate X Progressive</div>
+</div>
+
+<div class="row">
+  <input id="fallbackMult" type="number" min="1" max="12" value="1" placeholder="Multiplier fallback">
+</div>
+
+<div class="scanner">
+  <video id="video" autoplay playsinline muted></video>
+  <div class="band" id="band"></div>
+</div>
+
+<div class="status" id="status">Starting camera…</div>
+<div id="error"></div>
+
+<div class="kpis">
+  <div class="kpi">Multiplier: <strong id="multShow">—</strong></div>
+  <div class="kpi">Source: <strong id="multSrc">—</strong></div>
+</div>
+
+<div id="hand"></div>
+<div id="explain"></div>
+</div>
+
+<footer>
+  <button id="snap" class="primary">SNAP</button>
+</footer>
+
+<script>
+/* ================= CONFIG ================= */
+const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const DOWNSCALE_WIDTH = 520;
+const JPEG_QUALITY = 0.6;
+
+/* ================= STATE ================= */
+let mode = "ux";
+let stream = null;
+let busy = false;
+
+/* ================= ELEMENTS ================= */
+const video = document.getElementById("video");
+const band = document.getElementById("band");
+const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
+const snapBtn = document.getElementById("snap");
+const handDiv = document.getElementById("hand");
+const explainDiv = document.getElementById("explain");
+
+const tabUX = document.getElementById("tabUX");
+const tabUXP = document.getElementById("tabUXP");
+const fallbackMult = document.getElementById("fallbackMult");
+const multShow = document.getElementById("multShow");
+const multSrc = document.getElementById("multSrc");
+
+/* ================= TABS ================= */
+tabUX.onclick = () => {
+  mode = "ux";
+  tabUX.classList.add("active");
+  tabUXP.classList.remove("active");
+};
+tabUXP.onclick = () => {
+  mode = "uxp";
+  tabUXP.classList.add("active");
+  tabUX.classList.remove("active");
+};
+
+/* ================= CAMERA ================= */
+async function startCamera(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"environment" }
+    });
+    video.srcObject = stream;
+    statusEl.textContent = "Camera ready";
+    requestAnimationFrame(updateBandOverlay);
+  }catch(e){
+    statusEl.textContent = "Camera permission denied";
+  }
+}
+startCamera();
+
+function updateBandOverlay(){
+  const rect = video.getBoundingClientRect();
+  const center = rect.height * 0.5;
+  const h = rect.height * 0.35;
+  band.style.top = (center - h/2) + "px";
+  band.style.height = h + "px";
+  requestAnimationFrame(updateBandOverlay);
+}
+
+/* ================= HELPERS ================= */
+function showError(msg){
+  errorEl.style.display="block";
+  errorEl.textContent=msg;
+}
+function clearError(){
+  errorEl.style.display="none";
+  errorEl.textContent="";
+}
+
+function cropDownscaleBase64(){
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if(!vw || !vh) return null;
+
+  const bandH = Math.floor(vh * 0.35);
+  const bandY = Math.floor((vh - bandH) / 2);
+
+  const crop = document.createElement("canvas");
+  crop.width = vw;
+  crop.height = bandH;
+  crop.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
+
+  const scale = DOWNSCALE_WIDTH / vw;
+  const outW = DOWNSCALE_WIDTH;
+  const outH = Math.floor(bandH * scale);
+
+  const out = document.createElement("canvas");
+  out.width = outW;
+  out.height = outH;
+  out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
+
+  return out.toDataURL("image/jpeg", JPEG_QUALITY);
+}
+
+function renderHand(cards, hold){
+  handDiv.innerHTML="";
+  cards.forEach((c,i)=>{
+    const d=document.createElement("div");
+    d.className="card"+(hold?.[i]?" hold":"");
+    const red=c.suit==="H"||c.suit==="D";
+    d.innerHTML=<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>;
+    handDiv.appendChild(d);
+  });
+}
+
+/* ================= SNAP ================= */
+snapBtn.onclick = async()=>{
+  if(busy) return;
+  busy=true;
+  clearError();
+  explainDiv.style.display="none";
+  statusEl.textContent="Capturing…";
+
+  await new Promise(r=>requestAnimationFrame(r));
+  const img = cropDownscaleBase64();
+  if(!img){
+    showError("Camera not ready");
+    busy=false;
+    return;
+  }
+
+  statusEl.textContent="Reading cards + multiplier…";
+
+  try{
+    const res = await fetch(WORKER_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        imageBase64: img,
+        mode,
+        multiplier: Number(fallbackMult.value||1)
+      })
+    });
+
+    const data = await res.json();
+    if(data.error){
+      showError(data.error);
+      statusEl.textContent="Error";
+    }else{
+      renderHand(data.cards||[], data.hold||[]);
+      multShow.textContent = data.multiplier_used + "×";
+      multSrc.textContent = data.multiplier_detected ? "vision" : "manual";
+      explainDiv.style.display="block";
+      explainDiv.textContent = data.explanation || "";
+      statusEl.textContent="Done";
+    }
+  }catch(e){
+    showError("Network error");
+    statusEl.textContent="Error";
+  }
+
+  busy=false;
+};
+</script>
+</body>
+</html>
