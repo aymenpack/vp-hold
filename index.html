@@ -21,21 +21,22 @@ h2{
   margin:0 0 6px;
 }
 .subtitle{
-  font-size:13px;
+  font-size:14px;
   color:#9ca3af;
-  margin-bottom:12px;
+  margin-bottom:14px;
 }
 
-/* CAMERA CONTAINER – WIDE & SHORT */
+/* CAMERA CONTAINER – BIG & IMMERSIVE */
 .scanner{
   position:relative;
   width:100%;
-  height:200px;               /* 🔒 SHORTER */
-  aspect-ratio:16/9;          /* 🔒 WIDE */
-  border-radius:18px;
+  height:45vh;                 /* 🔥 MUCH TALLER */
+  max-height:420px;
+  border-radius:20px;
   overflow:hidden;
   border:1px solid #1f2937;
   background:#000;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
 
 /* VIDEO */
@@ -46,41 +47,43 @@ video{
   background:#000;
 }
 
-/* GREEN GUIDE BOX – MORE BREATHING ROOM */
+/* GREEN FRAME – BIG & CONFIDENT */
 .band{
   position:absolute;
-  left:3%;
-  right:3%;
-  border:3px dashed #22c55e;
-  border-radius:12px;
-  background:rgba(34,197,94,0.08);
+  left:4%;
+  right:4%;
+  border:4px dashed #22c55e;     /* thicker */
+  border-radius:16px;
+  background:rgba(34,197,94,0.10);
   pointer-events:none;
 }
 
-/* CONTROLS */
+/* BUTTON */
 button{
-  margin-top:14px;
+  margin-top:18px;
   width:100%;
-  padding:16px;
-  font-size:18px;
-  font-weight:bold;
+  padding:18px;
+  font-size:20px;
+  font-weight:900;
   background:#22c55e;
   color:#000;
   border:none;
-  border-radius:16px;
+  border-radius:18px;
   cursor:pointer;
 }
 
+/* PREVIEW */
 #preview{
-  margin-top:14px;
+  margin-top:16px;
   width:100%;
-  border-radius:12px;
+  border-radius:14px;
   border:1px solid #333;
 }
 
+/* STATUS */
 #status{
-  margin-top:8px;
-  font-size:13px;
+  margin-top:10px;
+  font-size:14px;
   color:#9ca3af;
 }
 </style>
@@ -90,7 +93,7 @@ button{
 <div class="app">
   <h2>Ultimate X – Vision Capture</h2>
   <div class="subtitle">
-    Align <strong>ALL 3 rows</strong> (top + middle + bottom) inside the green frame
+    Align <strong>ALL 3 rows 1</strong> (top + middle + bottom) inside the green frame
   </div>
 
   <div class="scanner">
@@ -111,7 +114,7 @@ const snap  = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
 
-/* 🔒 CAPTURE GEOMETRY (UNCHANGED LOGIC) */
+/* 🔒 CAPTURE GEOMETRY (UNCHANGED) */
 const CAPTURE_TOP_FRAC    = 0.42;
 const CAPTURE_HEIGHT_FRAC = 0.45;
 const OUTPUT_WIDTH        = 1000;
@@ -137,7 +140,7 @@ function updateBand(){
   requestAnimationFrame(updateBand);
 }
 
-/* SNAP – PREVIEW ONLY */
+/* SNAP – PREVIEW */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
