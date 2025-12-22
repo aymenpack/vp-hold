@@ -31,6 +31,59 @@ button{
 .suit{font-size:20px;margin-top:4px}
 .red{color:#ef4444}
 
+/* ===== REAL CARD UI ===== */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+  margin-top:18px;
+}
+
+.card{
+  position:relative;
+  background:#fff;
+  color:#000;
+  border-radius:14px;
+  padding:14px 6px 10px;
+  text-align:center;
+  box-shadow:0 8px 18px rgba(0,0,0,.35);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+
+.card .rank{
+  font-size:28px;
+  font-weight:900;
+}
+
+.card .suit{
+  font-size:22px;
+  margin-top:4px;
+}
+
+.card.red{
+  color:#c1121f;
+}
+
+.card.held{
+  transform:translateY(-10px);
+  box-shadow:0 0 0 3px #22c55e, 0 18px 35px rgba(34,197,94,.6);
+}
+
+.card.held::after{
+  content:"HOLD";
+  position:absolute;
+  top:-10px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#22c55e;
+  color:#000;
+  font-size:11px;
+  font-weight:900;
+  padding:4px 10px;
+  border-radius:999px;
+  box-shadow:0 4px 12px rgba(0,0,0,.35);
+}
+
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{
   margin-top:14px;padding:12px;border-radius:12px;border:1px solid #333;background:#020617;
@@ -123,19 +176,40 @@ function renderMultipliers(m){
   multMid.textContent = "×" + (m?.middle ?? "—");
   multBot.textContent = "×" + (m?.bottom ?? "—");
 }
-
-function renderCards(cards){
+  
+function renderCards(cards, bestHold){
   cardsBox.innerHTML = "";
-  if(!Array.isArray(cards)) return;
-  cards.forEach(c=>{
+
+  const SUIT_SYMBOL = {
+    S: "♠",
+    H: "♥",
+    D: "♦",
+    C: "♣"
+  };
+
+  cards.forEach((c, i) => {
     const el = document.createElement("div");
     el.className = "card";
-    if(!c?.rank || !c?.suit){
-      el.innerHTML = `<div class="rank">?</div><div class="suit">?</div>`;
-    } else {
-      const isRed = (c.suit==="H"||c.suit==="D");
-      el.innerHTML = `<div class="rank ${isRed?"red":""}">${c.rank}</div><div class="suit ${isRed?"red":""}">${c.suit}</div>`;
+
+    if (bestHold?.[i]) {
+      el.classList.add("held");
     }
+
+    if (!c?.rank || !c?.suit) {
+      el.innerHTML = `
+        <div class="rank">?</div>
+        <div class="suit">?</div>
+      `;
+    } else {
+      const isRed = c.suit === "H" || c.suit === "D";
+      if (isRed) el.classList.add("red");
+
+      el.innerHTML = `
+        <div class="rank">${c.rank}</div>
+        <div class="suit">${SUIT_SYMBOL[c.suit]}</div>
+      `;
+    }
+
     cardsBox.appendChild(el);
   });
 }
@@ -196,7 +270,7 @@ snap.onclick = async ()=>{
 
     // render
     renderMultipliers(data.multipliers);
-    renderCards(data.cards);
+    renderCards(data.cards, data.best_hold);
 
     statusEl.textContent = "Done ✅";
     setDebug(`HTTP ${res.status}\n\nPARSED:\n${safeStr(data)}`);
