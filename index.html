@@ -5,63 +5,150 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Ultimate X Assistant</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-
 <style>
-/* (styles unchanged — omitted for brevity, same as before) */
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#020617;
+  color:#fff;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 160px;
+}
+h2{
+  margin:0 0 6px;
+}
+.subtitle{
+  font-size:13px;
+  color:#9ca3af;
+  margin-bottom:10px;
+}
+
+/* CAMERA CONTAINER */
+.scanner{
+  position:relative;
+  width:100%;
+  height:260px;              /* 🔒 FIXED HEIGHT */
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid #1f2937;
+  background:#000;
+}
+
+/* VIDEO */
+video{
+  width:100%;
+  height:100%;
+  object-fit:contain;        /* 🔒 PRESERVE ASPECT RATIO */
+  background:#000;
+}
+
+/* GREEN GUIDE BAND */
+.band{
+  position:absolute;
+  left:0;
+  right:0;
+  border-top:3px dashed #22c55e;
+  border-bottom:3px dashed #22c55e;
+  background:rgba(34,197,94,0.05); /* subtle fill */
+  pointer-events:none;
+}
+
+/* CONTROLS */
+.row{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
+input,button{
+  flex:1;
+  padding:12px;
+  font-size:15px;
+  border-radius:12px;
+  border:1px solid #333;
+  background:#020617;
+  color:#fff;
+}
+button{
+  background:#22c55e;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+#preview{
+  margin-top:12px;
+  border-radius:12px;
+  border:1px solid #333;
+  width:100%;
+}
+
+#status{
+  font-size:13px;
+  color:#9ca3af;
+  margin-top:8px;
+}
+
+#error{
+  margin-top:10px;
+  padding:12px;
+  border-radius:12px;
+  background:#7f1d1d;
+  display:none;
+  white-space:pre-wrap;
+}
 </style>
 </head>
 
 <body>
 <div class="app">
-<header>
-  <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">LLM Vision · Bottom row capture</div>
-</header>
+  <h2>Ultimate X – Capture Debug</h2>
+  <div class="subtitle">Align the **bottom row of cards** between green lines</div>
 
-<div class="scanner">
-  <video id="video" autoplay playsinline muted></video>
-  <div class="band" id="band"></div>
+  <div class="scanner">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="band" id="band"></div>
+  </div>
+
+  <div class="row">
+    <button id="snap">SNAP (Preview)</button>
+  </div>
+
+  <img id="preview">
+  <div id="status">Starting camera…</div>
+  <div id="error"></div>
 </div>
-
-<div class="status" id="status">Align bottom row between green lines</div>
-<div id="error"></div>
-
-<div id="previewWrap">
-  <img id="previewImg">
-</div>
-
-<div id="hand"></div>
-
-<footer>
-  <button id="snap" class="primary">SNAP</button>
-</footer>
 
 <script>
-const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-
-// 🔑 FINAL CAPTURE PROFILE (FIXED)
-const PROFILE = {
-  bandTopFrac: 0.58,  // 👈 anchor lower for bottom row
-  bandFrac:    0.35,
-  outW:        900,
-  jpegQ:       0.8
-};
-
 const video = document.getElementById("video");
 const band  = document.getElementById("band");
 const snap  = document.getElementById("snap");
-const previewImg = document.getElementById("previewImg");
+const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
-const errorEl  = document.getElementById("error");
+const errorEl = document.getElementById("error");
 
-navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
-.then(stream=>{
+/* 🔒 CAPTURE PROFILE (LOCKED) */
+const PROFILE = {
+  bandTopFrac: 0.58,  // bottom row
+  bandFrac:    0.32,  // height of capture
+  outW:        900,
+  jpegQ:       0.85
+};
+
+/* START CAMERA */
+navigator.mediaDevices.getUserMedia({
+  video:{ facingMode:"environment" }
+}).then(stream=>{
   video.srcObject = stream;
-  statusEl.textContent = "Align bottom row between green lines";
+  statusEl.textContent = "Camera ready — align bottom row";
   requestAnimationFrame(updateBand);
+}).catch(e=>{
+  statusEl.textContent = "Camera error";
 });
 
+/* UPDATE GREEN BAND */
 function updateBand(){
   const r = video.getBoundingClientRect();
   const h = r.height * PROFILE.bandFrac;
@@ -70,11 +157,19 @@ function updateBand(){
   requestAnimationFrame(updateBand);
 }
 
-async function capture(){
+/* SNAP PREVIEW ONLY */
+snap.onclick = async ()=>{
+  errorEl.style.display="none";
+  statusEl.textContent="Capturing preview…";
+
   await new Promise(r=>requestAnimationFrame(r));
+
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-  if(!vw||!vh) throw new Error("Camera not ready");
+  if(!vw || !vh){
+    statusEl.textContent="Camera not ready";
+    return;
+  }
 
   const bandH = Math.floor(vh * PROFILE.bandFrac);
   const bandY = Math.floor(vh * PROFILE.bandTopFrac);
@@ -93,35 +188,10 @@ async function capture(){
   out.height = Math.floor(bandH * (PROFILE.outW / vw));
   out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
 
-  return out.toDataURL("image/jpeg", PROFILE.jpegQ);
-}
+  const img = out.toDataURL("image/jpeg", PROFILE.jpegQ);
+  preview.src = img;
 
-snap.onclick = async()=>{
-  errorEl.style.display="none";
-  statusEl.textContent="Capturing…";
-
-  try{
-    const img = await capture();
-    previewImg.src = img;
-
-    statusEl.textContent="Sending to vision…";
-
-    const res = await fetch(WORKER_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ imageBase64: img })
-    });
-
-    const data = await res.json();
-    if(data.error) throw new Error(data.error);
-
-    statusEl.textContent="Done";
-
-  }catch(e){
-    errorEl.style.display="block";
-    errorEl.textContent=e.message;
-    statusEl.textContent="Error";
-  }
+  statusEl.textContent = `Preview captured (${out.width} × ${out.height})`;
 };
 </script>
 </body>
