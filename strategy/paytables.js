@@ -1,34 +1,27 @@
-// 6/5 Bonus Poker base pays
-export const BASE_PAY_65 = {
-  RF: 800,
-  SF: 50,
-  K4A: 80,
-  K42_4: 40,
-  K45K: 25,
-  FH: 6,
-  FL: 5,
-  ST: 4,
-  K3: 3,
-  TP: 2,
-  JOB: 1,
-  N: 0
-};
+// strategy/paytables.js
 
-// Ultimate X award multipliers (Triple Play, Bonus Poker 6/5)
-export const AWARD_MULT_3PLAY = {
-  RF: 2,
-  SF: 2,
-  K4A: 2,
-  K42_4: 2,
-  K45K: 2,
-  FH: 12,
-  FL: 11,
-  ST: 8,
-  K3: 4,
-  TP: 3,
-  JOB: 2,
-  N: 1
-};
+export const PAYTABLES = {
+  DDB_9_6: {
+    name: "Double Double Bonus 9/6",
 
-// Ultimate X Progressive Royal
-export const UXP_ROYAL = 4000;
+    payouts: {
+      royal_flush: 800,
+      straight_flush: 50,
+
+      four_aces_234_kicker: 400,
+      four_aces_other: 160,
+
+      four_234_ace_kicker: 160,
+      four_234_other: 80,
+
+      four_5k: 50,
+
+      full_house: 9,
+      flush: 6,
+      straight: 4,
+      three_kind: 3,
+      two_pair: 1,
+      jacks_or_better: 1
+    }
+  }
+};
