@@ -37,6 +37,11 @@ button{
   cursor:pointer;
 }
 
+button:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
 #preview{
   margin-top:16px;
   width:100%;
@@ -195,6 +200,7 @@ import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js"
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
+/* ELEMENTS */
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
@@ -209,8 +215,10 @@ const multMid = document.getElementById("multMid");
 const multBot = document.getElementById("multBot");
 const cardsBox = document.getElementById("cardsBox");
 
-function setDebug(s){ debugEl.textContent = s; }
+/* SNAP LOCK */
+let snapInProgress = false;
 
+/* HELPERS */
 function renderMultipliers(m){
   multTop.textContent = "×" + m.top;
   multMid.textContent = "×" + m.middle;
@@ -241,10 +249,17 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 
 /* SNAP */
 snap.onclick = async ()=>{
+  if (snapInProgress) return;
+  snapInProgress = true;
+  snap.disabled = true;
+
   try{
     statusEl.textContent = "Capturing…";
+
     const img = await captureFromGreenFrame({ video, band, scanner });
     preview.src = img;
+
+    statusEl.textContent = "Calling worker…";
 
     const res = await fetch(WORKER_URL,{
       method:"POST",
@@ -256,7 +271,7 @@ snap.onclick = async ()=>{
     });
 
     const data = await res.json();
-    setDebug(JSON.stringify(data,null,2));
+    debugEl.textContent = JSON.stringify(data,null,2);
 
     renderMultipliers(data.multipliers);
     renderCards(data.cards, data.best_hold);
@@ -264,7 +279,10 @@ snap.onclick = async ()=>{
     statusEl.textContent = "Done ✅";
   }catch(e){
     statusEl.textContent = "Client error";
-    setDebug(e.stack || e.message);
+    debugEl.textContent = e.stack || e.message;
+  }finally{
+    snapInProgress = false;
+    snap.disabled = false;
   }
 };
 </script>
