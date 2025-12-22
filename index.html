@@ -106,6 +106,7 @@ const band    = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snap    = document.getElementById("snap");
 const preview = document.getElementById("preview");
+const paytableSelect = document.getElementById("paytableSelect");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
@@ -167,7 +168,10 @@ snap.onclick = async ()=>{
     const res = await fetch(WORKER_URL, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ imageBase64: img })
+    body: JSON.stringify({
+      imageBase64: img,
+      paytable: paytableSelect.value
+})
     });
 
     const rawText = await res.text();
