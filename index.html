@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Capture</title>
+<title>Ultimate X – Vision Capture</title>
 
 <style>
 body{
@@ -17,15 +17,22 @@ body{
   margin:auto;
   padding:16px 16px 160px;
 }
-h2{margin:0}
-.subtitle{font-size:13px;color:#9ca3af;margin-bottom:10px}
+h2{
+  margin:0 0 6px;
+}
+.subtitle{
+  font-size:13px;
+  color:#9ca3af;
+  margin-bottom:12px;
+}
 
-/* CAMERA CONTAINER */
+/* CAMERA CONTAINER – WIDE & SHORT */
 .scanner{
   position:relative;
   width:100%;
-  height:220px;                 /* 🔒 SHORTER HEIGHT */
-  border-radius:16px;
+  height:200px;               /* 🔒 SHORTER */
+  aspect-ratio:16/9;          /* 🔒 WIDE */
+  border-radius:18px;
   overflow:hidden;
   border:1px solid #1f2937;
   background:#000;
@@ -35,23 +42,24 @@ h2{margin:0}
 video{
   width:100%;
   height:100%;
-  object-fit:contain;           /* 🔒 KEEP ASPECT */
+  object-fit:contain;
   background:#000;
 }
 
-/* GUIDE BAND (ALL 3 ROWS) */
+/* GREEN GUIDE BOX – MORE BREATHING ROOM */
 .band{
   position:absolute;
-  left:0;
-  right:0;
-  border-top:3px dashed #22c55e;
-  border-bottom:3px dashed #22c55e;
-  background:rgba(34,197,94,0.06);
+  left:3%;
+  right:3%;
+  border:3px dashed #22c55e;
+  border-radius:12px;
+  background:rgba(34,197,94,0.08);
   pointer-events:none;
 }
 
+/* CONTROLS */
 button{
-  margin-top:12px;
+  margin-top:14px;
   width:100%;
   padding:16px;
   font-size:18px;
@@ -59,12 +67,12 @@ button{
   background:#22c55e;
   color:#000;
   border:none;
-  border-radius:14px;
+  border-radius:16px;
   cursor:pointer;
 }
 
 #preview{
-  margin-top:12px;
+  margin-top:14px;
   width:100%;
   border-radius:12px;
   border:1px solid #333;
@@ -82,7 +90,7 @@ button{
 <div class="app">
   <h2>Ultimate X – Vision Capture</h2>
   <div class="subtitle">
-    Align **ALL 3 rows** (top + middle + bottom) inside green box
+    Align <strong>ALL 3 rows</strong> (top + middle + bottom) inside the green frame
   </div>
 
   <div class="scanner">
@@ -103,23 +111,24 @@ const snap  = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
 
-/* 🔒 FINAL CAPTURE GEOMETRY */
-const CAPTURE_TOP_FRAC    = 0.42; // where top of capture starts
-const CAPTURE_HEIGHT_FRAC = 0.45; // covers all 3 rows
-const OUTPUT_WIDTH        = 1000; // wide for symbols
+/* 🔒 CAPTURE GEOMETRY (UNCHANGED LOGIC) */
+const CAPTURE_TOP_FRAC    = 0.42;
+const CAPTURE_HEIGHT_FRAC = 0.45;
+const OUTPUT_WIDTH        = 1000;
 const JPEG_QUALITY        = 0.85;
 
 /* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject = stream;
-  statusEl.textContent = "Camera ready";
+  statusEl.textContent = "Camera ready — align machine";
   requestAnimationFrame(updateBand);
-}).catch(e=>{
+})
+.catch(e=>{
   statusEl.textContent = "Camera error";
 });
 
-/* UPDATE GREEN BAND */
+/* UPDATE GREEN FRAME */
 function updateBand(){
   const r = video.getBoundingClientRect();
   const h = r.height * CAPTURE_HEIGHT_FRAC;
@@ -128,7 +137,7 @@ function updateBand(){
   requestAnimationFrame(updateBand);
 }
 
-/* SNAP = CAPTURE PREVIEW ONLY */
+/* SNAP – PREVIEW ONLY */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
