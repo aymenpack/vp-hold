@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     /* ===============================
-       CORS (REQUIRED)
+       CORS
        =============================== */
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
@@ -35,7 +35,7 @@ export default {
 
     const { imageBase64 } = body;
 
-    if (!imageBase64 || typeof imageBase64 !== "string") {
+    if (!imageBase64) {
       return new Response(
         JSON.stringify({ error: "Missing imageBase64" }),
         { status: 400, headers: corsHeaders }
@@ -50,9 +50,15 @@ export default {
     }
 
     /* ===============================
-       VISION PROMPT (READ-ONLY)
+       CONSTANTS
        =============================== */
-    const prompt = `
+    const VALID_RANKS = new Set(["A","K","Q","J","T","9","8","7","6","5","4","3","2"]);
+    const VALID_SUITS = new Set(["S","H","D","C"]);
+
+    /* ===============================
+       PROMPTS
+       =============================== */
+    const basePrompt = `
 You are reading a casino Ultimate X video poker machine.
 
 The image contains THREE horizontal rows:
@@ -64,11 +70,7 @@ TASKS:
 1. Read the multiplier shown on the LEFT of each row.
 2. Read the FIVE cards on the BOTTOM row, left to right.
 
-OUTPUT STRICT JSON ONLY.
-DO NOT explain anything.
-DO NOT add text outside JSON.
-
-JSON FORMAT:
+OUTPUT STRICT JSON ONLY:
 
 {
   "multipliers": {
@@ -89,15 +91,24 @@ Rules:
 - Ranks: A K Q J T 9 8 7 6 5 4 3 2
 - Suits: S H D C
 - If a multiplier is not visible, return null
-- If a card is unreadable, return {"rank":null,"suit":null} for that position
+- If a card is unreadable, return {"rank":null,"suit":null}
+`;
+
+    const clarificationPrompt = `
+Some cards were unclear.
+
+Look ONLY at the BOTTOM row and try again.
+Focus on card rank and suit symbols.
+
+Return the SAME JSON format.
+Do not explain anything.
 `;
 
     /* ===============================
-       OPENAI VISION CALL
+       HELPERS
        =============================== */
-    let openaiResponse;
-    try {
-      openaiResponse = await fetch(
+    async function callVision(prompt) {
+      const res = await fetch(
         "https://api.openai.com/v1/chat/completions",
         {
           method: "POST",
@@ -114,51 +125,96 @@ Rules:
                 role: "user",
                 content: [
                   { type: "text", text: prompt },
-                  {
-                    type: "image_url",
-                    image_url: { url: imageBase64 },
-                  },
+                  { type: "image_url", image_url: { url: imageBase64 } },
                 ],
               },
             ],
           }),
         }
       );
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ error: "Failed to call OpenAI", detail: err.message }),
-        { status: 502, headers: corsHeaders }
-      );
+
+      const text = await res.text();
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("No JSON returned");
+      return JSON.parse(match[0]);
     }
 
-    const rawText = await openaiResponse.text();
+    function validate(parsed) {
+      const warnings = [];
+
+      if (!parsed.multipliers) {
+        warnings.push("Missing multipliers");
+      }
+
+      if (!Array.isArray(parsed.cards) || parsed.cards.length !== 5) {
+        warnings.push("Expected 5 cards");
+      }
+
+      parsed.cards?.forEach((c, i) => {
+        if (!VALID_RANKS.has(c?.rank)) {
+          warnings.push(`Invalid rank at position ${i}`);
+        }
+        if (!VALID_SUITS.has(c?.suit)) {
+          warnings.push(`Invalid suit at position ${i}`);
+        }
+      });
+
+      return warnings;
+    }
+
+    function normalizeMultipliers(multipliers) {
+      return {
+        top:    multipliers?.top    ?? 1,
+        middle: multipliers?.middle ?? 1,
+        bottom: multipliers?.bottom ?? 1,
+      };
+    }
 
     /* ===============================
-       PARSE JSON SAFELY
+       MAIN FLOW
        =============================== */
-    let parsed;
+    let result;
+    let warnings = [];
+
     try {
-      const match = rawText.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error("No JSON found");
-      parsed = JSON.parse(match[0]);
+      result = await callVision(basePrompt);
+      warnings = validate(result);
+
+      // Retry ONCE if there are card issues
+      if (warnings.length > 0) {
+        const retry = await callVision(clarificationPrompt);
+        const retryWarnings = validate(retry);
+
+        if (retryWarnings.length < warnings.length) {
+          result = retry;
+          warnings = retryWarnings;
+        }
+      }
+
+      // 🔒 Normalize multipliers: null → 1
+      result.multipliers = normalizeMultipliers(result.multipliers);
+
     } catch (err) {
       return new Response(
-        JSON.stringify({
-          error: "Vision returned invalid JSON",
-          raw: rawText,
-        }),
+        JSON.stringify({ error: "Vision failed", detail: err.message }),
         { status: 500, headers: corsHeaders }
       );
     }
 
     /* ===============================
-       SUCCESS RESPONSE
+       FINAL RESPONSE
        =============================== */
-    return new Response(JSON.stringify(parsed), {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        ...result,
+        warnings: warnings.length ? warnings : undefined
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   },
 };
