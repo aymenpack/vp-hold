@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Ultimate X Assistant</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ultimate X – Capture</title>
 
 <style>
 body{
@@ -17,20 +17,14 @@ body{
   margin:auto;
   padding:16px 16px 160px;
 }
-h2{
-  margin:0 0 6px;
-}
-.subtitle{
-  font-size:13px;
-  color:#9ca3af;
-  margin-bottom:10px;
-}
+h2{margin:0}
+.subtitle{font-size:13px;color:#9ca3af;margin-bottom:10px}
 
 /* CAMERA CONTAINER */
 .scanner{
   position:relative;
   width:100%;
-  height:260px;              /* 🔒 FIXED HEIGHT */
+  height:220px;                 /* 🔒 SHORTER HEIGHT */
   border-radius:16px;
   overflow:hidden;
   border:1px solid #1f2937;
@@ -41,84 +35,65 @@ h2{
 video{
   width:100%;
   height:100%;
-  object-fit:contain;        /* 🔒 PRESERVE ASPECT RATIO */
+  object-fit:contain;           /* 🔒 KEEP ASPECT */
   background:#000;
 }
 
-/* GREEN GUIDE BAND */
+/* GUIDE BAND (ALL 3 ROWS) */
 .band{
   position:absolute;
   left:0;
   right:0;
   border-top:3px dashed #22c55e;
   border-bottom:3px dashed #22c55e;
-  background:rgba(34,197,94,0.05); /* subtle fill */
+  background:rgba(34,197,94,0.06);
   pointer-events:none;
 }
 
-/* CONTROLS */
-.row{
-  display:flex;
-  gap:10px;
-  margin-top:12px;
-}
-input,button{
-  flex:1;
-  padding:12px;
-  font-size:15px;
-  border-radius:12px;
-  border:1px solid #333;
-  background:#020617;
-  color:#fff;
-}
 button{
+  margin-top:12px;
+  width:100%;
+  padding:16px;
+  font-size:18px;
+  font-weight:bold;
   background:#22c55e;
   color:#000;
-  font-weight:bold;
+  border:none;
+  border-radius:14px;
   cursor:pointer;
 }
 
 #preview{
   margin-top:12px;
+  width:100%;
   border-radius:12px;
   border:1px solid #333;
-  width:100%;
 }
 
 #status{
+  margin-top:8px;
   font-size:13px;
   color:#9ca3af;
-  margin-top:8px;
-}
-
-#error{
-  margin-top:10px;
-  padding:12px;
-  border-radius:12px;
-  background:#7f1d1d;
-  display:none;
-  white-space:pre-wrap;
 }
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Capture Debug</h2>
-  <div class="subtitle">Align the **bottom row of cards** between green lines</div>
+  <h2>Ultimate X – Vision Capture</h2>
+  <div class="subtitle">
+    Align **ALL 3 rows** (top + middle + bottom) inside green box
+  </div>
 
   <div class="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
-  <div class="row">
-    <button id="snap">SNAP (Preview)</button>
-  </div>
+  <button id="snap">SNAP (Preview)</button>
 
   <img id="preview">
   <div id="status">Starting camera…</div>
-  <div id="error"></div>
 </div>
 
 <script>
@@ -127,22 +102,18 @@ const band  = document.getElementById("band");
 const snap  = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
 
-/* 🔒 CAPTURE PROFILE (LOCKED) */
-const PROFILE = {
-  bandTopFrac: 0.58,  // bottom row
-  bandFrac:    0.32,  // height of capture
-  outW:        900,
-  jpegQ:       0.85
-};
+/* 🔒 FINAL CAPTURE GEOMETRY */
+const CAPTURE_TOP_FRAC    = 0.42; // where top of capture starts
+const CAPTURE_HEIGHT_FRAC = 0.45; // covers all 3 rows
+const OUTPUT_WIDTH        = 1000; // wide for symbols
+const JPEG_QUALITY        = 0.85;
 
 /* START CAMERA */
-navigator.mediaDevices.getUserMedia({
-  video:{ facingMode:"environment" }
-}).then(stream=>{
+navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
+.then(stream=>{
   video.srcObject = stream;
-  statusEl.textContent = "Camera ready — align bottom row";
+  statusEl.textContent = "Camera ready";
   requestAnimationFrame(updateBand);
 }).catch(e=>{
   statusEl.textContent = "Camera error";
@@ -151,17 +122,14 @@ navigator.mediaDevices.getUserMedia({
 /* UPDATE GREEN BAND */
 function updateBand(){
   const r = video.getBoundingClientRect();
-  const h = r.height * PROFILE.bandFrac;
-  band.style.top = (r.height * PROFILE.bandTopFrac) + "px";
+  const h = r.height * CAPTURE_HEIGHT_FRAC;
+  band.style.top = (r.height * CAPTURE_TOP_FRAC) + "px";
   band.style.height = h + "px";
   requestAnimationFrame(updateBand);
 }
 
-/* SNAP PREVIEW ONLY */
+/* SNAP = CAPTURE PREVIEW ONLY */
 snap.onclick = async ()=>{
-  errorEl.style.display="none";
-  statusEl.textContent="Capturing preview…";
-
   await new Promise(r=>requestAnimationFrame(r));
 
   const vw = video.videoWidth;
@@ -171,27 +139,27 @@ snap.onclick = async ()=>{
     return;
   }
 
-  const bandH = Math.floor(vh * PROFILE.bandFrac);
-  const bandY = Math.floor(vh * PROFILE.bandTopFrac);
+  const capY = Math.floor(vh * CAPTURE_TOP_FRAC);
+  const capH = Math.floor(vh * CAPTURE_HEIGHT_FRAC);
 
   const raw = document.createElement("canvas");
   raw.width = vw;
-  raw.height = bandH;
+  raw.height = capH;
   raw.getContext("2d").drawImage(
     video,
-    0, bandY, vw, bandH,
-    0, 0, vw, bandH
+    0, capY, vw, capH,
+    0, 0, vw, capH
   );
 
   const out = document.createElement("canvas");
-  out.width = PROFILE.outW;
-  out.height = Math.floor(bandH * (PROFILE.outW / vw));
+  out.width = OUTPUT_WIDTH;
+  out.height = Math.floor(capH * (OUTPUT_WIDTH / vw));
   out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
 
-  const img = out.toDataURL("image/jpeg", PROFILE.jpegQ);
+  const img = out.toDataURL("image/jpeg", JPEG_QUALITY);
   preview.src = img;
 
-  statusEl.textContent = `Preview captured (${out.width} × ${out.height})`;
+  statusEl.textContent = `Captured ${out.width} × ${out.height}`;
 };
 </script>
 </body>
