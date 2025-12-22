@@ -2,241 +2,133 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X Assistant</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-
 <style>
-:root{
-  --bg:#020617;
-  --panel:#020617cc;
-  --border:#1f2937;
-  --text:#e5e7eb;
-  --muted:#9ca3af;
-  --accent:#22c55e;
-  --danger:#ef4444;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Inter,-apple-system,system-ui;
-  background:radial-gradient(circle at top,#020617,#000 70%);
-  color:var(--text);
-}
-.app{
-  max-width:900px;
-  margin:auto;
-  padding:16px 16px 150px;
-}
-header{
-  padding-bottom:12px;
-  border-bottom:1px solid var(--border);
-}
-h1{margin:0;font-size:22px;font-weight:900}
-.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
-
-/* Camera */
-.scanner{
-  margin-top:16px;
-  border-radius:18px;
-  overflow:hidden;
-  border:1px solid var(--border);
-  position:relative;
-}
-video{
-  width:100%;
-  max-height:320px;
-  object-fit:cover;
-  background:black;
-}
-.band{
-  position:absolute;
-  left:0; right:0;
-  border-top:2px dashed var(--accent);
-  border-bottom:2px dashed var(--accent);
-  pointer-events:none;
-}
-
-.row{display:flex;gap:10px;margin-top:14px}
-input,button{
-  background:var(--panel);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:12px 14px;
-  font-size:14px;
-}
-button.primary{
-  background:linear-gradient(180deg,#22c55e,#16a34a);
-  color:#000;border:none;font-weight:900
-}
-
-#hand{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:14px;
-  margin-top:18px;
-}
-.card{
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:18px 6px;
-  text-align:center;
-  background:var(--panel);
-}
-.card.hold{
-  outline:3px solid var(--accent);
-  transform:translateY(-6px);
-}
-.rank{font-size:24px;font-weight:900}
-.suit{font-size:18px}
-.red{color:var(--danger)}
-
-footer{
-  position:fixed;
-  left:0; right:0; bottom:0;
-  padding:14px 16px;
-  background:linear-gradient(180deg,transparent,#000 40%);
-}
-#snap{
-  width:100%;
-  padding:16px;
-  font-size:18px;
-  border-radius:18px;
-}
+body { margin:0; font-family:system-ui; background:#020617; color:#fff; }
+.app { max-width:900px; margin:auto; padding:16px 16px 120px; }
+video { width:100%; max-height:320px; border-radius:16px; background:#000; }
+.band { position:absolute; left:0; right:0; border-top:2px dashed #22c55e; border-bottom:2px dashed #22c55e; pointer-events:none; }
+.row { display:flex; gap:10px; margin-top:12px; }
+input,button { padding:12px; font-size:16px; border-radius:10px; border:none; }
+input { background:#020617; color:#fff; border:1px solid #333; flex:1; }
+button { background:#22c55e; color:#000; font-weight:bold; cursor:pointer; }
+.card { display:inline-block; width:18%; margin:1%; padding:14px; border:1px solid #333; text-align:center; border-radius:10px; }
+.hold { outline:3px solid #22c55e; transform:translateY(-6px); }
+.red { color:#ef4444; }
+#log { margin-top:10px; font-size:13px; color:#9ca3af; white-space:pre-wrap; }
 </style>
 </head>
 
 <body>
 <div class="app">
-<header>
-  <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">Vision-powered · Wizard strategy</div>
-</header>
+  <h2>Ultimate X Assistant</h2>
 
-<div class="scanner">
-  <video id="video" autoplay playsinline muted></video>
-  <div class="band" id="band"></div>
+  <div class="row">
+    <input id="fallbackMult" value="1" placeholder="Multiplier fallback">
+  </div>
+
+  <div style="position:relative; margin-top:12px;">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="band" id="band"></div>
+  </div>
+
+  <div class="row">
+    <button id="snap">SNAP</button>
+  </div>
+
+  <div id="hand"></div>
+  <div id="log"></div>
 </div>
-
-<div class="row">
-  <input id="m1" value="1" placeholder="Hand 1 mult">
-  <input id="m2" value="1" placeholder="Hand 2 mult">
-  <input id="m3" value="1" placeholder="Hand 3 mult">
-</div>
-
-<div id="hand"></div>
-</div>
-
-<footer>
-  <button id="snap" class="primary">SNAP</button>
-</footer>
-
-<!-- ===============================
-     CLASSIC SCRIPT — AUTO CAMERA
-     =============================== -->
-<script>
-const video = document.getElementById("video");
-const band  = document.getElementById("band");
-
-navigator.mediaDevices.getUserMedia({
-  video:{ facingMode:"environment" }
-}).then(stream=>{
-  video.srcObject = stream;
-  requestAnimationFrame(updateBand);
-});
-
-function updateBand(){
-  const r = video.getBoundingClientRect();
-  const h = r.height * 0.35;
-  band.style.top = (r.height*0.5 - h/2) + "px";
-  band.style.height = h + "px";
-  requestAnimationFrame(updateBand);
-}
-</script>
 
 <script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-const snapBtn = document.getElementById("snap");
-const videoEl = document.getElementById("video");
-const handDiv = document.getElementById("hand");
+const video = document.getElementById("video");
+const band = document.getElementById("band");
+const snap = document.getElementById("snap");
+const hand = document.getElementById("hand");
+const log = document.getElementById("log");
+const fallbackMult = document.getElementById("fallbackMult");
 
-snapBtn.onclick = async () => {
-  console.log("SNAP clicked"); // DEBUG
-  try {
-    // --- CAPTURE (KNOWN GOOD) ---
-    await new Promise(r => requestAnimationFrame(r));
+// ---- AUTO CAMERA START ----
+navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
+  .then(stream => {
+    video.srcObject = stream;
+    requestAnimationFrame(updateBand);
+    log.textContent = "Camera started";
+  })
+  .catch(e => log.textContent = "Camera error: " + e.message);
 
-    const vw = videoEl.videoWidth;
-    const vh = videoEl.videoHeight;
-    if (!vw || !vh) {
-      alert("Camera not ready");
-      return;
-    }
+function updateBand(){
+  const r = video.getBoundingClientRect();
+  const h = r.height * 0.35;
+  band.style.top = (r.height * 0.5 - h/2) + "px";
+  band.style.height = h + "px";
+  requestAnimationFrame(updateBand);
+}
 
-    const bandH = Math.floor(vh * 0.35);
-    const bandY = Math.floor((vh - bandH) / 2);
+// ---- SNAP HANDLER ----
+snap.onclick = async () => {
+  log.textContent = "SNAP clicked";
 
-    const crop = document.createElement("canvas");
-    crop.width = vw;
-    crop.height = bandH;
-    crop.getContext("2d").drawImage(
-      videoEl,
-      0, bandY, vw, bandH,
-      0, 0, vw, bandH
-    );
+  await new Promise(r => requestAnimationFrame(r));
 
-    const outW = 520;
-    const outH = Math.floor(bandH * (outW / vw));
-
-    const out = document.createElement("canvas");
-    out.width = outW;
-    out.height = outH;
-    out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
-
-    const img = out.toDataURL("image/jpeg", 0.6);
-
-    // --- SEND TO WORKER ---
-    const res = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageBase64: img,
-        multipliers_fallback: [
-          Number(m1.value || 1),
-          Number(m2.value || 1),
-          Number(m3.value || 1)
-        ],
-        progressive: false
-      })
-    });
-
-    const data = await res.json();
-    console.log("Worker response:", data);
-
-    if (data.error) {
-      alert("Worker error: " + data.error);
-      return;
-    }
-
-    // --- RENDER ---
-    handDiv.innerHTML = "";
-    data.cards.forEach((c, i) => {
-      const d = document.createElement("div");
-      d.className = "card" + (data.hold[i] ? " hold" : "");
-      const red = c.suit === "H" || c.suit === "D";
-      d.innerHTML = `
-        <div class="rank ${red ? "red" : ""}">${c.rank}</div>
-        <div class="suit ${red ? "red" : ""}">${c.suit}</div>
-      `;
-      handDiv.appendChild(d);
-    });
-
-  } catch (e) {
-    alert("SNAP failed: " + e.message);
-    console.error(e);
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) {
+    log.textContent = "Camera not ready";
+    return;
   }
+
+  const bandH = Math.floor(vh * 0.35);
+  const bandY = Math.floor((vh - bandH) / 2);
+
+  const crop = document.createElement("canvas");
+  crop.width = vw;
+  crop.height = bandH;
+  crop.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
+
+  const outW = 520;
+  const outH = Math.floor(bandH * (outW / vw));
+
+  const out = document.createElement("canvas");
+  out.width = outW;
+  out.height = outH;
+  out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
+
+  const img = out.toDataURL("image/jpeg", 0.6);
+
+  log.textContent = "Image captured, sending to worker...";
+
+  const res = await fetch(WORKER_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      imageBase64: img,
+      multipliers_fallback: [Number(fallbackMult.value || 1), 1, 1],
+      progressive:false
+    })
+  });
+
+  const data = await res.json();
+  log.textContent = "Worker response:\n" + JSON.stringify(data, null, 2);
+
+  if (data.error) return;
+
+  hand.innerHTML = "";
+  data.cards.forEach((c,i)=>{
+    const d = document.createElement("div");
+    d.className = "card" + (data.hold[i] ? " hold" : "");
+    const red = c.suit==="H" || c.suit==="D";
+    d.innerHTML = `
+      <div class="${red ? "red" : ""}">${c.rank}</div>
+      <div class="${red ? "red" : ""}">${c.suit}</div>
+    `;
+    hand.appendChild(d);
+  });
 };
 </script>
+</body>
+</html>
