@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture v5 (Locked)</title>
+<title>Ultimate X – Vision Capture v6</title>
 
 <style>
 body{
@@ -24,7 +24,7 @@ h2{margin:0}
   margin-bottom:12px;
 }
 
-/* CAMERA CONTAINER */
+/* CAMERA CONTAINER — LOCKED */
 .scanner{
   position:relative;
   width:100%;
@@ -36,7 +36,7 @@ h2{margin:0}
   background:#000;
 }
 
-/* VIDEO */
+/* VIDEO — LOCKED */
 video{
   width:100%;
   height:100%;
@@ -46,11 +46,11 @@ video{
   transform-origin:center;
 }
 
-/* GREEN FRAME — DO NOT CHANGE */
+/* GREEN FRAME — BIGGER, SAME RATIO */
 .band{
   position:absolute;
-  left:12%;
-  right:12%;
+  left:8%;              /* 🔒 was 12% */
+  right:8%;             /* 🔒 was 12% */
   border:4px dashed #22c55e;
   border-radius:18px;
   background:rgba(34,197,94,0.12);
@@ -90,7 +90,7 @@ button{
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture v5</h2>
+  <h2>Ultimate X – Vision Capture</h2>
   <div class="subtitle">
     Align ALL 3 rows inside the green frame
   </div>
@@ -114,9 +114,12 @@ const snap    = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
 
-/* OUTPUT SETTINGS */
-const OUTPUT_WIDTH  = 1100;
-const JPEG_QUALITY  = 0.85;
+/* 🔒 OUTPUT SETTINGS */
+const OUTPUT_WIDTH = 1100;
+const JPEG_QUALITY = 0.85;
+
+/* 🔒 FRAME SCALE — BIGGER */
+const FRAME_SCALE = 0.58;   // was 0.48
 
 /* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
@@ -131,9 +134,12 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 
 /* CENTER GREEN FRAME (VISUAL ONLY) */
 function positionBand(){
-  const h = scanner.getBoundingClientRect().height * 0.48;
-  band.style.top = (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
-  band.style.height = h + "px";
+  const containerH = scanner.getBoundingClientRect().height;
+  const bandH = containerH * FRAME_SCALE;
+
+  band.style.top = (containerH / 2 - bandH / 2) + "px";
+  band.style.height = bandH + "px";
+
   requestAnimationFrame(positionBand);
 }
 
@@ -148,22 +154,17 @@ snap.onclick = async ()=>{
     return;
   }
 
-  // DOM rects
   const videoRect = video.getBoundingClientRect();
   const bandRect  = band.getBoundingClientRect();
 
-  // Scale from CSS pixels to video pixels
-  const scaleY = vh / videoRect.height;
   const scaleX = vw / videoRect.width;
+  const scaleY = vh / videoRect.height;
 
-  // Calculate crop in VIDEO pixel space
-  const cropY = Math.max(0, (bandRect.top - videoRect.top) * scaleY);
-  const cropH = Math.min(vh, bandRect.height * scaleY);
+  const cropX = (bandRect.left - videoRect.left) * scaleX;
+  const cropY = (bandRect.top  - videoRect.top)  * scaleY;
+  const cropW = bandRect.width  * scaleX;
+  const cropH = bandRect.height * scaleY;
 
-  const cropX = Math.max(0, (bandRect.left - videoRect.left) * scaleX);
-  const cropW = Math.min(vw, bandRect.width * scaleX);
-
-  // Crop EXACTLY what user sees
   const raw = document.createElement("canvas");
   raw.width  = cropW;
   raw.height = cropH;
@@ -173,7 +174,6 @@ snap.onclick = async ()=>{
     0, 0, cropW, cropH
   );
 
-  // Downscale
   const out = document.createElement("canvas");
   out.width = OUTPUT_WIDTH;
   out.height = Math.floor(cropH * (OUTPUT_WIDTH / cropW));
