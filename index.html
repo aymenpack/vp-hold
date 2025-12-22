@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture (LOCKED)</title>
+<title>Ultimate X – Vision Capture (Final)</title>
 
 <style>
 body{
@@ -24,7 +24,7 @@ h2{margin:0}
   margin-bottom:12px;
 }
 
-/* CAMERA CONTAINER — LOCKED */
+/* CAMERA CONTAINER — UNCHANGED */
 .scanner{
   position:relative;
   width:100%;
@@ -36,17 +36,15 @@ h2{margin:0}
   background:#000;
 }
 
-/* VIDEO — RESTORED EXACTLY */
+/* VIDEO — NO CSS SCALE */
 video{
   width:100%;
   height:100%;
   object-fit:contain;
   background:#000;
-  transform:scale(1.4);
-  transform-origin:center;
 }
 
-/* GREEN FRAME — LOCKED */
+/* GREEN FRAME — UNCHANGED */
 .band{
   position:absolute;
   left:8%;
@@ -89,10 +87,8 @@ button{
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture v10</h2>
-  <div class="subtitle">
-    Align ALL 3 rows inside the green frame
-  </div>
+  <h2>Ultimate X – Vision Capture v11</h2>
+  <div class="subtitle">Align ALL 3 rows inside the green frame</div>
 
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
@@ -113,24 +109,34 @@ const snap    = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
 
-/* LOCKED CONSTANTS */
-const FRAME_SCALE  = 0.58;
-const VIDEO_SCALE  = 1.4;
+/* OUTPUT */
 const OUTPUT_WIDTH = 1100;
 const JPEG_QUALITY = 0.85;
 
-/* START CAMERA */
+/* FRAME SCALE (visual only) */
+const FRAME_SCALE = 0.58;
+
+/* START CAMERA + REAL ZOOM */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject = stream;
+
+  const track = stream.getVideoTracks()[0];
+  const caps = track.getCapabilities?.();
+  if (caps?.zoom) {
+    track.applyConstraints({
+      advanced: [{ zoom: Math.min(2, caps.zoom.max) }]
+    });
+  }
+
   statusEl.textContent = "Camera ready — align machine";
   requestAnimationFrame(positionBand);
 })
 .catch(e=>{
-  statusEl.textContent = "Camera error";
+  statusEl.textContent = "Camera error: " + e.message;
 });
 
-/* VISUAL FRAME — LOCKED */
+/* CENTER GREEN FRAME */
 function positionBand(){
   const h = scanner.getBoundingClientRect().height * FRAME_SCALE;
   band.style.top = (scanner.getBoundingClientRect().height/2 - h/2) + "px";
@@ -138,7 +144,7 @@ function positionBand(){
   requestAnimationFrame(positionBand);
 }
 
-/* SNAP — CAPTURE EXACTLY GREEN FRAME */
+/* SNAP — EXACT FRAME CAPTURE */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
@@ -152,20 +158,13 @@ snap.onclick = async ()=>{
   const videoRect = video.getBoundingClientRect();
   const bandRect  = band.getBoundingClientRect();
 
-  /* Undo CSS scale */
-  const adjLeft   = (bandRect.left - videoRect.left) / VIDEO_SCALE;
-  const adjTop    = (bandRect.top  - videoRect.top)  / VIDEO_SCALE;
-  const adjWidth  = bandRect.width  / VIDEO_SCALE;
-  const adjHeight = bandRect.height / VIDEO_SCALE;
-
-  /* Map to video pixels */
   const scaleX = vw / videoRect.width;
   const scaleY = vh / videoRect.height;
 
-  const cropX = Math.round(adjLeft   * scaleX);
-  const cropY = Math.round(adjTop    * scaleY);
-  const cropW = Math.round(adjWidth  * scaleX);
-  const cropH = Math.round(adjHeight * scaleY);
+  const cropX = (bandRect.left - videoRect.left) * scaleX;
+  const cropY = (bandRect.top  - videoRect.top)  * scaleY;
+  const cropW = bandRect.width  * scaleX;
+  const cropH = bandRect.height * scaleY;
 
   const raw = document.createElement("canvas");
   raw.width  = cropW;
