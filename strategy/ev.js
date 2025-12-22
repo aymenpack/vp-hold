@@ -1,14 +1,23 @@
 // strategy/ev.js
-// Wizard-of-Odds style EV engine for Double Double Bonus
+// Wizard-of-Odds style EV engine for Double Double Bonus + Ultimate X
 
 import { evaluateHand } from "./handEvaluator.js";
 
 /* ===============================
-   DECK SETUP
+   CONSTANTS
    =============================== */
+
+// Published Wizard-of-Odds base EVs (per coin)
+const BASE_EV = {
+  DDB_9_6: 0.9861
+};
 
 const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
 const SUITS = ["S","H","D","C"];
+
+/* ===============================
+   DECK
+   =============================== */
 
 const FULL_DECK = [];
 for (const r of RANKS) {
@@ -27,7 +36,7 @@ function buildDeck(excludeCards) {
 }
 
 /* ===============================
-   COMBINATIONS (exact enumeration)
+   COMBINATIONS (exact)
    =============================== */
 
 function combinations(arr, k, fn) {
@@ -49,7 +58,7 @@ function combinations(arr, k, fn) {
 }
 
 /* ===============================
-   PAYOUT LOOKUP
+   PAYOUT
    =============================== */
 
 function payoutForHand(cards, paytable) {
@@ -67,7 +76,6 @@ function evForHold(hand, holdMask, paytable) {
   const drawCount = 5 - held.length;
   const deck = buildDeck(hand);
 
-  // No draw → direct payout
   if (drawCount === 0) {
     return payoutForHand(held, paytable);
   }
@@ -85,7 +93,7 @@ function evForHold(hand, holdMask, paytable) {
     return total / count;
   }
 
-  // Monte Carlo simulation for speed
+  // Monte Carlo for speed
   const SAMPLES =
     drawCount === 3 ? 20000 :
     drawCount === 4 ? 15000 :
@@ -95,12 +103,10 @@ function evForHold(hand, holdMask, paytable) {
   const d = deck.slice();
 
   for (let t = 0; t < SAMPLES; t++) {
-    // partial Fisher–Yates shuffle
     for (let i = 0; i < drawCount; i++) {
       const j = i + ((Math.random() * (d.length - i)) | 0);
       [d[i], d[j]] = [d[j], d[i]];
     }
-
     total += payoutForHand(held.concat(d.slice(0, drawCount)), paytable);
   }
 
@@ -108,19 +114,25 @@ function evForHold(hand, holdMask, paytable) {
 }
 
 /* ===============================
-   BEST HOLD (32 masks)
+   BEST HOLD — ULTIMATE X
    =============================== */
 
-export function bestHoldEV(hand, paytable) {
+export function bestHoldEV(hand, paytable, multiplier = 1, paytableKey = "DDB_9_6") {
   let bestEV = -Infinity;
   let bestMask = null;
 
+  const baseEV = BASE_EV[paytableKey] ?? 0;
+
   for (let mask = 0; mask < 32; mask++) {
     const holdMask = [0,1,2,3,4].map(i => Boolean(mask & (1 << i)));
-    const ev = evForHold(hand, holdMask, paytable);
 
-    if (ev > bestEV) {
-      bestEV = ev;
+    const evCurrent = evForHold(hand, holdMask, paytable);
+
+    // Ultimate X EV layer (Wizard method)
+    const evUltimateX = evCurrent + (multiplier * baseEV);
+
+    if (evUltimateX > bestEV) {
+      bestEV = evUltimateX;
       bestMask = holdMask;
     }
   }
