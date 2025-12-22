@@ -50,15 +50,9 @@ export default {
     }
 
     /* ===============================
-       CONSTANTS
+       PROMPT
        =============================== */
-    const VALID_RANKS = new Set(["A","K","Q","J","T","9","8","7","6","5","4","3","2"]);
-    const VALID_SUITS = new Set(["S","H","D","C"]);
-
-    /* ===============================
-       PROMPTS
-       =============================== */
-    const basePrompt = `
+    const prompt = `
 You are reading a casino Ultimate X video poker machine.
 
 The image contains THREE horizontal rows:
@@ -70,8 +64,9 @@ TASKS:
 1. Read the multiplier shown on the LEFT of each row.
 2. Read the FIVE cards on the BOTTOM row, left to right.
 
-OUTPUT STRICT JSON ONLY:
+OUTPUT STRICT JSON ONLY.
 
+JSON FORMAT:
 {
   "multipliers": {
     "top": number | null,
@@ -94,127 +89,83 @@ Rules:
 - If a card is unreadable, return {"rank":null,"suit":null}
 `;
 
-    const clarificationPrompt = `
-Some cards were unclear.
-
-Look ONLY at the BOTTOM row and try again.
-Focus on card rank and suit symbols.
-
-Return the SAME JSON format.
-Do not explain anything.
-`;
-
     /* ===============================
-       HELPERS
+       CALL OPENAI
        =============================== */
-    async function callVision(prompt) {
-      const res = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4.1",
-            temperature: 0,
-            messages: [
-              { role: "system", content: "Return STRICT JSON only." },
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: prompt },
-                  { type: "image_url", image_url: { url: imageBase64 } },
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      const text = await res.text();
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error("No JSON returned");
-      return JSON.parse(match[0]);
-    }
-
-    function validate(parsed) {
-      const warnings = [];
-
-      if (!parsed.multipliers) {
-        warnings.push("Missing multipliers");
-      }
-
-      if (!Array.isArray(parsed.cards) || parsed.cards.length !== 5) {
-        warnings.push("Expected 5 cards");
-      }
-
-      parsed.cards?.forEach((c, i) => {
-        if (!VALID_RANKS.has(c?.rank)) {
-          warnings.push(`Invalid rank at position ${i}`);
-        }
-        if (!VALID_SUITS.has(c?.suit)) {
-          warnings.push(`Invalid suit at position ${i}`);
-        }
+    let openaiJson;
+    try {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1",
+          temperature: 0,
+          messages: [
+            { role: "system", content: "Return STRICT JSON only." },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: imageBase64 } }
+              ]
+            }
+          ]
+        })
       });
 
-      return warnings;
-    }
-
-    function normalizeMultipliers(multipliers) {
-      return {
-        top:    multipliers?.top    ?? 1,
-        middle: multipliers?.middle ?? 1,
-        bottom: multipliers?.bottom ?? 1,
-      };
+      openaiJson = await res.json();
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ error: "Failed to call OpenAI", detail: err.message }),
+        { status: 502, headers: corsHeaders }
+      );
     }
 
     /* ===============================
-       MAIN FLOW
+       EXTRACT VISION JSON (THE FIX)
        =============================== */
-    let result;
-    let warnings = [];
-
+    let vision;
     try {
-      result = await callVision(basePrompt);
-      warnings = validate(result);
+      const content = openaiJson.choices?.[0]?.message?.content;
+      if (!content) throw new Error("Missing message content");
 
-      // Retry ONCE if there are card issues
-      if (warnings.length > 0) {
-        const retry = await callVision(clarificationPrompt);
-        const retryWarnings = validate(retry);
+      const match = content.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("No JSON found in vision response");
 
-        if (retryWarnings.length < warnings.length) {
-          result = retry;
-          warnings = retryWarnings;
-        }
-      }
-
-      // 🔒 Normalize multipliers: null → 1
-      result.multipliers = normalizeMultipliers(result.multipliers);
-
+      vision = JSON.parse(match[0]);
     } catch (err) {
       return new Response(
-        JSON.stringify({ error: "Vision failed", detail: err.message }),
+        JSON.stringify({
+          error: "Vision returned invalid JSON",
+          raw: openaiJson
+        }),
         { status: 500, headers: corsHeaders }
       );
     }
 
     /* ===============================
-       FINAL RESPONSE
+       NORMALIZE MULTIPLIERS
+       =============================== */
+    vision.multipliers = {
+      top: vision.multipliers?.top ?? 1,
+      middle: vision.multipliers?.middle ?? 1,
+      bottom: vision.multipliers?.bottom ?? 1
+    };
+
+    /* ===============================
+       FINAL RESPONSE (ONLY VISION DATA)
        =============================== */
     return new Response(
-      JSON.stringify({
-        ...result,
-        warnings: warnings.length ? warnings : undefined
-      }),
+      JSON.stringify(vision),
       {
         headers: {
           ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"
+        }
       }
     );
-  },
+  }
 };
