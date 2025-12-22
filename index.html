@@ -17,20 +17,14 @@ body{
   margin:auto;
   padding:16px 16px 160px;
 }
-h2{
-  margin:0 0 6px;
-}
-.subtitle{
-  font-size:14px;
-  color:#9ca3af;
-  margin-bottom:14px;
-}
+h2{margin:0}
+.subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
 
-/* CAMERA CONTAINER – BIG & IMMERSIVE */
+/* CAMERA CONTAINER */
 .scanner{
   position:relative;
   width:100%;
-  height:45vh;                 /* 🔥 MUCH TALLER */
+  height:42vh;
   max-height:420px;
   border-radius:20px;
   overflow:hidden;
@@ -39,26 +33,28 @@ h2{
   box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
 
-/* VIDEO */
+/* VIDEO — ZOOMED */
 video{
   width:100%;
   height:100%;
   object-fit:contain;
   background:#000;
+  transform: scale(1.4);          /* 🔥 ZOOM */
+  transform-origin: center;
 }
 
-/* GREEN FRAME – BIG & CONFIDENT */
+/* GREEN FRAME */
 .band{
   position:absolute;
-  left:4%;
-  right:4%;
-  border:4px dashed #22c55e;     /* thicker */
+  left:5%;
+  right:5%;
+  border:4px dashed #22c55e;
   border-radius:16px;
-  background:rgba(34,197,94,0.10);
+  background:rgba(34,197,94,0.12);
   pointer-events:none;
 }
 
-/* BUTTON */
+/* CONTROLS */
 button{
   margin-top:18px;
   width:100%;
@@ -72,7 +68,6 @@ button{
   cursor:pointer;
 }
 
-/* PREVIEW */
 #preview{
   margin-top:16px;
   width:100%;
@@ -80,7 +75,6 @@ button{
   border:1px solid #333;
 }
 
-/* STATUS */
 #status{
   margin-top:10px;
   font-size:14px;
@@ -91,9 +85,9 @@ button{
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture</h2>
+  <h2>Ultimate X – Vision Capture v3</h2>
   <div class="subtitle">
-    Align <strong>ALL 3 rows 1</strong> (top + middle + bottom) inside the green frame
+    Align <strong>ALL 3 rows</strong> inside the green frame
   </div>
 
   <div class="scanner">
@@ -114,10 +108,10 @@ const snap  = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
 
-/* 🔒 CAPTURE GEOMETRY (UNCHANGED) */
+/* 🔒 CAPTURE GEOMETRY */
 const CAPTURE_TOP_FRAC    = 0.42;
-const CAPTURE_HEIGHT_FRAC = 0.45;
-const OUTPUT_WIDTH        = 1000;
+const CAPTURE_HEIGHT_FRAC = 0.38;  // tighter now that we zoom
+const OUTPUT_WIDTH        = 1100;
 const JPEG_QUALITY        = 0.85;
 
 /* START CAMERA */
@@ -140,7 +134,7 @@ function updateBand(){
   requestAnimationFrame(updateBand);
 }
 
-/* SNAP – PREVIEW */
+/* SNAP PREVIEW */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
