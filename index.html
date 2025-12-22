@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture v6.1 (Locked)</title>
+<title>Ultimate X – Vision Capture v6.2 (Locked)</title>
 
 <style>
 body{
@@ -90,7 +90,7 @@ button{
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture v12</h2>
+  <h2>Ultimate X – Vision Capture</h2>
   <div class="subtitle">Align ALL 3 rows inside the green frame</div>
 
   <div class="scanner" id="scanner">
@@ -119,9 +119,12 @@ const JPEG_QUALITY = 0.85;
 /* FRAME — LOCKED */
 const FRAME_SCALE = 0.58;
 
-/* CAPTURE MICRO-ADJUST (ONLY CHANGE) */
-const CAPTURE_Y_ADJUST = 0.03;  // shift down 3%
-const CAPTURE_H_ADJUST = 0.94;  // slightly shorter
+/* CAPTURE MICRO-ADJUST (LOCKED VERTICAL) */
+const CAPTURE_Y_ADJUST = 0.03;
+const CAPTURE_H_ADJUST = 0.94;
+
+/* 🔥 NEW: HORIZONTAL PADDING */
+const CAPTURE_X_PAD = 0.04; // 4% on each side
 
 /* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
@@ -143,7 +146,7 @@ function positionBand(){
   requestAnimationFrame(positionBand);
 }
 
-/* SNAP — ADJUSTED CAPTURE */
+/* SNAP — CAPTURE WITH HORIZONTAL EXPANSION */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
@@ -160,12 +163,20 @@ snap.onclick = async ()=>{
   const scaleX = vw / videoRect.width;
   const scaleY = vh / videoRect.height;
 
-  const cropX = (bandRect.left - videoRect.left) * scaleX;
-  const cropY = ((bandRect.top - videoRect.top) * scaleY)
+  const baseX = (bandRect.left - videoRect.left) * scaleX;
+  const baseY = ((bandRect.top - videoRect.top) * scaleY)
               + (bandRect.height * CAPTURE_Y_ADJUST * scaleY);
 
-  const cropW = bandRect.width * scaleX;
-  const cropH = bandRect.height * CAPTURE_H_ADJUST * scaleY;
+  const baseW = bandRect.width * scaleX;
+  const baseH = bandRect.height * CAPTURE_H_ADJUST * scaleY;
+
+  // 🔥 expand horizontally
+  const padX = baseW * CAPTURE_X_PAD;
+
+  const cropX = Math.max(0, baseX - padX);
+  const cropW = Math.min(vw - cropX, baseW + padX * 2);
+  const cropY = baseY;
+  const cropH = baseH;
 
   const raw = document.createElement("canvas");
   raw.width  = cropW;
