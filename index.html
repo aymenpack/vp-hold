@@ -1,199 +1,20 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture v6.3 (Locked)</title>
+<link rel="stylesheet" href="./capture/camera.css">
+<script type="module">
+import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
 
-<style>
-body{
-  margin:0;
-  font-family:system-ui;
-  background:#020617;
-  color:#fff;
-}
-.app{
-  max-width:900px;
-  margin:auto;
-  padding:16px 16px 160px;
-}
-h2{margin:0}
-.subtitle{
-  font-size:14px;
-  color:#9ca3af;
-  margin-bottom:12px;
-}
-
-/* CAMERA CONTAINER — LOCKED */
-.scanner{
-  position:relative;
-  width:100%;
-  height:42vh;
-  max-height:420px;
-  border-radius:20px;
-  overflow:hidden;
-  border:1px solid #1f2937;
-  background:#000;
-}
-
-/* VIDEO — LOCKED */
-video{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  background:#000;
-  transform:scale(1.4);
-  transform-origin:center;
-}
-
-/* GREEN FRAME — LOCKED */
-.band{
-  position:absolute;
-  left:8%;
-  right:8%;
-  border:4px dashed #22c55e;
-  border-radius:18px;
-  background:rgba(34,197,94,0.12);
-  pointer-events:none;
-}
-
-/* BUTTON */
-button{
-  margin-top:18px;
-  width:100%;
-  padding:18px;
-  font-size:20px;
-  font-weight:900;
-  background:#22c55e;
-  color:#000;
-  border:none;
-  border-radius:18px;
-  cursor:pointer;
-}
-
-/* PREVIEW */
-#preview{
-  margin-top:16px;
-  width:100%;
-  border-radius:14px;
-  border:1px solid #333;
-}
-
-/* STATUS */
-#status{
-  margin-top:10px;
-  font-size:14px;
-  color:#9ca3af;
-}
-</style>
-</head>
-
-<body>
-<div class="app">
-  <h2>Ultimate X – Vision Capture</h2>
-  <div class="subtitle">Align ALL 3 rows inside the green frame</div>
-
-  <div class="scanner" id="scanner">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="band" id="band"></div>
-  </div>
-
-  <button id="snap">SNAP (Preview)</button>
-
-  <img id="preview">
-  <div id="status">Starting camera…</div>
-</div>
-
-<script>
-const video   = document.getElementById("video");
-const band    = document.getElementById("band");
+const video = document.getElementById("video");
+const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
-const snap    = document.getElementById("snap");
 const preview = document.getElementById("preview");
-const statusEl = document.getElementById("status");
 
-/* OUTPUT */
-const OUTPUT_WIDTH = 1100;
-const JPEG_QUALITY = 0.85;
-
-/* FRAME — LOCKED */
-const FRAME_SCALE = 0.58;
-
-/* CAPTURE — LOCKED VERTICAL */
-const CAPTURE_Y_ADJUST = 0.03;
-const CAPTURE_H_ADJUST = 0.94;
-
-/* 🔒 FINAL HORIZONTAL EXPANSION */
-const CAPTURE_X_PAD = 0.17; // ~17% per side
-
-/* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
-.then(stream=>{
+.then(stream => {
   video.srcObject = stream;
-  statusEl.textContent = "Camera ready — align machine";
-  requestAnimationFrame(positionBand);
-})
-.catch(e=>{
-  statusEl.textContent = "Camera error";
+  requestAnimationFrame(() => positionGreenFrame(scanner, band));
 });
 
-/* CENTER GREEN FRAME (LOCKED) */
-function positionBand(){
-  const containerH = scanner.getBoundingClientRect().height;
-  const bandH = containerH * FRAME_SCALE;
-  band.style.top = (containerH / 2 - bandH / 2) + "px";
-  band.style.height = bandH + "px";
-  requestAnimationFrame(positionBand);
-}
-
-/* SNAP — FINAL CAPTURE */
-snap.onclick = async ()=>{
-  await new Promise(r=>requestAnimationFrame(r));
-
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if(!vw || !vh){
-    statusEl.textContent = "Camera not ready";
-    return;
-  }
-
-  const videoRect = video.getBoundingClientRect();
-  const bandRect  = band.getBoundingClientRect();
-
-  const scaleX = vw / videoRect.width;
-  const scaleY = vh / videoRect.height;
-
-  const baseX = (bandRect.left - videoRect.left) * scaleX;
-  const baseY = ((bandRect.top - videoRect.top) * scaleY)
-              + (bandRect.height * CAPTURE_Y_ADJUST * scaleY);
-
-  const baseW = bandRect.width * scaleX;
-  const baseH = bandRect.height * CAPTURE_H_ADJUST * scaleY;
-
-  const padX = baseW * CAPTURE_X_PAD;
-
-  const cropX = Math.max(0, baseX - padX);
-  const cropW = Math.min(vw - cropX, baseW + padX * 2);
-  const cropY = baseY;
-  const cropH = baseH;
-
-  const raw = document.createElement("canvas");
-  raw.width  = cropW;
-  raw.height = cropH;
-  raw.getContext("2d").drawImage(
-    video,
-    cropX, cropY, cropW, cropH,
-    0, 0, cropW, cropH
-  );
-
-  const out = document.createElement("canvas");
-  out.width = OUTPUT_WIDTH;
-  out.height = Math.floor(cropH * (OUTPUT_WIDTH / cropW));
-  out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
-
-  preview.src = out.toDataURL("image/jpeg", JPEG_QUALITY);
-  statusEl.textContent = `Captured ${out.width} × ${out.height}`;
+document.getElementById("snap").onclick = async () => {
+  const img = await captureFromGreenFrame({ video, band, scanner });
+  preview.src = img;
 };
 </script>
-</body>
-</html>
