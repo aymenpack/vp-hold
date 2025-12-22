@@ -156,44 +156,87 @@ function updateBand(){
 }
 </script>
 
-<!-- ===============================
-     MODULE SCRIPT — VISION LOGIC
-     =============================== -->
-<script type="module">
-import { captureAndAnalyze } from "./visionCapture.js";
-
+<script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+
 const snapBtn = document.getElementById("snap");
+const videoEl = document.getElementById("video");
 const handDiv = document.getElementById("hand");
 
-snapBtn.onclick = async()=>{
-  try{
-    const data = await captureAndAnalyze({
-      videoEl: document.getElementById("video"),
-      workerUrl: WORKER_URL,
-      multipliersFallback:[
-        Number(m1.value||1),
-        Number(m2.value||1),
-        Number(m3.value||1)
-      ],
-      progressive:false
+snapBtn.onclick = async () => {
+  console.log("SNAP clicked"); // DEBUG
+  try {
+    // --- CAPTURE (KNOWN GOOD) ---
+    await new Promise(r => requestAnimationFrame(r));
+
+    const vw = videoEl.videoWidth;
+    const vh = videoEl.videoHeight;
+    if (!vw || !vh) {
+      alert("Camera not ready");
+      return;
+    }
+
+    const bandH = Math.floor(vh * 0.35);
+    const bandY = Math.floor((vh - bandH) / 2);
+
+    const crop = document.createElement("canvas");
+    crop.width = vw;
+    crop.height = bandH;
+    crop.getContext("2d").drawImage(
+      videoEl,
+      0, bandY, vw, bandH,
+      0, 0, vw, bandH
+    );
+
+    const outW = 520;
+    const outH = Math.floor(bandH * (outW / vw));
+
+    const out = document.createElement("canvas");
+    out.width = outW;
+    out.height = outH;
+    out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
+
+    const img = out.toDataURL("image/jpeg", 0.6);
+
+    // --- SEND TO WORKER ---
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageBase64: img,
+        multipliers_fallback: [
+          Number(m1.value || 1),
+          Number(m2.value || 1),
+          Number(m3.value || 1)
+        ],
+        progressive: false
+      })
     });
 
-    handDiv.innerHTML="";
-    data.cards.forEach((c,i)=>{
-      const d=document.createElement("div");
-      d.className="card"+(data.hold[i]?" hold":"");
-      const red=c.suit==="H"||c.suit==="D";
-      d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div>
-                   <div class="suit ${red?"red":""}">${c.suit}</div>`;
+    const data = await res.json();
+    console.log("Worker response:", data);
+
+    if (data.error) {
+      alert("Worker error: " + data.error);
+      return;
+    }
+
+    // --- RENDER ---
+    handDiv.innerHTML = "";
+    data.cards.forEach((c, i) => {
+      const d = document.createElement("div");
+      d.className = "card" + (data.hold[i] ? " hold" : "");
+      const red = c.suit === "H" || c.suit === "D";
+      d.innerHTML = `
+        <div class="rank ${red ? "red" : ""}">${c.rank}</div>
+        <div class="suit ${red ? "red" : ""}">${c.suit}</div>
+      `;
       handDiv.appendChild(d);
     });
 
-  }catch(e){
-    alert("Vision failed: "+e.message);
+  } catch (e) {
+    alert("SNAP failed: " + e.message);
+    console.error(e);
   }
 };
 </script>
-
-</body>
-</html>
