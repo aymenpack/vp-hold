@@ -4,112 +4,221 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X Wizard</title>
+
 <style>
-body{margin:0;font-family:system-ui;background:#020617;color:#fff}
-.app{max-width:900px;margin:auto;padding:16px 16px 120px}
-video{width:100%;max-height:320px;border-radius:16px;background:#000;border:1px solid #1f2937}
-.row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-input,button{padding:12px;font-size:16px;border-radius:10px;border:none}
-input{background:#020617;color:#fff;border:1px solid #333;flex:1;min-width:90px}
-button{background:#22c55e;color:#000;font-weight:bold;cursor:pointer}
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#020617;
+  color:#fff;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 120px;
+}
+h2{margin:0}
+.subtitle{font-size:13px;color:#9ca3af;margin-bottom:10px}
+
+.videoWrap{
+  position:relative;
+  margin-top:14px;
+}
+video{
+  width:100%;
+  max-height:320px;
+  border-radius:16px;
+  background:#000;
+  border:1px solid #1f2937;
+}
+
+/* FIXED GUIDE LINES */
+.band{
+  position:absolute;
+  left:0;
+  right:0;
+  border-top:2px dashed #22c55e;
+  border-bottom:2px dashed #22c55e;
+  pointer-events:none;
+}
+
+.row{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  flex-wrap:wrap;
+}
+input,button{
+  padding:12px;
+  font-size:16px;
+  border-radius:10px;
+  border:none;
+}
+input{
+  background:#020617;
+  color:#fff;
+  border:1px solid #333;
+  flex:1;
+  min-width:90px;
+}
+button{
+  background:#22c55e;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
 button:disabled{opacity:.5}
-.card{display:inline-block;width:18%;margin:1%;padding:14px;border:1px solid #333;text-align:center;border-radius:10px}
-.hold{outline:3px solid #22c55e;transform:translateY(-6px)}
-#err{margin-top:10px;color:#f87171;white-space:pre-wrap}
-#dbg{margin-top:10px;color:#9ca3af;white-space:pre-wrap;font-size:12px}
+
+#cards{margin-top:16px}
+.card{
+  display:inline-block;
+  width:18%;
+  margin:1%;
+  padding:14px;
+  border:1px solid #333;
+  border-radius:10px;
+  text-align:center;
+}
+.hold{
+  outline:3px solid #22c55e;
+  transform:translateY(-6px);
+}
+
+#error{
+  margin-top:10px;
+  color:#f87171;
+  white-space:pre-wrap;
+}
+
+#info{
+  margin-top:10px;
+  font-size:14px;
+  color:#e5e7eb;
+}
 </style>
 </head>
+
 <body>
 <div class="app">
   <h2>Ultimate X Wizard</h2>
-  <p>Triple Play · 6/5 Bonus Poker</p>
+  <div class="subtitle">
+    Place the 5 cards between the green lines · Triple Play · 6/5 Bonus Poker
+  </div>
 
-  <video id="video" autoplay playsinline muted></video>
+  <div class="videoWrap">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="band" id="band"></div>
+  </div>
 
   <div class="row">
-    <input id="m1" value="1" placeholder="Hand1 mult fallback">
-    <input id="m2" value="1" placeholder="Hand2 mult fallback">
-    <input id="m3" value="1" placeholder="Hand3 mult fallback">
+    <input id="m1" value="1" placeholder="Hand 1 mult">
+    <input id="m2" value="1" placeholder="Hand 2 mult">
+    <input id="m3" value="1" placeholder="Hand 3 mult">
   </div>
 
   <div class="row">
     <button id="snap">SNAP</button>
   </div>
 
-  <div id="err"></div>
+  <div id="error"></div>
   <div id="cards"></div>
-  <div id="dbg"></div>
+  <div id="info"></div>
 </div>
 
 <script>
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
+/* ===== FIXED CROP CONSTANTS (LOCKED) ===== */
+const BAND_CENTER = 0.50;
+const BAND_HEIGHT = 0.38;
+const LEFT_CROP   = 0.05;
+const RIGHT_CROP  = 0.00;
+const OUT_WIDTH   = 480;
+const JPEG_Q      = 0.60;
+
 const video = document.getElementById("video");
+const band  = document.getElementById("band");
+
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
   .then(s => video.srcObject = s)
-  .catch(()=>{ document.getElementById("err").textContent="Camera permission denied"; });
+  .catch(()=> error.textContent="Camera permission denied");
 
-function capture() {
-  const vw = video.videoWidth, vh = video.videoHeight;
+function updateBand(){
+  const r = video.getBoundingClientRect();
+  const h = r.height * BAND_HEIGHT;
+  const top = r.height * BAND_CENTER - h/2;
+  band.style.top = top+"px";
+  band.style.height = h+"px";
+  requestAnimationFrame(updateBand);
+}
+requestAnimationFrame(updateBand);
+
+function capture(){
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
   if(!vw || !vh) return null;
 
-  const bandH = Math.floor(vh * 0.30);
-  const top = Math.floor(vh * 0.5 - bandH / 2);
+  const bandH = Math.floor(vh * BAND_HEIGHT);
+  const top   = Math.floor(vh * BAND_CENTER - bandH/2);
 
-  const c = document.createElement("canvas");
-  c.width = vw; c.height = bandH;
-  c.getContext("2d").drawImage(video, 0, top, vw, bandH, 0, 0, vw, bandH);
+  const left  = Math.floor(vw * LEFT_CROP);
+  const right = Math.floor(vw * RIGHT_CROP);
+  const cw    = vw - left - right;
+
+  const crop = document.createElement("canvas");
+  crop.width = cw;
+  crop.height = bandH;
+  crop.getContext("2d").drawImage(
+    video,
+    left, top, cw, bandH,
+    0, 0, cw, bandH
+  );
 
   const out = document.createElement("canvas");
-  out.width = 360;
-  out.height = Math.max(1, Math.floor(bandH * (360 / vw)));
-  out.getContext("2d").drawImage(c, 0, 0, out.width, out.height);
+  out.width = OUT_WIDTH;
+  out.height = Math.max(1, Math.floor(bandH * (OUT_WIDTH / cw)));
+  out.getContext("2d").drawImage(crop, 0, 0, out.width, out.height);
 
-  return out.toDataURL("image/jpeg", 0.5);
+  return out.toDataURL("image/jpeg", JPEG_Q);
 }
 
-snap.onclick = async () => {
-  err.textContent = "";
-  dbg.textContent = "";
-  cards.innerHTML = "";
-  snap.disabled = true;
+snap.onclick = async()=>{
+  error.textContent="";
+  cards.innerHTML="";
+  info.textContent="";
+  snap.disabled=true;
 
-  try {
+  try{
     const img = capture();
     if(!img) throw new Error("Camera not ready");
 
-    const res = await fetch(WORKER_URL, {
+    const res = await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
+      body:JSON.stringify({
         imageBase64: img,
         multipliers_fallback:[m1.value,m2.value,m3.value],
         progressive:false
       })
     });
 
-    const text = await res.text();
-    dbg.textContent = `HTTP ${res.status}\n${text.slice(0,2000)}`;
-
-    let data = null;
-    try{ data = JSON.parse(text); } catch { throw new Error("Worker did not return JSON"); }
-
-    if(data.error){
-      err.textContent = `Worker error: ${data.error}\nStage: ${data.stage||"?"}\nDetail: ${data.detail||""}`;
-      return;
-    }
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
 
     data.cards.forEach((c,i)=>{
       const d=document.createElement("div");
-      d.className="card"+(data.hold?.[i]?" hold":"");
-      d.textContent = c.rank + c.suit;
+      d.className="card"+(data.hold[i]?" hold":"");
+      d.textContent=c.rank+c.suit;
       cards.appendChild(d);
     });
 
-  } catch(e) {
-    err.textContent = "SNAP failed: " + String(e.message||e);
-  } finally {
-    snap.disabled = false;
+    info.textContent =
+      `Total ${data.multiplier_total}× | EV ${data.ev_total.toFixed(2)} | Wizard Strategy`;
+
+  }catch(e){
+    error.textContent = "Scan failed: " + e.message;
+  }finally{
+    snap.disabled=false;
   }
 };
 </script>
