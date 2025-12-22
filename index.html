@@ -27,7 +27,7 @@ body{
 .app{
   max-width:900px;
   margin:auto;
-  padding:16px 16px 180px;
+  padding:16px 16px 170px;
 }
 header{
   padding-bottom:12px;
@@ -35,22 +35,6 @@ header{
 }
 h1{margin:0;font-size:22px;font-weight:900}
 .subtitle{font-size:13px;color:var(--muted);margin-top:4px}
-
-.tabs{display:flex;gap:10px;margin-top:14px}
-.tab{
-  flex:1;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  text-align:center;
-  font-weight:800;
-  cursor:pointer;
-  background:var(--panel);
-}
-.tab.active{
-  outline:3px solid var(--accent);
-  transform:translateY(-2px);
-}
 
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 input,button{
@@ -61,10 +45,9 @@ input,button{
   padding:12px 14px;
   font-size:14px;
 }
-button{font-weight:900;cursor:pointer}
 button.primary{
   background:linear-gradient(180deg,#22c55e,#16a34a);
-  color:#000;border:none
+  color:#000;border:none;font-weight:900;cursor:pointer
 }
 
 .scanner{
@@ -98,13 +81,14 @@ video{
   white-space:pre-wrap;
 }
 
-.kpis{display:flex;gap:12px;margin-top:14px}
-.kpi{
-  padding:10px 14px;
-  border-radius:999px;
+#previewWrap{
+  margin-top:14px;
+}
+#previewWrap img{
+  width:100%;
+  border-radius:12px;
   border:1px solid var(--border);
-  background:var(--panel);
-  font-size:13px;
+  background:#000;
 }
 
 #hand{
@@ -128,26 +112,6 @@ video{
 .suit{font-size:18px}
 .red{color:var(--danger)}
 
-#previewWrap{
-  margin-top:18px;
-}
-#previewWrap h3{
-  font-size:14px;
-  margin:0 0 8px;
-  color:var(--muted);
-}
-.previewBox{
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:8px;
-  background:#000;
-}
-.previewBox img{
-  width:100%;
-  display:block;
-  border-radius:8px;
-}
-
 footer{
   position:fixed;
   left:0; right:0; bottom:0;
@@ -167,13 +131,8 @@ footer{
 <div class="app">
 <header>
   <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">LLM Vision · Wizard strategy</div>
+  <div class="subtitle">LLM Vision · Middle row only</div>
 </header>
-
-<div class="tabs">
-  <div class="tab active" id="tabUX">Ultimate X</div>
-  <div class="tab" id="tabUXP">Ultimate X Progressive</div>
-</div>
 
 <div class="row">
   <input id="m1" type="number" min="1" max="12" value="1" placeholder="Hand 1 mult">
@@ -190,10 +149,7 @@ footer{
 <div id="error"></div>
 
 <div id="previewWrap">
-  <h3>Image sent to vision (Preview)</h3>
-  <div class="previewBox">
-    <img id="previewImg" alt="Captured preview">
-  </div>
+  <img id="previewImg" alt="Preview sent to vision">
 </div>
 
 <div id="hand"></div>
@@ -204,111 +160,101 @@ footer{
 </footer>
 
 <script>
+/* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-
-const PROFILE_A = { bandFrac:0.35, outW:520, jpegQ:0.6 };
-const PROFILE_B = { bandFrac:0.42, outW:900, jpegQ:0.85 };
-
-let mode="ux", busy=false;
+const PROFILE = { bandFrac:0.35, outW:900, jpegQ:0.8 };
 
 const video=document.getElementById("video");
 const band=document.getElementById("band");
-const snapBtn=document.getElementById("snap");
+const snap=document.getElementById("snap");
 const statusEl=document.getElementById("status");
 const errorEl=document.getElementById("error");
-const handDiv=document.getElementById("hand");
 const previewImg=document.getElementById("previewImg");
+const handDiv=document.getElementById("hand");
 
 const m1=document.getElementById("m1");
 const m2=document.getElementById("m2");
 const m3=document.getElementById("m3");
 
 navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
-.then(s=>{
-  video.srcObject=s;
-  statusEl.textContent="Align cards between green lines";
+.then(stream=>{
+  video.srcObject=stream;
+  statusEl.textContent="Align middle row between green lines";
   requestAnimationFrame(updateBand);
 })
 .catch(e=>{
-  statusEl.textContent="Camera error";
+  statusEl.textContent="Camera permission denied";
 });
 
 function updateBand(){
   const r=video.getBoundingClientRect();
-  const h=r.height*PROFILE_A.bandFrac;
+  const h=r.height*PROFILE.bandFrac;
   band.style.top=(r.height*0.5-h/2)+"px";
   band.style.height=h+"px";
   requestAnimationFrame(updateBand);
 }
 
-async function capture(profile){
+async function capture(){
   await new Promise(r=>requestAnimationFrame(r));
-  const vw=video.videoWidth, vh=video.videoHeight;
-  if(!vw||!vh) return null;
 
-  const bandH=Math.floor(vh*profile.bandFrac);
-  const bandY=Math.floor((vh-bandH)/2);
+  const vw=video.videoWidth;
+  const vh=video.videoHeight;
+  if(!vw||!vh) throw new Error("Camera not ready");
 
-  const c=document.createElement("canvas");
-  c.width=vw; c.height=bandH;
-  c.getContext("2d").drawImage(video,0,bandY,vw,bandH,0,0,vw,bandH);
+  const bandH=Math.floor(vh*PROFILE.bandFrac);
+  const bandY=Math.floor(vh*0.5-bandH/2);
+
+  // IMPORTANT: capture RAW CAMERA pixels only
+  const raw=document.createElement("canvas");
+  raw.width=vw;
+  raw.height=bandH;
+  raw.getContext("2d").drawImage(
+    video,
+    0, bandY, vw, bandH,
+    0, 0, vw, bandH
+  );
 
   const out=document.createElement("canvas");
-  out.width=profile.outW;
-  out.height=Math.floor(bandH*(profile.outW/vw));
-  out.getContext("2d").drawImage(c,0,0,out.width,out.height);
+  out.width=PROFILE.outW;
+  out.height=Math.floor(bandH*(PROFILE.outW/vw));
+  out.getContext("2d").drawImage(raw,0,0,out.width,out.height);
 
-  return out.toDataURL("image/jpeg",profile.jpegQ);
+  return out.toDataURL("image/jpeg",PROFILE.jpegQ);
 }
 
 function renderHand(cards,hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
     const d=document.createElement("div");
-    d.className="card"+(hold?.[i]?" hold":"");
+    d.className="card"+(hold[i]?" hold":"");
     const red=c.suit==="H"||c.suit==="D";
     d.innerHTML=`<div class="rank ${red?"red":""}">${c.rank}</div><div class="suit ${red?"red":""}">${c.suit}</div>`;
     handDiv.appendChild(d);
   });
 }
 
-async function callWorker(img){
-  const res=await fetch(WORKER_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      imageBase64:img,
-      multipliers_fallback:[Number(m1.value||1),Number(m2.value||1),Number(m3.value||1)],
-      progressive:false
-    })
-  });
-  return await res.json();
-}
-
-snapBtn.onclick=async()=>{
-  if(busy) return;
-  busy=true;
+snap.onclick=async()=>{
   errorEl.style.display="none";
   statusEl.textContent="Capturing…";
 
   try{
-    const imgA=await capture(PROFILE_A);
-    if(!imgA) throw new Error("Camera not ready");
-    previewImg.src=imgA;
+    const img=await capture();
+    previewImg.src=img;
 
     statusEl.textContent="Analyzing…";
-    let data=await callWorker(imgA);
 
-    if(data?.error && /Vision did not return 5 cards|Cards not readable/i.test(data.error)){
-      statusEl.textContent="Retrying high-res…";
-      const imgB=await capture(PROFILE_B);
-      previewImg.src=imgB;
-      data=await callWorker(imgB);
-    }
+    const res=await fetch(WORKER_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        imageBase64:img,
+        multipliers_fallback:[Number(m1.value||1),Number(m2.value||1),Number(m3.value||1)],
+        progressive:false
+      })
+    });
 
-    if(data.error){
-      throw new Error(data.error);
-    }
+    const data=await res.json();
+    if(data.error) throw new Error(data.error);
 
     renderHand(data.cards,data.hold);
     statusEl.textContent="Done";
@@ -318,8 +264,6 @@ snapBtn.onclick=async()=>{
     errorEl.textContent=e.message;
     statusEl.textContent="Error";
   }
-
-  busy=false;
 };
 </script>
 </body>
