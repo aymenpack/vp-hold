@@ -77,6 +77,47 @@ button:disabled{
   margin-top:6px;
 }
 
+/* EV */
+#evBox{
+  margin-top:16px;
+  padding:14px;
+  border-radius:14px;
+  background:#020617;
+  border:1px solid #333;
+  text-align:center;
+  display:none;
+}
+
+#evValue{
+  margin-top:6px;
+  font-size:26px;
+  font-weight:900;
+  color:#22c55e;
+}
+
+/* WHY */
+#whyBox{
+  margin-top:16px;
+  padding:16px;
+  border-radius:14px;
+  background:#020617;
+  border:1px solid #333;
+  display:none;
+}
+
+#whyTitle{
+  font-size:14px;
+  font-weight:900;
+  color:#22c55e;
+}
+
+#whyText{
+  margin-top:8px;
+  font-size:14px;
+  color:#e5e7eb;
+  line-height:1.4;
+}
+
 /* REAL CARDS */
 .cards{
   display:grid;
@@ -133,26 +174,13 @@ button:disabled{
   font-size:14px;
   color:#9ca3af;
 }
-
-#debug{
-  margin-top:14px;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid #333;
-  background:#020617;
-  color:#9ca3af;
-  font-size:12px;
-  white-space:pre-wrap;
-  max-height:260px;
-  overflow:auto;
-}
 </style>
 </head>
 
 <body>
 <div class="app">
   <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Cards, multipliers & Wizard-style EV</div>
+  <div class="subtitle">Wizard-style EV, holds, and reasoning</div>
 
   <!-- CAMERA -->
   <div class="scanner" id="scanner">
@@ -188,11 +216,22 @@ button:disabled{
     <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
   </div>
 
+  <!-- EV -->
+  <div id="evBox">
+    <div style="font-size:12px;color:#9ca3af">Expected Value (per coin)</div>
+    <div id="evValue">—</div>
+  </div>
+
   <!-- CARDS -->
   <div class="cards" id="cardsBox"></div>
 
+  <!-- WHY -->
+  <div id="whyBox">
+    <div id="whyTitle">Why this hold?</div>
+    <div id="whyText"></div>
+  </div>
+
   <div id="status">Starting camera…</div>
-  <pre id="debug"></pre>
 </div>
 
 <script type="module">
@@ -200,7 +239,6 @@ import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js"
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ELEMENTS */
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
@@ -208,14 +246,18 @@ const snap = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const paytableSelect = document.getElementById("paytableSelect");
 const statusEl = document.getElementById("status");
-const debugEl = document.getElementById("debug");
 
 const multTop = document.getElementById("multTop");
 const multMid = document.getElementById("multMid");
 const multBot = document.getElementById("multBot");
 const cardsBox = document.getElementById("cardsBox");
 
-/* SNAP LOCK */
+const evBox = document.getElementById("evBox");
+const evValue = document.getElementById("evValue");
+
+const whyBox = document.getElementById("whyBox");
+const whyText = document.getElementById("whyText");
+
 let snapInProgress = false;
 
 /* HELPERS */
@@ -225,6 +267,11 @@ function renderMultipliers(m){
   multBot.textContent = "×" + m.bottom;
 }
 
+function renderEV(ev){
+  evValue.textContent = ev.toFixed(4);
+  evBox.style.display = "block";
+}
+
 function renderCards(cards, bestHold){
   cardsBox.innerHTML = "";
   const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
@@ -232,11 +279,39 @@ function renderCards(cards, bestHold){
   cards.forEach((c,i)=>{
     const el = document.createElement("div");
     el.className = "card";
-    if(bestHold?.[i]) el.classList.add("held");
+    if(bestHold[i]) el.classList.add("held");
     if(c.suit==="H"||c.suit==="D") el.classList.add("red");
     el.innerHTML = `<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
     cardsBox.appendChild(el);
   });
+}
+
+function explainHold(cards, bestHold){
+  const held = cards.filter((_,i)=>bestHold[i]);
+  const ranks = held.map(c=>c.rank);
+
+  let text = "";
+
+  const counts = {};
+  ranks.forEach(r=>counts[r]=(counts[r]||0)+1);
+  const pairs = Object.values(counts).filter(c=>c===2).length;
+  const trips = Object.values(counts).includes(3);
+  const quads = Object.values(counts).includes(4);
+
+  if (quads) {
+    text = "Holding all four cards completes a four-of-a-kind, which has the highest EV in Double Double Bonus.";
+  } else if (pairs === 2) {
+    text = "Holding both pairs maximizes EV by keeping strong full-house and four-of-a-kind outs.";
+  } else if (trips) {
+    text = "Holding three of a kind keeps full-house and four-of-a-kind possibilities.";
+  } else if (pairs === 1) {
+    text = "Holding the pair maximizes EV by preserving the strongest immediate value hand.";
+  } else {
+    text = "This hold offers the highest expected value compared to alternative draws.";
+  }
+
+  whyText.textContent = text;
+  whyBox.style.display = "block";
 }
 
 /* CAMERA */
@@ -255,12 +330,10 @@ snap.onclick = async ()=>{
 
   try{
     statusEl.textContent = "Capturing…";
-
     const img = await captureFromGreenFrame({ video, band, scanner });
     preview.src = img;
 
-    statusEl.textContent = "Calling worker…";
-
+    statusEl.textContent = "Analyzing…";
     const res = await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -271,15 +344,15 @@ snap.onclick = async ()=>{
     });
 
     const data = await res.json();
-    debugEl.textContent = JSON.stringify(data,null,2);
 
     renderMultipliers(data.multipliers);
+    renderEV(data.ev_best);
     renderCards(data.cards, data.best_hold);
+    explainHold(data.cards, data.best_hold);
 
     statusEl.textContent = "Done ✅";
   }catch(e){
     statusEl.textContent = "Client error";
-    debugEl.textContent = e.stack || e.message;
   }finally{
     snapInProgress = false;
     snap.disabled = false;
