@@ -8,30 +8,71 @@
 <link rel="stylesheet" href="./capture/camera.css">
 
 <style>
-body{margin:0;background:#020617;color:#fff;font-family:system-ui}
-.app{max-width:900px;margin:auto;padding:16px 16px 160px}
+body{
+  margin:0;
+  background:#020617;
+  color:#fff;
+  font-family:system-ui;
+}
+
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 160px;
+}
+
 h2{margin:0}
 .subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
 
 button{
-  margin-top:18px;width:100%;padding:18px;font-size:20px;font-weight:900;
-  background:#22c55e;color:#000;border:none;border-radius:18px;cursor:pointer
+  margin-top:18px;
+  width:100%;
+  padding:18px;
+  font-size:20px;
+  font-weight:900;
+  background:#22c55e;
+  color:#000;
+  border:none;
+  border-radius:18px;
+  cursor:pointer;
 }
 
-#preview{margin-top:16px;width:100%;border-radius:14px;border:1px solid #333;background:#000}
+#preview{
+  margin-top:16px;
+  width:100%;
+  border-radius:14px;
+  border:1px solid #333;
+  background:#000;
+}
 
-.multipliers{display:flex;gap:12px;margin-top:16px}
-.mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
-.mult .label{font-size:12px;color:#9ca3af}
-.mult .value{font-size:22px;font-weight:900;margin-top:6px}
+/* MULTIPLIERS */
+.multipliers{
+  display:flex;
+  gap:12px;
+  margin-top:16px;
+}
 
-.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
-.card{padding:16px 6px;border:1px solid #333;border-radius:16px;background:#020617;text-align:center}
-.rank{font-size:26px;font-weight:900}
-.suit{font-size:20px;margin-top:4px}
-.red{color:#ef4444}
+.mult{
+  flex:1;
+  padding:14px;
+  border:1px solid #333;
+  border-radius:14px;
+  background:#020617;
+  text-align:center;
+}
 
-/* ===== REAL CARD UI ===== */
+.mult .label{
+  font-size:12px;
+  color:#9ca3af;
+}
+
+.mult .value{
+  font-size:22px;
+  font-weight:900;
+  margin-top:6px;
+}
+
+/* REAL CARDS */
 .cards{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -60,9 +101,7 @@ button{
   margin-top:4px;
 }
 
-.card.red{
-  color:#c1121f;
-}
+.card.red{ color:#c1121f; }
 
 .card.held{
   transform:translateY(-10px);
@@ -84,10 +123,23 @@ button{
   box-shadow:0 4px 12px rgba(0,0,0,.35);
 }
 
-#status{margin-top:10px;font-size:14px;color:#9ca3af}
+#status{
+  margin-top:10px;
+  font-size:14px;
+  color:#9ca3af;
+}
+
 #debug{
-  margin-top:14px;padding:12px;border-radius:12px;border:1px solid #333;background:#020617;
-  color:#9ca3af;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto
+  margin-top:14px;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #333;
+  background:#020617;
+  color:#9ca3af;
+  font-size:12px;
+  white-space:pre-wrap;
+  max-height:260px;
+  overflow:auto;
 }
 </style>
 </head>
@@ -95,54 +147,43 @@ button{
 <body>
 <div class="app">
   <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">This page shows cards + multipliers + full debug output.</div>
+  <div class="subtitle">Cards, multipliers & Wizard-style EV</div>
 
-  <!-- LOCKED CAMERA -->
+  <!-- CAMERA -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
-<!-- Paytable Selector -->
-<div style="margin-top:16px">
-  <label style="font-size:13px;color:#9ca3af">Paytable</label>
-  <select id="paytableSelect" style="
-    width:100%;
-    margin-top:6px;
-    padding:12px;
-    border-radius:12px;
-    background:#020617;
-    color:#fff;
-    border:1px solid #333;
-    font-size:14px;
-  ">
-    <option value="DDB_9_6">Double Double Bonus 9/6</option>
-    <!-- future options -->
-    <!-- <option value="DDB_9_5">Double Double Bonus 9/5</option> -->
-  </select>
-</div>
-  
+  <!-- PAYTABLE -->
+  <div style="margin-top:16px">
+    <label style="font-size:13px;color:#9ca3af">Paytable</label>
+    <select id="paytableSelect" style="
+      width:100%;
+      margin-top:6px;
+      padding:12px;
+      border-radius:12px;
+      background:#020617;
+      color:#fff;
+      border:1px solid #333;
+      font-size:14px;
+    ">
+      <option value="DDB_9_6">Double Double Bonus 9/6</option>
+    </select>
+  </div>
+
   <button id="snap">SNAP</button>
 
   <img id="preview" alt="Captured preview">
 
-  <!-- Multipliers -->
+  <!-- MULTIPLIERS -->
   <div class="multipliers">
-    <div class="mult">
-      <div class="label">Top</div>
-      <div class="value" id="multTop">×—</div>
-    </div>
-    <div class="mult">
-      <div class="label">Middle</div>
-      <div class="value" id="multMid">×—</div>
-    </div>
-    <div class="mult">
-      <div class="label">Bottom</div>
-      <div class="value" id="multBot">×—</div>
-    </div>
+    <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
+    <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
+    <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
   </div>
 
-  <!-- Cards -->
+  <!-- CARDS -->
   <div class="cards" id="cardsBox"></div>
 
   <div id="status">Starting camera…</div>
@@ -154,10 +195,10 @@ import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js"
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-const video   = document.getElementById("video");
-const band    = document.getElementById("band");
+const video = document.getElementById("video");
+const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
-const snap    = document.getElementById("snap");
+const snap = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const paytableSelect = document.getElementById("paytableSelect");
 const statusEl = document.getElementById("status");
@@ -169,115 +210,61 @@ const multBot = document.getElementById("multBot");
 const cardsBox = document.getElementById("cardsBox");
 
 function setDebug(s){ debugEl.textContent = s; }
-function safeStr(x){ try{ return JSON.stringify(x, null, 2); }catch{ return String(x); } }
 
 function renderMultipliers(m){
-  multTop.textContent = "×" + (m?.top ?? "—");
-  multMid.textContent = "×" + (m?.middle ?? "—");
-  multBot.textContent = "×" + (m?.bottom ?? "—");
+  multTop.textContent = "×" + m.top;
+  multMid.textContent = "×" + m.middle;
+  multBot.textContent = "×" + m.bottom;
 }
-  
+
 function renderCards(cards, bestHold){
   cardsBox.innerHTML = "";
+  const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
-  const SUIT_SYMBOL = {
-    S: "♠",
-    H: "♥",
-    D: "♦",
-    C: "♣"
-  };
-
-  cards.forEach((c, i) => {
+  cards.forEach((c,i)=>{
     const el = document.createElement("div");
     el.className = "card";
-
-    if (bestHold?.[i]) {
-      el.classList.add("held");
-    }
-
-    if (!c?.rank || !c?.suit) {
-      el.innerHTML = `
-        <div class="rank">?</div>
-        <div class="suit">?</div>
-      `;
-    } else {
-      const isRed = c.suit === "H" || c.suit === "D";
-      if (isRed) el.classList.add("red");
-
-      el.innerHTML = `
-        <div class="rank">${c.rank}</div>
-        <div class="suit">${SUIT_SYMBOL[c.suit]}</div>
-      `;
-    }
-
+    if(bestHold?.[i]) el.classList.add("held");
+    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
+    el.innerHTML = `<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
     cardsBox.appendChild(el);
   });
 }
 
-/* Start camera */
+/* CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject = stream;
   statusEl.textContent = "Camera ready — align machine";
   requestAnimationFrame(()=>positionGreenFrame(scanner, band));
-})
-.catch(err=>{
-  statusEl.textContent = "Camera error: " + err.message;
-  setDebug("Camera error:\n" + err.stack);
 });
 
 /* SNAP */
 snap.onclick = async ()=>{
-  statusEl.textContent = "Capturing…";
-  setDebug("");
-  renderMultipliers(null);
-  renderCards([{},{},{},{},{}]);
-
   try{
+    statusEl.textContent = "Capturing…";
     const img = await captureFromGreenFrame({ video, band, scanner });
     preview.src = img;
 
-    statusEl.textContent = "Calling worker…";
-
-    const res = await fetch(WORKER_URL, {
+    const res = await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      imageBase64: img,
-      paytable: paytableSelect.value
-})
+      body: JSON.stringify({
+        imageBase64: img,
+        paytable: paytableSelect.value
+      })
     });
 
-    const rawText = await res.text();
+    const data = await res.json();
+    setDebug(JSON.stringify(data,null,2));
 
-    // show raw immediately
-    setDebug(`HTTP ${res.status}\n\nRAW:\n${rawText}`);
-
-    let data;
-    try{
-      data = JSON.parse(rawText);
-    }catch(e){
-      statusEl.textContent = "Worker returned non-JSON";
-      setDebug(`HTTP ${res.status}\n\nRAW:\n${rawText}\n\nJSON PARSE ERROR:\n${e.message}`);
-      return;
-    }
-
-    if(data.error){
-      statusEl.textContent = "Worker error: " + data.error;
-      setDebug(`HTTP ${res.status}\n\nPARSED:\n${safeStr(data)}`);
-      return;
-    }
-
-    // render
     renderMultipliers(data.multipliers);
     renderCards(data.cards, data.best_hold);
 
     statusEl.textContent = "Done ✅";
-    setDebug(`HTTP ${res.status}\n\nPARSED:\n${safeStr(data)}`);
-
-  }catch(err){
+  }catch(e){
     statusEl.textContent = "Client error";
-    setDebug("CLIENT ERROR:\n" + (err?.stack || err?.message || String(err)));
+    setDebug(e.stack || e.message);
   }
 };
 </script>
