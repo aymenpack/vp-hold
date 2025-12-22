@@ -1,20 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ultimate X – UI Test</title>
+
 <link rel="stylesheet" href="./capture/camera.css">
+
+<style>
+body{margin:0;background:#020617;color:#fff;font-family:system-ui}
+.app{max-width:900px;margin:auto;padding:16px}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <h2>UI Test</h2>
+
+  <div class="scanner" id="scanner">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="band" id="band"></div>
+  </div>
+
+  <button id="snap">SNAP</button>
+
+  <img id="preview">
+</div>
+
 <script type="module">
-import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
+import { positionGreenFrame } from "./capture/capture.js";
 
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
-const preview = document.getElementById("preview");
 
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
-.then(stream => {
+.then(stream=>{
   video.srcObject = stream;
-  requestAnimationFrame(() => positionGreenFrame(scanner, band));
+  requestAnimationFrame(()=>positionGreenFrame(scanner, band));
 });
-
-document.getElementById("snap").onclick = async () => {
-  const img = await captureFromGreenFrame({ video, band, scanner });
-  preview.src = img;
-};
 </script>
+</body>
+</html>
