@@ -1,6 +1,6 @@
 import { runVision } from "./vision/vision.js";
-import { bestHoldEV } from "./strategy/ev.js";
-import { PAYTABLES } from "./strategy/paytables.js";
+import { bestHoldEV } from "../strategy/ev.js";
+import { PAYTABLES } from "../strategy/paytables.js";
 
 export default {
   async fetch(request, env) {
