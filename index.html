@@ -138,6 +138,7 @@ video{
 .suit{font-size:18px}
 .red{color:var(--danger)}
 
+/* Explanation */
 #explain{
   margin-top:16px;
   padding:16px;
@@ -147,6 +148,7 @@ video{
   display:none;
   line-height:1.5;
 }
+#explain strong{color:var(--accent)}
 
 footer{
   position:fixed;
@@ -167,7 +169,7 @@ footer{
 <div class="app">
 <header>
   <h1>Ultimate X Assistant</h1>
-  <div class="subtitle">Reads cards & multipliers · Wizard strategy</div>
+  <div class="subtitle">Reads cards & multiplier · Wizard strategy</div>
 </header>
 
 <div class="tabs">
@@ -186,27 +188,34 @@ footer{
   <div class="band" id="band"></div>
 </div>
 
-<div class="status" id="status">Align cards between green lines</div>
+<div class="status" id="status">Starting camera…</div>
 <div id="error"></div>
+
+<div class="kpis">
+  <div class="kpi">Multiplier total: <strong id="multShow">—</strong></div>
+</div>
 
 <div id="hand"></div>
 <div id="explain"></div>
 </div>
 
 <footer>
-  <button id="snap" class="primary">🎯 SNAP</button>
+  <button id="snap" class="primary">SNAP</button>
 </footer>
 
-<script>
+<script type="module">
+/* ================= IMPORT ISOLATED VISION ================= */
+import { captureAndAnalyze } from "./visionCapture.js";
+
 /* ================= CONFIG ================= */
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-const DOWNSCALE_WIDTH = 520;
-const JPEG_QUALITY = 0.6;
 
+/* ================= STATE ================= */
 let mode = "ux";
 let stream = null;
 let busy = false;
 
+/* ================= ELEMENTS ================= */
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const statusEl = document.getElementById("status");
@@ -214,18 +223,25 @@ const errorEl = document.getElementById("error");
 const snapBtn = document.getElementById("snap");
 const handDiv = document.getElementById("hand");
 const explainDiv = document.getElementById("explain");
+const multShow = document.getElementById("multShow");
 
 const m1=document.getElementById("m1");
 const m2=document.getElementById("m2");
 const m3=document.getElementById("m3");
 
+const tabUX=document.getElementById("tabUX");
+const tabUXP=document.getElementById("tabUXP");
+
+/* ================= TABS ================= */
+tabUX.onclick=()=>{ mode="ux"; tabUX.classList.add("active"); tabUXP.classList.remove("active"); };
+tabUXP.onclick=()=>{ mode="uxp"; tabUXP.classList.add("active"); tabUX.classList.remove("active"); };
+
+/* ================= CAMERA ================= */
 async function startCamera(){
   try{
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:"environment" }
-    });
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
     video.srcObject = stream;
-    statusEl.textContent = "Camera ready";
+    statusEl.textContent = "Align cards between green lines";
     requestAnimationFrame(updateBandOverlay);
   }catch(e){
     statusEl.textContent = "Camera permission denied";
@@ -242,6 +258,7 @@ function updateBandOverlay(){
   requestAnimationFrame(updateBandOverlay);
 }
 
+/* ================= HELPERS ================= */
 function showError(msg){
   errorEl.style.display="block";
   errorEl.textContent=msg;
@@ -250,32 +267,6 @@ function clearError(){
   errorEl.style.display="none";
   errorEl.textContent="";
 }
-
-function cropDownscaleBase64(){
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if(!vw || !vh) return null;
-
-  const bandH = Math.floor(vh * 0.35);
-  const bandY = Math.floor((vh - bandH) / 2);
-
-  const crop = document.createElement("canvas");
-  crop.width = vw;
-  crop.height = bandH;
-  crop.getContext("2d").drawImage(video, 0, bandY, vw, bandH, 0, 0, vw, bandH);
-
-  const scale = DOWNSCALE_WIDTH / vw;
-  const outW = DOWNSCALE_WIDTH;
-  const outH = Math.floor(bandH * scale);
-
-  const out = document.createElement("canvas");
-  out.width = outW;
-  out.height = outH;
-  out.getContext("2d").drawImage(crop, 0, 0, outW, outH);
-
-  return out.toDataURL("image/jpeg", JPEG_QUALITY);
-}
-
 function renderHand(cards, hold){
   handDiv.innerHTML="";
   cards.forEach((c,i)=>{
@@ -287,50 +278,38 @@ function renderHand(cards, hold){
   });
 }
 
-snapBtn.onclick = async()=>{
-  if(busy) return;
-  busy=true;
+/* ================= SNAP ================= */
+snapBtn.onclick = async () => {
+  if (busy) return;
+  busy = true;
   clearError();
   explainDiv.style.display="none";
-  statusEl.textContent="Capturing…";
+  statusEl.textContent = "Capturing…";
 
-  await new Promise(r=>requestAnimationFrame(r));
-  const img = cropDownscaleBase64();
-  if(!img){
-    showError("Camera not ready");
-    busy=false;
-    return;
-  }
-
-  statusEl.textContent="Reading cards + multipliers…";
-
-  try{
-    const res = await fetch(WORKER_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        imageBase64: img,
-        multipliers_fallback:[Number(m1.value||1),Number(m2.value||1),Number(m3.value||1)],
-        progressive: mode==="uxp"
-      })
+  try {
+    const data = await captureAndAnalyze({
+      videoEl: video,
+      workerUrl: WORKER_URL,
+      multipliersFallback: [
+        Number(m1.value || 1),
+        Number(m2.value || 1),
+        Number(m3.value || 1)
+      ],
+      progressive: mode === "uxp"
     });
 
-    const data = await res.json();
-    if(data.error){
-      showError(data.error);
-      statusEl.textContent="Error";
-    }else{
-      renderHand(data.cards||[], data.hold||[]);
-      explainDiv.style.display="block";
-      explainDiv.textContent = data.explanation || "";
-      statusEl.textContent="Done";
-    }
-  }catch(e){
-    showError("Network error");
-    statusEl.textContent="Error";
+    renderHand(data.cards, data.hold);
+    multShow.textContent = data.multiplier_total + "×";
+    explainDiv.style.display = "block";
+    explainDiv.textContent = data.explanation;
+    statusEl.textContent = "Done";
+
+  } catch (e) {
+    showError(e.message);
+    statusEl.textContent = "Error";
   }
 
-  busy=false;
+  busy = false;
 };
 </script>
 </body>
