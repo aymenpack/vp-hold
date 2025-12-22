@@ -46,6 +46,17 @@ button{
   border:1px solid #333;
 }
 
+<pre id="visionDebug" style="
+  margin-top:12px;
+  padding:12px;
+  border-radius:12px;
+  background:#020617;
+  border:1px solid #333;
+  color:#9ca3af;
+  font-size:12px;
+  overflow:auto;
+"></pre>
+
 #status{
   margin-top:10px;
   font-size:14px;
@@ -101,6 +112,7 @@ snap.onclick = async () => {
   statusEl.textContent = "Capturing…";
 
   try {
+    // 1) Capture using LOCKED capture
     const img = await captureFromGreenFrame({
       video,
       band,
@@ -108,10 +120,27 @@ snap.onclick = async () => {
     });
 
     preview.src = img;
-    statusEl.textContent = "Preview captured";
+    statusEl.textContent = "Sending to Vision…";
+
+    // 2) Send to worker (vision only)
+    const res = await fetch("/vision", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64: img })
+    });
+
+    const data = await res.json();
+
+    // 3) Show raw vision result
+    document.getElementById("visionDebug").textContent =
+      JSON.stringify(data, null, 2);
+
+    statusEl.textContent = "Vision parsed";
 
   } catch (err) {
-    statusEl.textContent = "Error: " + err.message;
+    statusEl.textContent = "Vision error";
+    document.getElementById("visionDebug").textContent =
+      "ERROR:\n" + err.message;
   }
 };
 </script>
