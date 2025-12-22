@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture v6.2 (Locked)</title>
+<title>Ultimate X – Vision Capture v6.3 (Locked)</title>
 
 <style>
 body{
@@ -119,12 +119,12 @@ const JPEG_QUALITY = 0.85;
 /* FRAME — LOCKED */
 const FRAME_SCALE = 0.58;
 
-/* CAPTURE MICRO-ADJUST (LOCKED VERTICAL) */
+/* CAPTURE — LOCKED VERTICAL */
 const CAPTURE_Y_ADJUST = 0.03;
 const CAPTURE_H_ADJUST = 0.94;
 
-/* 🔥 NEW: HORIZONTAL PADDING */
-const CAPTURE_X_PAD = 0.04; // 4% on each side
+/* 🔒 FINAL HORIZONTAL EXPANSION */
+const CAPTURE_X_PAD = 0.09; // ~9% per side
 
 /* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
@@ -146,7 +146,7 @@ function positionBand(){
   requestAnimationFrame(positionBand);
 }
 
-/* SNAP — CAPTURE WITH HORIZONTAL EXPANSION */
+/* SNAP — FINAL CAPTURE */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
@@ -170,7 +170,6 @@ snap.onclick = async ()=>{
   const baseW = bandRect.width * scaleX;
   const baseH = bandRect.height * CAPTURE_H_ADJUST * scaleY;
 
-  // 🔥 expand horizontally
   const padX = baseW * CAPTURE_X_PAD;
 
   const cropX = Math.max(0, baseX - padX);
