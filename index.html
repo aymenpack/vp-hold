@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture v6</title>
+<title>Ultimate X – Vision Capture v7 (Locked)</title>
 
 <style>
 body{
@@ -24,7 +24,7 @@ h2{margin:0}
   margin-bottom:12px;
 }
 
-/* CAMERA CONTAINER — LOCKED */
+/* CAMERA CONTAINER */
 .scanner{
   position:relative;
   width:100%;
@@ -36,21 +36,21 @@ h2{margin:0}
   background:#000;
 }
 
-/* VIDEO — LOCKED */
+/* VIDEO */
 video{
   width:100%;
   height:100%;
   object-fit:contain;
   background:#000;
-  transform:scale(1.4);
+  transform:scale(1.4);          /* VISUAL ZOOM */
   transform-origin:center;
 }
 
-/* GREEN FRAME — BIGGER, SAME RATIO */
+/* GREEN FRAME */
 .band{
   position:absolute;
-  left:8%;              /* 🔒 was 12% */
-  right:8%;             /* 🔒 was 12% */
+  left:8%;
+  right:8%;
   border:4px dashed #22c55e;
   border-radius:18px;
   background:rgba(34,197,94,0.12);
@@ -114,12 +114,11 @@ const snap    = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
 
-/* 🔒 OUTPUT SETTINGS */
+/* CONSTANTS */
 const OUTPUT_WIDTH = 1100;
 const JPEG_QUALITY = 0.85;
-
-/* 🔒 FRAME SCALE — BIGGER */
-const FRAME_SCALE = 0.58;   // was 0.48
+const VIDEO_SCALE  = 1.4;     // MUST MATCH CSS TRANSFORM
+const FRAME_SCALE  = 0.58;
 
 /* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
@@ -132,14 +131,11 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
   statusEl.textContent = "Camera error";
 });
 
-/* CENTER GREEN FRAME (VISUAL ONLY) */
+/* CENTER GREEN FRAME */
 function positionBand(){
-  const containerH = scanner.getBoundingClientRect().height;
-  const bandH = containerH * FRAME_SCALE;
-
-  band.style.top = (containerH / 2 - bandH / 2) + "px";
-  band.style.height = bandH + "px";
-
+  const h = scanner.getBoundingClientRect().height * FRAME_SCALE;
+  band.style.top = (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
+  band.style.height = h + "px";
   requestAnimationFrame(positionBand);
 }
 
@@ -157,13 +153,20 @@ snap.onclick = async ()=>{
   const videoRect = video.getBoundingClientRect();
   const bandRect  = band.getBoundingClientRect();
 
+  /* REMOVE VISUAL SCALE */
+  const adjLeft   = (bandRect.left - videoRect.left) / VIDEO_SCALE;
+  const adjTop    = (bandRect.top  - videoRect.top)  / VIDEO_SCALE;
+  const adjWidth  = bandRect.width  / VIDEO_SCALE;
+  const adjHeight = bandRect.height / VIDEO_SCALE;
+
+  /* MAP TO VIDEO PIXELS */
   const scaleX = vw / videoRect.width;
   const scaleY = vh / videoRect.height;
 
-  const cropX = (bandRect.left - videoRect.left) * scaleX;
-  const cropY = (bandRect.top  - videoRect.top)  * scaleY;
-  const cropW = bandRect.width  * scaleX;
-  const cropH = bandRect.height * scaleY;
+  const cropX = adjLeft   * scaleX;
+  const cropY = adjTop    * scaleY;
+  const cropW = adjWidth  * scaleX;
+  const cropH = adjHeight * scaleY;
 
   const raw = document.createElement("canvas");
   raw.width  = cropW;
@@ -179,9 +182,7 @@ snap.onclick = async ()=>{
   out.height = Math.floor(cropH * (OUTPUT_WIDTH / cropW));
   out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
 
-  const img = out.toDataURL("image/jpeg", JPEG_QUALITY);
-  preview.src = img;
-
+  preview.src = out.toDataURL("image/jpeg", JPEG_QUALITY);
   statusEl.textContent = `Captured ${out.width} × ${out.height}`;
 };
 </script>
