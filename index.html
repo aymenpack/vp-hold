@@ -3,15 +3,28 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture (Exact)</title>
+<title>Ultimate X – Vision Capture (LOCKED)</title>
 
 <style>
-body{margin:0;font-family:system-ui;background:#020617;color:#fff}
-.app{max-width:900px;margin:auto;padding:16px 16px 160px}
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#020617;
+  color:#fff;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 160px;
+}
 h2{margin:0}
-.subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
+.subtitle{
+  font-size:14px;
+  color:#9ca3af;
+  margin-bottom:12px;
+}
 
-/* CAMERA CONTAINER — keep as you like */
+/* CAMERA CONTAINER — LOCKED */
 .scanner{
   position:relative;
   width:100%;
@@ -23,15 +36,17 @@ h2{margin:0}
   background:#000;
 }
 
-/* VIDEO — IMPORTANT: no transform scaling */
+/* VIDEO — RESTORED EXACTLY */
 video{
   width:100%;
   height:100%;
-  object-fit:contain;   /* keep */
+  object-fit:contain;
   background:#000;
+  transform:scale(1.4);
+  transform-origin:center;
 }
 
-/* GREEN FRAME — your chosen size */
+/* GREEN FRAME — LOCKED */
 .band{
   position:absolute;
   left:8%;
@@ -64,14 +79,20 @@ button{
   border:1px solid #333;
 }
 
-#status{margin-top:10px;font-size:14px;color:#9ca3af}
+#status{
+  margin-top:10px;
+  font-size:14px;
+  color:#9ca3af;
+}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture</h2>
-  <div class="subtitle">Align ALL 3 rows inside the green frame</div>
+  <h2>Ultimate X – Vision Capture v10</h2>
+  <div class="subtitle">
+    Align ALL 3 rows inside the green frame
+  </div>
 
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
@@ -79,6 +100,7 @@ button{
   </div>
 
   <button id="snap">SNAP (Preview)</button>
+
   <img id="preview">
   <div id="status">Starting camera…</div>
 </div>
@@ -91,14 +113,13 @@ const snap    = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
 
-/* Green frame height (visual only) */
-const FRAME_SCALE = 0.58;
-
-/* Output image settings */
+/* LOCKED CONSTANTS */
+const FRAME_SCALE  = 0.58;
+const VIDEO_SCALE  = 1.4;
 const OUTPUT_WIDTH = 1100;
 const JPEG_QUALITY = 0.85;
 
-/* Start camera */
+/* START CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject = stream;
@@ -106,89 +127,48 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
   requestAnimationFrame(positionBand);
 })
 .catch(e=>{
-  statusEl.textContent = "Camera error: " + e.message;
+  statusEl.textContent = "Camera error";
 });
 
-/* Keep green frame centered (visual) */
+/* VISUAL FRAME — LOCKED */
 function positionBand(){
-  const containerH = scanner.getBoundingClientRect().height;
-  const bandH = containerH * FRAME_SCALE;
-  band.style.top = (containerH/2 - bandH/2) + "px";
-  band.style.height = bandH + "px";
+  const h = scanner.getBoundingClientRect().height * FRAME_SCALE;
+  band.style.top = (scanner.getBoundingClientRect().height/2 - h/2) + "px";
+  band.style.height = h + "px";
   requestAnimationFrame(positionBand);
 }
 
-/* Compute the actual displayed camera content box inside the video rect (object-fit: contain) */
-function getContainBox(videoEl){
-  const vw = videoEl.videoWidth;
-  const vh = videoEl.videoHeight;
-  const rect = videoEl.getBoundingClientRect();
-
-  const arVideo = vw / vh;
-  const arRect  = rect.width / rect.height;
-
-  let contentW, contentH, offX, offY;
-  if(arVideo > arRect){
-    // video is wider than rect: fill width, letterbox top/bottom
-    contentW = rect.width;
-    contentH = rect.width / arVideo;
-    offX = 0;
-    offY = (rect.height - contentH) / 2;
-  } else {
-    // video is taller than rect: fill height, letterbox left/right
-    contentH = rect.height;
-    contentW = rect.height * arVideo;
-    offY = 0;
-    offX = (rect.width - contentW) / 2;
-  }
-
-  return {
-    rect,
-    contentLeft: rect.left + offX,
-    contentTop:  rect.top + offY,
-    contentW,
-    contentH,
-    vw,
-    vh
-  };
-}
-
-/* SNAP — capture EXACTLY what’s inside the green frame */
+/* SNAP — CAPTURE EXACTLY GREEN FRAME */
 snap.onclick = async ()=>{
   await new Promise(r=>requestAnimationFrame(r));
 
-  const vw = video.videoWidth, vh = video.videoHeight;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
   if(!vw || !vh){
     statusEl.textContent = "Camera not ready";
     return;
   }
 
-  const box = getContainBox(video);
-  const bandRect = band.getBoundingClientRect();
+  const videoRect = video.getBoundingClientRect();
+  const bandRect  = band.getBoundingClientRect();
 
-  // Intersect bandRect with actual content box (ignore black bars)
-  const left   = Math.max(bandRect.left, box.contentLeft);
-  const right  = Math.min(bandRect.right, box.contentLeft + box.contentW);
-  const top    = Math.max(bandRect.top, box.contentTop);
-  const bottom = Math.min(bandRect.bottom, box.contentTop + box.contentH);
+  /* Undo CSS scale */
+  const adjLeft   = (bandRect.left - videoRect.left) / VIDEO_SCALE;
+  const adjTop    = (bandRect.top  - videoRect.top)  / VIDEO_SCALE;
+  const adjWidth  = bandRect.width  / VIDEO_SCALE;
+  const adjHeight = bandRect.height / VIDEO_SCALE;
 
-  const wCss = Math.max(1, right - left);
-  const hCss = Math.max(1, bottom - top);
+  /* Map to video pixels */
+  const scaleX = vw / videoRect.width;
+  const scaleY = vh / videoRect.height;
 
-  // Convert CSS coords -> normalized within content box -> video pixels
-  const nx = (left - box.contentLeft) / box.contentW;
-  const ny = (top  - box.contentTop)  / box.contentH;
-  const nw = wCss / box.contentW;
-  const nh = hCss / box.contentH;
+  const cropX = Math.round(adjLeft   * scaleX);
+  const cropY = Math.round(adjTop    * scaleY);
+  const cropW = Math.round(adjWidth  * scaleX);
+  const cropH = Math.round(adjHeight * scaleY);
 
-  const cropX = Math.max(0, Math.floor(nx * box.vw));
-  const cropY = Math.max(0, Math.floor(ny * box.vh));
-  const cropW = Math.max(1, Math.floor(nw * box.vw));
-  const cropH = Math.max(1, Math.floor(nh * box.vh));
-
-  // Crop from raw camera pixels
   const raw = document.createElement("canvas");
-  raw.width = cropW;
+  raw.width  = cropW;
   raw.height = cropH;
   raw.getContext("2d").drawImage(
     video,
@@ -196,7 +176,6 @@ snap.onclick = async ()=>{
     0, 0, cropW, cropH
   );
 
-  // Downscale output
   const out = document.createElement("canvas");
   out.width = OUTPUT_WIDTH;
   out.height = Math.floor(cropH * (OUTPUT_WIDTH / cropW));
