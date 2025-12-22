@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision Capture</title>
+<title>Ultimate X – Vision Capture v4</title>
 
 <style>
 body{
@@ -18,7 +18,11 @@ body{
   padding:16px 16px 160px;
 }
 h2{margin:0}
-.subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
+.subtitle{
+  font-size:14px;
+  color:#9ca3af;
+  margin-bottom:12px;
+}
 
 /* CAMERA CONTAINER */
 .scanner{
@@ -33,17 +37,17 @@ h2{margin:0}
   box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
 
-/* VIDEO — ZOOMED */
+/* VIDEO */
 video{
   width:100%;
   height:100%;
   object-fit:contain;
   background:#000;
-  transform: scale(1.4);          /* 🔥 ZOOM */
-  transform-origin: center;
+  transform:scale(1.4);      /* zoom in */
+  transform-origin:center;
 }
 
-/* GREEN FRAME */
+/* GREEN GUIDE (CENTERED VISUALLY) */
 .band{
   position:absolute;
   left:5%;
@@ -54,7 +58,7 @@ video{
   pointer-events:none;
 }
 
-/* CONTROLS */
+/* BUTTON */
 button{
   margin-top:18px;
   width:100%;
@@ -68,6 +72,7 @@ button{
   cursor:pointer;
 }
 
+/* PREVIEW */
 #preview{
   margin-top:16px;
   width:100%;
@@ -75,6 +80,7 @@ button{
   border:1px solid #333;
 }
 
+/* STATUS */
 #status{
   margin-top:10px;
   font-size:14px;
@@ -85,12 +91,12 @@ button{
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision Capture v3</h2>
+  <h2>Ultimate X – Vision Capture</h2>
   <div class="subtitle">
     Align <strong>ALL 3 rows</strong> inside the green frame
   </div>
 
-  <div class="scanner">
+  <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
@@ -107,10 +113,11 @@ const band  = document.getElementById("band");
 const snap  = document.getElementById("snap");
 const preview = document.getElementById("preview");
 const statusEl = document.getElementById("status");
+const scanner = document.getElementById("scanner");
 
-/* 🔒 CAPTURE GEOMETRY */
+/* 🔒 CAPTURE GEOMETRY (DO NOT CHANGE) */
 const CAPTURE_TOP_FRAC    = 0.42;
-const CAPTURE_HEIGHT_FRAC = 0.38;  // tighter now that we zoom
+const CAPTURE_HEIGHT_FRAC = 0.38;
 const OUTPUT_WIDTH        = 1100;
 const JPEG_QUALITY        = 0.85;
 
@@ -119,19 +126,21 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject = stream;
   statusEl.textContent = "Camera ready — align machine";
-  requestAnimationFrame(updateBand);
+  requestAnimationFrame(updateGuide);
 })
 .catch(e=>{
   statusEl.textContent = "Camera error";
 });
 
-/* UPDATE GREEN FRAME */
-function updateBand(){
-  const r = video.getBoundingClientRect();
-  const h = r.height * CAPTURE_HEIGHT_FRAC;
-  band.style.top = (r.height * CAPTURE_TOP_FRAC) + "px";
-  band.style.height = h + "px";
-  requestAnimationFrame(updateBand);
+/* VISUAL GUIDE — CENTERED */
+function updateGuide(){
+  const containerH = scanner.getBoundingClientRect().height;
+  const bandH = containerH * CAPTURE_HEIGHT_FRAC;
+
+  band.style.top = (containerH / 2 - bandH / 2) + "px";
+  band.style.height = bandH + "px";
+
+  requestAnimationFrame(updateGuide);
 }
 
 /* SNAP PREVIEW */
