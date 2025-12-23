@@ -167,7 +167,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
     </select>
   </div>
 
-  <!-- MODE TOGGLE (NEW) -->
+  <!-- MODE -->
   <div style="margin-top:14px">
     <label style="font-size:13px;color:#9ca3af">Play Style</label>
     <select id="modeSelect" style="
@@ -223,6 +223,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
+const REQUEST_TIMEOUT_MS = 45000;
 
 const video = document.getElementById("video");
 const band = document.getElementById("band");
@@ -264,24 +265,41 @@ function renderCards(cards, bestHold){
     el.className="card";
     if(bestHold[i]) el.classList.add("held");
     if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
+    el.innerHTML=`<div class="rank">${c.rank ?? "?"}</div><div class="suit">${SUIT[c.suit] ?? "?"}</div>`;
     cardsBox.appendChild(el);
   });
 }
 
 function explainHold(multiplier, mode){
   if(mode === "aggressive"){
-    whyText.textContent =
-      "Aggressive mode prefers draw potential and multiplier growth, accepting higher variance.";
+    whyText.textContent = "Aggressive mode prefers draw potential and multiplier growth, accepting higher variance.";
     return;
   }
   if(multiplier >= 4){
-    whyText.textContent =
-      "Conservative mode locks value when possible, but still respects strong Ultimate X multipliers.";
+    whyText.textContent = "Conservative mode locks value when possible, but still respects strong Ultimate X multipliers.";
     return;
   }
-  whyText.textContent =
-    "Conservative mode prefers lower-variance holds while maximizing expected value.";
+  whyText.textContent = "Conservative mode prefers lower-variance holds while maximizing expected value.";
+}
+
+async function fetchWithTimeout(url, options, timeoutMs){
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, { ...options, signal: controller.signal, cache: "no-store" });
+    return res;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function readJsonOrText(res){
+  const text = await res.text();
+  try{
+    return { ok: res.ok, status: res.status, data: JSON.parse(text), raw: text };
+  }catch{
+    return { ok: res.ok, status: res.status, data: null, raw: text };
+  }
 }
 
 /* CAMERA */
@@ -290,6 +308,10 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
   video.srcObject=stream;
   statusEl.textContent="Camera ready — align machine";
   requestAnimationFrame(()=>positionGreenFrame(scanner, band));
+})
+.catch(err=>{
+  statusEl.textContent="Camera error";
+  debugEl.textContent = err?.message || String(err);
 });
 
 /* SNAP */
@@ -302,18 +324,34 @@ snap.onclick = async ()=>{
     statusEl.textContent="Capturing…";
     const img=await captureFromGreenFrame({video,band,scanner});
 
-    const res=await fetch(WORKER_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        imageBase64: img,
-        paytable: paytableSelect.value,
-        mode: modeSelect.value
-      })
-    });
+    statusEl.textContent="Sending to worker…";
+    const res = await fetchWithTimeout(
+      WORKER_URL,
+      {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          imageBase64: img,
+          paytable: paytableSelect.value,
+          mode: modeSelect.value
+        })
+      },
+      REQUEST_TIMEOUT_MS
+    );
 
-    const data = await res.json();
-    debugEl.textContent = JSON.stringify(data,null,2);
+    const parsed = await readJsonOrText(res);
+
+    // Always show something useful
+    debugEl.textContent = parsed.data
+      ? JSON.stringify(parsed.data, null, 2)
+      : `HTTP ${parsed.status}\n\nNon-JSON response:\n${parsed.raw.slice(0, 2000)}`;
+
+    if(!parsed.ok || !parsed.data){
+      statusEl.textContent = `Worker error (HTTP ${parsed.status})`;
+      return;
+    }
+
+    const data = parsed.data;
 
     renderMultipliers(data.multipliers);
     renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
@@ -322,8 +360,13 @@ snap.onclick = async ()=>{
 
     statusEl.textContent="Done ✅";
   }catch(e){
+    const msg =
+      e?.name === "AbortError"
+        ? `Timeout after ${REQUEST_TIMEOUT_MS/1000}s`
+        : (e?.message || String(e));
+
     statusEl.textContent="Client error";
-    debugEl.textContent=e.stack||e.message;
+    debugEl.textContent = msg + (e?.stack ? "\n\n" + e.stack : "");
   }finally{
     snapInProgress=false;
     snap.disabled=false;
