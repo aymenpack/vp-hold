@@ -67,7 +67,7 @@ export default {
     const strategy = bestHoldEV(
       vision.cards,
       pt,
-      vision.multipliers.bottom, // Ultimate X multiplier
+      vision.multipliers.bottom,
       paytable
     );
 
@@ -76,8 +76,11 @@ export default {
         paytable: pt.name,
         multipliers: vision.multipliers,
         cards: vision.cards,
+
+        // ✅ UPDATED FIELDS
         best_hold: strategy.best_hold,
-        ev_best: strategy.ev_best
+        ev_with_multiplier: strategy.ev_with_multiplier,
+        ev_without_multiplier: strategy.ev_without_multiplier
       }),
       {
         headers: {
