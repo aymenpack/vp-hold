@@ -22,7 +22,11 @@ export default {
       );
     }
 
-    const { imageBase64, paytable = "DDB_9_6" } = await request.json();
+    const {
+      imageBase64,
+      paytable = "DDB_9_6",
+      mode = "conservative" // ✅ NEW
+    } = await request.json();
 
     if (!imageBase64) {
       return new Response(
@@ -68,7 +72,8 @@ export default {
       vision.cards,
       pt,
       vision.multipliers.bottom,
-      paytable
+      paytable,
+      mode
     );
 
     return new Response(
@@ -77,10 +82,11 @@ export default {
         multipliers: vision.multipliers,
         cards: vision.cards,
 
-        // ✅ UPDATED FIELDS
+        // ✅ NEW OUTPUTS
         best_hold: strategy.best_hold,
         ev_with_multiplier: strategy.ev_with_multiplier,
-        ev_without_multiplier: strategy.ev_without_multiplier
+        ev_without_multiplier: strategy.ev_without_multiplier,
+        mode: strategy.mode
       }),
       {
         headers: {
