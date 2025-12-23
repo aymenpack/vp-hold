@@ -1,5 +1,6 @@
 // ui/snapWorker.js
-// 🔒 One-shot worker: encode + fetch once, then die
+// One-shot worker for SNAP
+// Encodes bitmap → JPEG → base64 → POST → respond
 
 function arrayBufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer);
@@ -11,8 +12,8 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
-self.onmessage = async (evt) => {
-  const { bitmap, workerUrl, paytable, mode, jpegQuality = 0.85 } = evt.data;
+self.onmessage = async (e) => {
+  const { bitmap, workerUrl, paytable, mode } = e.data;
 
   try {
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
@@ -22,7 +23,7 @@ self.onmessage = async (evt) => {
 
     const blob = await canvas.convertToBlob({
       type: "image/jpeg",
-      quality: jpegQuality
+      quality: 0.85
     });
 
     const ab = await blob.arrayBuffer();
