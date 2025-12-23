@@ -1,6 +1,6 @@
 // ui/snapWorker.js
 // 🔒 Worker owns: JPEG encoding + base64 + fetch
-// UI thread never fetches
+// FINAL version — stable for repeated snaps
 
 const DEFAULT_TIMEOUT_MS = 45000;
 
@@ -14,14 +14,21 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
+function withReqId(url) {
+  const sep = url.includes("?") ? "&" : "?";
+  return url + sep + "req=" + Date.now() + "-" + Math.random().toString(16).slice(2);
+}
+
 async function fetchWithTimeout(url, options, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    // IMPORTANT: self.fetch + mode:"cors"
     return await self.fetch(url, {
       ...options,
       mode: "cors",
+      cache: "no-store",
+      keepalive: false,
       signal: controller.signal
     });
   } finally {
@@ -33,12 +40,11 @@ self.onmessage = async (evt) => {
   const { id, bitmap, workerUrl, paytable, mode, jpegQuality = 0.85 } = evt.data;
 
   try {
-    // 1) Encode ImageBitmap -> JPEG Blob
+    // 1) Encode ImageBitmap -> JPEG
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     const ctx = canvas.getContext("2d");
     ctx.drawImage(bitmap, 0, 0);
 
-    // Free bitmap ASAP
     if (bitmap.close) bitmap.close();
 
     const blob = await canvas.convertToBlob({
@@ -52,7 +58,7 @@ self.onmessage = async (evt) => {
 
     // 2) POST JSON to Cloudflare Worker
     const res = await fetchWithTimeout(
-      workerUrl,
+      withReqId(workerUrl), // 👈 CRITICAL
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,7 +83,6 @@ self.onmessage = async (evt) => {
       raw: data ? null : text.slice(0, 2000)
     });
   } catch (err) {
-    // Surface real worker-side error
     self.postMessage({
       id,
       ok: false,
