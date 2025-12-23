@@ -232,6 +232,7 @@ const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snap = document.getElementById("snap");
+
 const paytableSelect = document.getElementById("paytableSelect");
 const modeSelect = document.getElementById("modeSelect");
 const statusEl = document.getElementById("status");
@@ -247,7 +248,7 @@ const whyText = document.getElementById("whyText");
 
 let snapInProgress = false;
 
-/* RENDER HELPERS */
+/* render helpers */
 function renderMultipliers(m){
   multTop.textContent = "×" + m.top;
   multMid.textContent = "×" + m.middle;
@@ -265,8 +266,9 @@ function renderCards(cards, bestHold){
     el.className="card";
     if(bestHold[i]) el.classList.add("held");
     if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank}</div>
-                  <div class="suit">${SUIT[c.suit]}</div>`;
+    el.innerHTML =
+      `<div class="rank">${c.rank}</div>
+       <div class="suit">${SUIT[c.suit]}</div>`;
     cardsBox.appendChild(el);
   });
 }
@@ -283,6 +285,10 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
   video.srcObject=stream;
   statusEl.textContent="Camera ready — align machine";
   requestAnimationFrame(()=>positionGreenFrame(scanner, band));
+})
+.catch(err=>{
+  statusEl.textContent="Camera error";
+  debugEl.textContent = err.message;
 });
 
 /* SNAP — INLINE & STABLE */
@@ -293,23 +299,16 @@ snap.onclick = async ()=>{
 
   try{
     statusEl.textContent="Capturing…";
-    const img=await captureFromGreenFrameBlob({ video, band, scanner });
 
-    statusEl.textContent = "Preparing…";
+    const img = await captureFromGreenFrameBlob({
+      video, band, scanner
+    });
 
-// 👇 yield UI thread (VERY IMPORTANT)
-await new Promise(requestAnimationFrame);
+    statusEl.textContent="Preparing…";
+    await new Promise(requestAnimationFrame);
 
-statusEl.textContent = "Sending to worker…";
-const res = await fetch(WORKER_URL, {
-  method:"POST",
-  headers:{ "Content-Type":"application/json" },
-  body: JSON.stringify({
-    imageBase64: img,
-    paytable: paytableSelect.value,
-    mode: modeSelect.value
-  })
-});
+    statusEl.textContent="Sending to worker…";
+    const res=await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
@@ -332,8 +331,7 @@ const res = await fetch(WORKER_URL, {
     statusEl.textContent="Client error";
     debugEl.textContent=e.message||String(e);
   }finally{
-  // 👇 allow browser to settle before next snap
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r=>setTimeout(r,150));
     snapInProgress=false;
     snap.disabled=false;
   }
