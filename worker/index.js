@@ -2,6 +2,10 @@ import { runVision } from "./vision/vision.js";
 import { bestHoldEV } from "../strategy/ev.js";
 import { PAYTABLES } from "../strategy/paytables.js";
 
+/* ===============================
+   HELPERS
+   =============================== */
+
 function jsonResponse(obj, status, corsHeaders) {
   return new Response(JSON.stringify(obj), {
     status,
@@ -11,6 +15,20 @@ function jsonResponse(obj, status, corsHeaders) {
     }
   });
 }
+
+function arrayBufferToBase64(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/* ===============================
+   WORKER
+   =============================== */
 
 export default {
   async fetch(request, env) {
@@ -22,6 +40,7 @@ export default {
     };
 
     try {
+      /* ---------- CORS ---------- */
       if (request.method === "OPTIONS") {
         return new Response(null, { headers: corsHeaders });
       }
@@ -30,65 +49,103 @@ export default {
         return jsonResponse({ error: "Method not allowed" }, 405, corsHeaders);
       }
 
-      let body;
-      try {
-        body = await request.json();
-      } catch {
-        return jsonResponse({ error: "Invalid JSON body" }, 400, corsHeaders);
-      }
-
-      const {
-        imageBase64,
-        paytable = "DDB_9_6",
-        mode = "conservative"
-      } = body || {};
-
-      if (!imageBase64) {
-        return jsonResponse({ error: "Missing imageBase64" }, 400, corsHeaders);
-      }
-
       if (!env.OPENAI_API_KEY) {
-        return jsonResponse({ error: "OPENAI_API_KEY not configured" }, 500, corsHeaders);
+        return jsonResponse(
+          { error: "OPENAI_API_KEY not configured" },
+          500,
+          corsHeaders
+        );
       }
 
-      const pt = PAYTABLES[paytable];
-      if (!pt) {
-        return jsonResponse({ error: "Unknown paytable" }, 400, corsHeaders);
+      /* ===============================
+         READ multipart/form-data
+         =============================== */
+
+      const form = await request.formData();
+
+      const file = form.get("image");
+      if (!(file instanceof Blob)) {
+        return jsonResponse(
+          { error: "Missing image file" },
+          400,
+          corsHeaders
+        );
       }
+
+      const paytableKey = form.get("paytable") || "DDB_9_6";
+      const mode = form.get("mode") || "conservative";
+
+      const pt = PAYTABLES[paytableKey];
+      if (!pt) {
+        return jsonResponse(
+          { error: "Unknown paytable" },
+          400,
+          corsHeaders
+        );
+      }
+
+      /* ===============================
+         Convert Blob → base64 Data URL
+         =============================== */
+
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 =
+        "data:image/jpeg;base64," +
+        arrayBufferToBase64(arrayBuffer);
 
       /* ===============================
          VISION (LOCKED)
          =============================== */
+
       const vision = await runVision({
-        imageBase64,
+        imageBase64: base64,
         apiKey: env.OPENAI_API_KEY
       });
 
+      if (!vision || vision.error) {
+        return jsonResponse(
+          {
+            error: "Vision failed",
+            details: vision?.message || "Unknown vision error"
+          },
+          502,
+          corsHeaders
+        );
+      }
+
       // Normalize multipliers (null → 1)
       vision.multipliers = {
-        top: vision?.multipliers?.top ?? 1,
-        middle: vision?.multipliers?.middle ?? 1,
-        bottom: vision?.multipliers?.bottom ?? 1
+        top: vision.multipliers?.top ?? 1,
+        middle: vision.multipliers?.middle ?? 1,
+        bottom: vision.multipliers?.bottom ?? 1
       };
 
       if (!Array.isArray(vision.cards) || vision.cards.length !== 5) {
         return jsonResponse(
-          { error: "Vision returned invalid cards", vision },
+          {
+            error: "Vision returned invalid cards",
+            vision
+          },
           502,
           corsHeaders
         );
       }
 
       /* ===============================
-         STRATEGY
+         STRATEGY (ULTIMATE X)
          =============================== */
+
       const strategy = bestHoldEV(
         vision.cards,
         pt,
         vision.multipliers.bottom,
-        paytable,
+        paytableKey,
         mode
       );
+
+      /* ===============================
+         RESPONSE
+         =============================== */
 
       return jsonResponse(
         {
@@ -103,8 +160,8 @@ export default {
         200,
         corsHeaders
       );
+
     } catch (err) {
-      // IMPORTANT: always return JSON so the client can show real errors
       return jsonResponse(
         {
           error: "Worker exception",
