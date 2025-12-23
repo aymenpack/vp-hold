@@ -167,6 +167,24 @@ button:disabled{opacity:.6;cursor:not-allowed}
     </select>
   </div>
 
+  <!-- MODE TOGGLE (NEW) -->
+  <div style="margin-top:14px">
+    <label style="font-size:13px;color:#9ca3af">Play Style</label>
+    <select id="modeSelect" style="
+      width:100%;
+      margin-top:6px;
+      padding:12px;
+      border-radius:12px;
+      background:#020617;
+      color:#fff;
+      border:1px solid #333;
+      font-size:14px
+    ">
+      <option value="conservative">Conservative (lock value)</option>
+      <option value="aggressive">Aggressive (chase multipliers)</option>
+    </select>
+  </div>
+
   <button id="snap">SNAP</button>
 
   <!-- MULTIPLIERS -->
@@ -211,6 +229,7 @@ const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snap = document.getElementById("snap");
 const paytableSelect = document.getElementById("paytableSelect");
+const modeSelect = document.getElementById("modeSelect");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
@@ -226,8 +245,6 @@ const whyText = document.getElementById("whyText");
 
 let snapInProgress = false;
 
-/* RENDERING */
-
 function renderMultipliers(m){
   multTop.textContent = "×" + m.top;
   multMid.textContent = "×" + m.middle;
@@ -235,8 +252,8 @@ function renderMultipliers(m){
 }
 
 function renderEVs(evBase, evUX){
-  evBaseEl.textContent = evBase.toFixed(4);
-  evUXEl.textContent = evUX.toFixed(4);
+  evBaseEl.textContent = Number(evBase).toFixed(4);
+  evUXEl.textContent = Number(evUX).toFixed(4);
 }
 
 function renderCards(cards, bestHold){
@@ -252,14 +269,19 @@ function renderCards(cards, bestHold){
   });
 }
 
-function explainHold(cards, bestHold, multiplier){
+function explainHold(multiplier, mode){
+  if(mode === "aggressive"){
+    whyText.textContent =
+      "Aggressive mode prefers draw potential and multiplier growth, accepting higher variance.";
+    return;
+  }
   if(multiplier >= 4){
     whyText.textContent =
-      "With a high Ultimate X multiplier, this hold maximizes future value by chasing strong paying hands.";
+      "Conservative mode locks value when possible, but still respects strong Ultimate X multipliers.";
     return;
   }
   whyText.textContent =
-    "This hold produces the highest expected value based on payout odds.";
+    "Conservative mode prefers lower-variance holds while maximizing expected value.";
 }
 
 /* CAMERA */
@@ -283,7 +305,11 @@ snap.onclick = async ()=>{
     const res=await fetch(WORKER_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ imageBase64:img, paytable:paytableSelect.value })
+      body:JSON.stringify({
+        imageBase64: img,
+        paytable: paytableSelect.value,
+        mode: modeSelect.value
+      })
     });
 
     const data = await res.json();
@@ -292,7 +318,7 @@ snap.onclick = async ()=>{
     renderMultipliers(data.multipliers);
     renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
     renderCards(data.cards, data.best_hold);
-    explainHold(data.cards, data.best_hold, data.multipliers.bottom);
+    explainHold(data.multipliers.bottom, data.mode);
 
     statusEl.textContent="Done ✅";
   }catch(e){
