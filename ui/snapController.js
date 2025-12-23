@@ -1,12 +1,20 @@
 // ui/snapController.js
-// 🔒 SNAP CONTROLLER — DO NOT SPLIT / DO NOT WRAP
+// 🔒 SNAP CONTROLLER — SINGLE SOURCE OF TRUTH
+// DO NOT add snap.onclick anywhere else
 
 import { captureFromGreenFrame } from "../capture/capture.js";
 
+/* ===============================
+   SINGLETON GUARD
+   =============================== */
 if (window.__SNAP_CONTROLLER_LOADED__) {
   throw new Error("Snap controller loaded twice");
 }
 window.__SNAP_CONTROLLER_LOADED__ = true;
+
+/* ===============================
+   SNAP INITIALIZER
+   =============================== */
 
 export function initSnapController({
   video,
