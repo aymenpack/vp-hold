@@ -295,8 +295,21 @@ snap.onclick = async ()=>{
     statusEl.textContent="Capturing…";
     const img=await captureFromGreenFrameBlob({ video, band, scanner });
 
-    statusEl.textContent="Sending to worker…";
-    const res=await fetch(WORKER_URL,{
+    statusEl.textContent = "Preparing…";
+
+// 👇 yield UI thread (VERY IMPORTANT)
+await new Promise(requestAnimationFrame);
+
+statusEl.textContent = "Sending to worker…";
+const res = await fetch(WORKER_URL, {
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  body: JSON.stringify({
+    imageBase64: img,
+    paytable: paytableSelect.value,
+    mode: modeSelect.value
+  })
+});
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
@@ -319,6 +332,8 @@ snap.onclick = async ()=>{
     statusEl.textContent="Client error";
     debugEl.textContent=e.message||String(e);
   }finally{
+  // 👇 allow browser to settle before next snap
+    await new Promise(r => setTimeout(r, 150));
     snapInProgress=false;
     snap.disabled=false;
   }
