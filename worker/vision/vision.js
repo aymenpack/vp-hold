@@ -1,5 +1,4 @@
-// 🔒 DO NOT MODIFY — VISION IS LOCKED
-
+// vision/vision.js
 import { VISION_PROMPT } from "./prompt.js";
 import { parseVisionResponse } from "./parser.js";
 
