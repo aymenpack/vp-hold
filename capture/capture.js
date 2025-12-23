@@ -1,5 +1,6 @@
 // capture/capture.js
 // 🔒 DO NOT MODIFY — pixel-perfect capture
+// This file is safe for both base64 and ImageBitmap pipelines
 
 export const CAPTURE_CONFIG = {
   FRAME_SCALE: 0.58,
@@ -10,11 +11,20 @@ export const CAPTURE_CONFIG = {
   JPEG_QUALITY: 0.85
 };
 
+/* ===============================
+   FRAME POSITIONING
+   =============================== */
+
 export function positionGreenFrame(scanner, band) {
   const h = scanner.getBoundingClientRect().height * CAPTURE_CONFIG.FRAME_SCALE;
-  band.style.top = (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
+  band.style.top =
+    (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
   band.style.height = h + "px";
 }
+
+/* ===============================
+   BASE64 CAPTURE (LEGACY / SAFE)
+   =============================== */
 
 export async function captureFromGreenFrame({
   video,
@@ -59,16 +69,23 @@ export async function captureFromGreenFrame({
 
   const out = document.createElement("canvas");
   out.width = CAPTURE_CONFIG.OUTPUT_WIDTH;
-  out.height = Math.floor(cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW));
-  out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
+  out.height = Math.floor(
+    cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW)
+  );
+  out.getContext("2d").drawImage(
+    raw,
+    0, 0,
+    out.width, out.height
+  );
 
   return out.toDataURL("image/jpeg", CAPTURE_CONFIG.JPEG_QUALITY);
 }
 
-// 🔒 SAFE CAPTURE — BLOB VERSION
-// Uses toBlob() to avoid large JS string allocations
+/* ===============================
+   IMAGEBITMAP CAPTURE (WORKER SAFE)
+   =============================== */
 
-export async function captureFromGreenFrameBlob({
+export async function captureBitmapFromGreenFrame({
   video,
   band,
   scanner
@@ -111,22 +128,16 @@ export async function captureFromGreenFrameBlob({
 
   const out = document.createElement("canvas");
   out.width = CAPTURE_CONFIG.OUTPUT_WIDTH;
-  out.height = Math.floor(cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW));
-  out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
-
-  // ✅ CRITICAL DIFFERENCE: toBlob instead of toDataURL
-  const blob = await new Promise(resolve =>
-    out.toBlob(resolve, "image/jpeg", CAPTURE_CONFIG.JPEG_QUALITY)
+  out.height = Math.floor(
+    cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW)
+  );
+  out.getContext("2d").drawImage(
+    raw,
+    0, 0,
+    out.width, out.height
   );
 
-  if (!blob) throw new Error("Failed to create image blob");
-
-  // Convert Blob → base64 data URL (small, controlled allocation)
-  const base64 = await new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
-
-  return base64;
+  // ✅ CRITICAL: return ImageBitmap (transferable, no giant strings)
+  const bitmap = await createImageBitmap(out);
+  return bitmap;
 }
