@@ -36,7 +36,6 @@ button{
 }
 button:disabled{opacity:.6;cursor:not-allowed}
 
-/* MULTIPLIERS */
 .multipliers{
   display:flex;
   gap:12px;
@@ -53,7 +52,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .mult .label{font-size:12px;color:#9ca3af}
 .mult .value{font-size:22px;font-weight:900;margin-top:6px}
 
-/* EV */
 .ev-compare{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -75,7 +73,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
 }
 .ev-box.ux .value{ color:#22c55e; }
 
-/* REAL CARDS */
 .cards{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -98,21 +95,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
   transform:translateY(-10px);
   box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6)
 }
-.card.held::after{
-  content:"HOLD";
-  position:absolute;
-  top:-10px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#22c55e;
-  color:#000;
-  font-size:11px;
-  font-weight:900;
-  padding:4px 10px;
-  border-radius:999px;
-}
 
-/* WHY */
 #whyBox{
   margin-top:16px;
   padding:16px;
@@ -120,8 +103,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
   background:#020617;
   border:1px solid #333;
 }
-#whyTitle{font-size:14px;font-weight:900;color:#22c55e}
-#whyText{margin-top:8px;font-size:14px;color:#e5e7eb;line-height:1.4}
+#whyText{margin-top:8px;font-size:14px;color:#e5e7eb}
 
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{
@@ -142,62 +124,24 @@ button:disabled{opacity:.6;cursor:not-allowed}
 <body>
 <div class="app">
   <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Wizard-style EV comparison</div>
+  <div class="subtitle">Stable snap + fetch pipeline</div>
 
-  <!-- CAMERA -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
-  <!-- PAYTABLE -->
-  <div style="margin-top:16px">
-    <label style="font-size:13px;color:#9ca3af">Paytable</label>
-    <select id="paytableSelect" style="
-      width:100%;
-      margin-top:6px;
-      padding:12px;
-      border-radius:12px;
-      background:#020617;
-      color:#fff;
-      border:1px solid #333;
-      font-size:14px
-    ">
-      <option value="DDB_9_6">Double Double Bonus 9/6</option>
-    </select>
-  </div>
-
-  <!-- MODE -->
-  <div style="margin-top:14px">
-    <label style="font-size:13px;color:#9ca3af">Play Style</label>
-    <select id="modeSelect" style="
-      width:100%;
-      margin-top:6px;
-      padding:12px;
-      border-radius:12px;
-      background:#020617;
-      color:#fff;
-      border:1px solid #333;
-      font-size:14px
-    ">
-      <option value="conservative">Conservative (lock value)</option>
-      <option value="aggressive">Aggressive (chase multipliers)</option>
-    </select>
-  </div>
-
   <button id="snap">SNAP</button>
 
-  <!-- MULTIPLIERS -->
   <div class="multipliers">
     <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
     <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
     <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
   </div>
 
-  <!-- EV COMPARISON -->
   <div class="ev-compare">
     <div class="ev-box">
-      <div class="label">Base EV (no multiplier)</div>
+      <div class="label">Base EV</div>
       <div class="value" id="evBase">—</div>
     </div>
     <div class="ev-box ux">
@@ -206,12 +150,9 @@ button:disabled{opacity:.6;cursor:not-allowed}
     </div>
   </div>
 
-  <!-- CARDS -->
   <div class="cards" id="cardsBox"></div>
 
-  <!-- WHY -->
   <div id="whyBox">
-    <div id="whyTitle">Why this hold?</div>
     <div id="whyText"></div>
   </div>
 
@@ -221,7 +162,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
 <script type="module">
 import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
-import { callWorkerJSON } from "./net/workerClient.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
@@ -229,8 +169,6 @@ const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snap = document.getElementById("snap");
-const paytableSelect = document.getElementById("paytableSelect");
-const modeSelect = document.getElementById("modeSelect");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
@@ -240,113 +178,98 @@ const multBot = document.getElementById("multBot");
 
 const evBaseEl = document.getElementById("evBase");
 const evUXEl = document.getElementById("evUX");
-
 const cardsBox = document.getElementById("cardsBox");
 const whyText = document.getElementById("whyText");
 
 let snapInProgress = false;
 
-function renderMultipliers(m){
-  multTop.textContent = "×" + m.top;
-  multMid.textContent = "×" + m.middle;
-  multBot.textContent = "×" + m.bottom;
-}
-
-function renderEVs(evBase, evUX){
-  evBaseEl.textContent = Number(evBase).toFixed(4);
-  evUXEl.textContent = Number(evUX).toFixed(4);
-}
-
-function renderCards(cards, bestHold){
-  cardsBox.innerHTML = "";
-  const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
-  cards.forEach((c,i)=>{
-    const el=document.createElement("div");
-    el.className="card";
-    if(bestHold[i]) el.classList.add("held");
-    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank ?? "?"}</div><div class="suit">${SUIT[c.suit] ?? "?"}</div>`;
-    cardsBox.appendChild(el);
-  });
-}
-
-function explainHold(multiplier, mode){
-  if(mode === "aggressive"){
-    whyText.textContent = "Aggressive mode prefers draw potential and multiplier growth, accepting higher variance.";
-    return;
-  }
-  if(multiplier >= 4){
-    whyText.textContent = "Conservative mode locks value when possible, but still respects strong Ultimate X multipliers.";
-    return;
-  }
-  whyText.textContent = "Conservative mode prefers lower-variance holds while maximizing expected value.";
-}
-
-/* CAMERA */
+/* CAMERA INIT */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
-  video.srcObject=stream;
-  statusEl.textContent="Camera ready — align machine";
+  video.srcObject = stream;
+  statusEl.textContent = "Camera ready";
   requestAnimationFrame(()=>positionGreenFrame(scanner, band));
-})
-.catch(err=>{
-  statusEl.textContent="Camera error";
-  debugEl.textContent = err?.message || String(err);
 });
 
 /* SNAP */
-snap.onclick = async ()=>{
-  if(snapInProgress) return;
-  snapInProgress=true;
-  snap.disabled=true;
+snap.onclick = async () => {
+  if (snapInProgress) return;
+  snapInProgress = true;
+  snap.disabled = true;
 
-  let img = null;
+  let payload = null;
 
-  try{
-    statusEl.textContent="Capturing…";
-    img = await captureFromGreenFrame({video,band,scanner});
+  try {
+    statusEl.textContent = "Capturing…";
 
-    statusEl.textContent="Sending to worker…";
-    const parsed = await callWorkerJSON(
-      WORKER_URL,
+    // 1) Capture
+    const rawImg = await captureFromGreenFrame({ video, band, scanner });
+
+    // 2) Clone base64 string (CRITICAL)
+    const img = (" " + rawImg).slice(1);
+    rawImg.length = 0;
+
+    // 3) Build payload
+    statusEl.textContent = "Sending to worker…";
+    payload = { imageBase64: img };
+
+    // 4) Fetch (no reuse issues now)
+    const res = await fetch(
+      WORKER_URL + "?req=" + crypto.randomUUID(),
       {
-        imageBase64: img,
-        paytable: paytableSelect.value,
-        mode: modeSelect.value
-      },
-      { timeoutMs: 45000, retries: 2 }
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        keepalive: false
+      }
     );
 
-    // Free big string ASAP (helps Safari/Chrome memory behavior)
-    img = null;
+    const text = await res.text();
+    payload.imageBase64 = "";
+    payload = null;
 
-    debugEl.textContent = parsed.data
-      ? JSON.stringify(parsed.data, null, 2)
-      : `HTTP ${parsed.status || 0}\n\n${parsed.raw?.slice(0, 2000)}`;
-
-    if(!parsed.ok || !parsed.data){
-      statusEl.textContent = parsed.status
-        ? `Worker error (HTTP ${parsed.status})`
-        : "Network error (load failed)";
+    if (!res.ok) {
+      statusEl.textContent = "Worker error";
+      debugEl.textContent = text;
       return;
     }
 
-    const data = parsed.data;
+    const data = JSON.parse(text);
+    debugEl.textContent = JSON.stringify(data, null, 2);
 
-    renderMultipliers(data.multipliers);
-    renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
-    renderCards(data.cards, data.best_hold);
-    explainHold(data.multipliers.bottom, data.mode);
+    multTop.textContent = "×" + data.multipliers.top;
+    multMid.textContent = "×" + data.multipliers.middle;
+    multBot.textContent = "×" + data.multipliers.bottom;
 
-    statusEl.textContent="Done ✅";
-  }catch(e){
-    statusEl.textContent="Client error";
-    debugEl.textContent = (e?.message || String(e)) + (e?.stack ? "\n\n" + e.stack : "");
-  }finally{
-    // ensure we always release
-    img = null;
-    snapInProgress=false;
-    snap.disabled=false;
+    evBaseEl.textContent = Number(data.ev_without_multiplier).toFixed(4);
+    evUXEl.textContent = Number(data.ev_with_multiplier).toFixed(4);
+
+    cardsBox.innerHTML = "";
+    const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
+    data.cards.forEach((c,i)=>{
+      const el = document.createElement("div");
+      el.className = "card";
+      if (data.best_hold[i]) el.classList.add("held");
+      if (c.suit==="H"||c.suit==="D") el.classList.add("red");
+      el.innerHTML =
+        `<div class="rank">${c.rank}</div>
+         <div class="suit">${SUIT[c.suit]}</div>`;
+      cardsBox.appendChild(el);
+    });
+
+    whyText.textContent = "Hold selected using stable Ultimate X EV.";
+
+    statusEl.textContent = "Done ✅";
+
+  } catch (e) {
+    statusEl.textContent = "Client error";
+    debugEl.textContent = e?.message || String(e);
+  } finally {
+    if (payload?.imageBase64) payload.imageBase64 = "";
+    payload = null;
+    snapInProgress = false;
+    snap.disabled = false;
   }
 };
 </script>
