@@ -36,6 +36,7 @@ button{
 }
 button:disabled{opacity:.6;cursor:not-allowed}
 
+/* MULTIPLIERS */
 .multipliers{
   display:flex;
   gap:12px;
@@ -52,6 +53,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .mult .label{font-size:12px;color:#9ca3af}
 .mult .value{font-size:22px;font-weight:900;margin-top:6px}
 
+/* EV */
 .ev-compare{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -73,6 +75,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 }
 .ev-box.ux .value{ color:#22c55e; }
 
+/* REAL CARDS */
 .cards{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -238,11 +241,11 @@ function renderCards(cards, bestHold){
   cardsBox.innerHTML = "";
   const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
   cards.forEach((c,i)=>{
-    const el = document.createElement("div");
-    el.className = "card";
-    if (bestHold[i]) el.classList.add("held");
-    if (c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML = `<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
+    const el=document.createElement("div");
+    el.className="card";
+    if(bestHold[i]) el.classList.add("held");
+    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
+    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
     cardsBox.appendChild(el);
   });
 }
@@ -253,15 +256,15 @@ function explainHold(multiplier, mode){
       : "Maximizing expected value with lower variance.";
 }
 
-/* camera */
+/* camera init */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
-  video.srcObject = stream;
-  statusEl.textContent = "Camera ready — align machine";
+  video.srcObject=stream;
+  statusEl.textContent="Camera ready — align machine";
   requestAnimationFrame(()=>positionGreenFrame(scanner, band));
 });
 
-/* snap init */
+/* snap init — ONLY PLACE */
 initSnapController({
   video,
   band,
