@@ -205,7 +205,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
 import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-const BASE_EV = 0.9861; // Wizard DDB 9/6
 
 const video = document.getElementById("video");
 const band = document.getElementById("band");
@@ -227,14 +226,15 @@ const whyText = document.getElementById("whyText");
 
 let snapInProgress = false;
 
+/* RENDERING */
+
 function renderMultipliers(m){
   multTop.textContent = "×" + m.top;
   multMid.textContent = "×" + m.middle;
   multBot.textContent = "×" + m.bottom;
 }
 
-function renderEVs(evUX, multiplier){
-  const evBase = evUX - (multiplier * BASE_EV);
+function renderEVs(evBase, evUX){
   evBaseEl.textContent = evBase.toFixed(4);
   evUXEl.textContent = evUX.toFixed(4);
 }
@@ -252,16 +252,14 @@ function renderCards(cards, bestHold){
   });
 }
 
-function explainHold(cards, bestHold){
-  const held = cards.filter((_,i)=>bestHold[i]);
-  const counts = {};
-  held.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
-  const vals = Object.values(counts);
-  if(vals.includes(4)) whyText.textContent="Four of a kind maximizes EV in Double Double Bonus.";
-  else if(vals.filter(v=>v===2).length===2) whyText.textContent="Holding both pairs preserves strong full house and quad outs.";
-  else if(vals.includes(3)) whyText.textContent="Trips keep full house and quad possibilities.";
-  else if(vals.includes(2)) whyText.textContent="Holding the pair maximizes expected value.";
-  else whyText.textContent="This draw has the highest expected value.";
+function explainHold(cards, bestHold, multiplier){
+  if(multiplier >= 4){
+    whyText.textContent =
+      "With a high Ultimate X multiplier, this hold maximizes future value by chasing strong paying hands.";
+    return;
+  }
+  whyText.textContent =
+    "This hold produces the highest expected value based on payout odds.";
 }
 
 /* CAMERA */
@@ -288,14 +286,13 @@ snap.onclick = async ()=>{
       body:JSON.stringify({ imageBase64:img, paytable:paytableSelect.value })
     });
 
-    const raw=await res.text();
-    const data=JSON.parse(raw);
-    debugEl.textContent=JSON.stringify(data,null,2);
+    const data = await res.json();
+    debugEl.textContent = JSON.stringify(data,null,2);
 
     renderMultipliers(data.multipliers);
-    renderEVs(data.ev_best, data.multipliers.bottom);
+    renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
     renderCards(data.cards, data.best_hold);
-    explainHold(data.cards, data.best_hold);
+    explainHold(data.cards, data.best_hold, data.multipliers.bottom);
 
     statusEl.textContent="Done ✅";
   }catch(e){
