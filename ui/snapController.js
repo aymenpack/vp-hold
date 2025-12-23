@@ -1,20 +1,12 @@
 // ui/snapController.js
 // 🔒 SNAP CONTROLLER — DO NOT SPLIT / DO NOT WRAP
-// This module MUST be imported exactly once.
 
 import { captureFromGreenFrame } from "../capture/capture.js";
 
-/* ===============================
-   SINGLETON GUARD
-   =============================== */
 if (window.__SNAP_CONTROLLER_LOADED__) {
   throw new Error("Snap controller loaded twice");
 }
 window.__SNAP_CONTROLLER_LOADED__ = true;
-
-/* ===============================
-   SNAP INITIALIZER
-   =============================== */
 
 export function initSnapController({
   video,
