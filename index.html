@@ -4,94 +4,26 @@ import { initSnapController } from "./ui/snapController.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* ===============================
-   DOM REFERENCES
-   =============================== */
-
+/* DOM refs */
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snapButton = document.getElementById("snap");
-
 const paytableSelect = document.getElementById("paytableSelect");
 const modeSelect = document.getElementById("modeSelect");
-
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
-const multTop = document.getElementById("multTop");
-const multMid = document.getElementById("multMid");
-const multBot = document.getElementById("multBot");
+/* render helpers here ... */
 
-const evBaseEl = document.getElementById("evBase");
-const evUXEl = document.getElementById("evUX");
-
-const cardsBox = document.getElementById("cardsBox");
-const whyText = document.getElementById("whyText");
-
-/* ===============================
-   RENDER HELPERS (PURE)
-   =============================== */
-
-function renderMultipliers(m) {
-  multTop.textContent = "×" + m.top;
-  multMid.textContent = "×" + m.middle;
-  multBot.textContent = "×" + m.bottom;
-}
-
-function renderEVs(evBase, evUX) {
-  evBaseEl.textContent = Number(evBase).toFixed(4);
-  evUXEl.textContent = Number(evUX).toFixed(4);
-}
-
-function renderCards(cards, bestHold) {
-  cardsBox.innerHTML = "";
-  const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
-  cards.forEach((c, i) => {
-    const el = document.createElement("div");
-    el.className = "card";
-    if (bestHold[i]) el.classList.add("held");
-    if (c.suit === "H" || c.suit === "D") el.classList.add("red");
-    el.innerHTML =
-      `<div class="rank">${c.rank}</div>
-       <div class="suit">${SUIT[c.suit]}</div>`;
-    cardsBox.appendChild(el);
-  });
-}
-
-function explainHold(multiplier, mode) {
-  if (mode === "aggressive") {
-    whyText.textContent =
-      "Aggressive mode prioritizes multiplier growth.";
-    return;
-  }
-  if (multiplier >= 4) {
-    whyText.textContent =
-      "High multiplier — favoring future value.";
-    return;
-  }
-  whyText.textContent =
-    "Maximizing expected value with lower variance.";
-}
-
-/* ===============================
-   CAMERA INIT
-   =============================== */
-
-navigator.mediaDevices.getUserMedia({
-  video: { facingMode: "environment" }
-}).then(stream => {
+/* camera init */
+navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
+.then(stream=>{
   video.srcObject = stream;
-  statusEl.textContent = "Camera ready — align machine";
-  requestAnimationFrame(() =>
-    positionGreenFrame(scanner, band)
-  );
+  requestAnimationFrame(()=>positionGreenFrame(scanner, band));
 });
 
-/* ===============================
-   SNAP INIT (ONCE)
-   =============================== */
-
+/* snap init ONCE */
 initSnapController({
   video,
   band,
