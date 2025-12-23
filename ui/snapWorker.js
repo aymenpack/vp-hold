@@ -1,8 +1,5 @@
 // ui/snapWorker.js
-// 🔒 Worker owns: JPEG encoding + base64 + fetch
-// FINAL version — stable for repeated snaps
-
-const DEFAULT_TIMEOUT_MS = 45000;
+// 🔒 One-shot worker: encode + fetch once, then die
 
 function arrayBufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer);
@@ -14,38 +11,14 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
-function withReqId(url) {
-  const sep = url.includes("?") ? "&" : "?";
-  return url + sep + "req=" + Date.now() + "-" + Math.random().toString(16).slice(2);
-}
-
-async function fetchWithTimeout(url, options, timeoutMs = DEFAULT_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await self.fetch(url, {
-      ...options,
-      mode: "cors",
-      cache: "no-store",
-      keepalive: false,
-      signal: controller.signal
-    });
-  } finally {
-    clearTimeout(t);
-  }
-}
-
 self.onmessage = async (evt) => {
-  const { id, bitmap, workerUrl, paytable, mode, jpegQuality = 0.85 } = evt.data;
+  const { bitmap, workerUrl, paytable, mode, jpegQuality = 0.85 } = evt.data;
 
   try {
-    // 1) Encode ImageBitmap -> JPEG
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     const ctx = canvas.getContext("2d");
     ctx.drawImage(bitmap, 0, 0);
-
-    if (bitmap.close) bitmap.close();
+    bitmap.close?.();
 
     const blob = await canvas.convertToBlob({
       type: "image/jpeg",
@@ -54,41 +27,25 @@ self.onmessage = async (evt) => {
 
     const ab = await blob.arrayBuffer();
     const base64 = arrayBufferToBase64(ab);
-    const imageBase64 = `data:image/jpeg;base64,${base64}`;
 
-    // 2) POST JSON to Cloudflare Worker
-    const res = await fetchWithTimeout(
-      withReqId(workerUrl), // 👈 CRITICAL
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64,
-          paytable,
-          mode
-        })
-      },
-      DEFAULT_TIMEOUT_MS
-    );
+    const res = await fetch(workerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageBase64: `data:image/jpeg;base64,${base64}`,
+        paytable,
+        mode
+      })
+    });
 
     const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch {}
+    const data = JSON.parse(text);
 
-    self.postMessage({
-      id,
-      ok: res.ok && !!data,
-      status: res.status,
-      data,
-      raw: data ? null : text.slice(0, 2000)
-    });
+    self.postMessage({ ok: true, data });
   } catch (err) {
     self.postMessage({
-      id,
       ok: false,
-      status: 0,
-      data: null,
-      raw: `Worker fetch error: ${err?.message || String(err)}`
+      error: err?.message || String(err)
     });
   }
 };
