@@ -1,5 +1,6 @@
 // strategy/ev.js
 // Correct Ultimate X EV engine (Wizard-of-Odds aligned)
+// + Aggressive vs Conservative selection mode
 
 import { evaluateHand } from "./handEvaluator.js";
 
@@ -7,7 +8,7 @@ import { evaluateHand } from "./handEvaluator.js";
    CONSTANTS
    =============================== */
 
-// Long-run base EV per hand (Wizard of Odds, DDB 9/6)
+// Long-run base EV per hand (Wizard of Odds)
 const BASE_EV = {
   DDB_9_6: 0.9861
 };
@@ -61,7 +62,7 @@ function combinations(arr, k, fn) {
    ULTIMATE X HELPERS
    =============================== */
 
-// Hands that propagate future value in Ultimate X
+// Hands that propagate future value
 function qualifiesForUltimateX(result) {
   return [
     "jacks_or_better",
@@ -77,11 +78,12 @@ function qualifiesForUltimateX(result) {
 }
 
 /* ===============================
-   PAYOUT
+   PAYOUT EVALUATION
    =============================== */
 
 function evaluatePayout(cards, paytable, multiplier, baseEV) {
   const result = evaluateHand(cards);
+
   if (!result || !result.payout) {
     return { cash: 0, future: 0 };
   }
@@ -93,7 +95,7 @@ function evaluatePayout(cards, paytable, multiplier, baseEV) {
 }
 
 /* ===============================
-   EV FOR ONE HOLD (Ultimate X)
+   EV FOR ONE HOLD
    =============================== */
 
 function evForHold(hand, holdMask, paytable, multiplier, baseEV) {
@@ -105,29 +107,25 @@ function evForHold(hand, holdMask, paytable, multiplier, baseEV) {
   let totalFuture = 0;
   let count = 0;
 
+  // No draw
   if (drawCount === 0) {
     const r = evaluatePayout(held, paytable, multiplier, baseEV);
     return {
-      evUX: r.cash + r.future,
-      evBase: r.cash / multiplier // normalize back to base
+      ev_with_multiplier: r.cash + r.future,
+      ev_without_multiplier: r.cash / multiplier
     };
   }
 
-  // Exact enumeration for small draws
+  // Exact enumeration
   if (drawCount <= 2) {
     combinations(deck, drawCount, draw => {
-      const r = evaluatePayout(
-        held.concat(draw),
-        paytable,
-        multiplier,
-        baseEV
-      );
+      const r = evaluatePayout(held.concat(draw), paytable, multiplier, baseEV);
       totalCash += r.cash;
       totalFuture += r.future;
       count++;
     });
   } else {
-    // Monte Carlo for speed
+    // Monte Carlo
     const SAMPLES =
       drawCount === 3 ? 20000 :
       drawCount === 4 ? 15000 :
@@ -155,8 +153,8 @@ function evForHold(hand, holdMask, paytable, multiplier, baseEV) {
   }
 
   return {
-    evUX: (totalCash + totalFuture) / count,
-    evBase: (totalCash / multiplier) / count
+    ev_with_multiplier: (totalCash + totalFuture) / count,
+    ev_without_multiplier: (totalCash / multiplier) / count
   };
 }
 
@@ -168,35 +166,54 @@ export function bestHoldEV(
   hand,
   paytable,
   multiplier = 1,
-  paytableKey = "DDB_9_6"
+  paytableKey = "DDB_9_6",
+  mode = "conservative" // "conservative" | "aggressive"
 ) {
   const baseEV = BASE_EV[paytableKey] ?? 0;
 
-  let bestUX = -Infinity;
-  let bestBase = -Infinity;
-  let bestMask = null;
+  const candidates = [];
 
   for (let mask = 0; mask < 32; mask++) {
     const holdMask = [0,1,2,3,4].map(i => Boolean(mask & (1 << i)));
 
-    const { evUX, evBase } = evForHold(
-      hand,
-      holdMask,
-      paytable,
-      multiplier,
-      baseEV
-    );
+    const { ev_with_multiplier, ev_without_multiplier } =
+      evForHold(hand, holdMask, paytable, multiplier, baseEV);
 
-    if (evUX > bestUX) {
-      bestUX = evUX;
-      bestBase = evBase;
-      bestMask = holdMask;
-    }
+    candidates.push({
+      holdMask,
+      evUX: ev_with_multiplier,
+      evBase: ev_without_multiplier,
+      heldCount: holdMask.filter(Boolean).length
+    });
+  }
+
+  // Best by UX EV
+  candidates.sort((a,b)=>b.evUX - a.evUX);
+  const bestEV = candidates[0].evUX;
+
+  // How close to best EV we allow:
+  // - aggressive: allow more “near-best” holds, then pick the one with more draw potential (fewer held cards)
+  // - conservative: stricter, then pick the one that locks value (more held cards)
+  const threshold =
+    mode === "aggressive"
+      ? bestEV * 0.97
+      : bestEV * 0.995;
+
+  const viable = candidates.filter(c => c.evUX >= threshold);
+
+  let chosen;
+  if (mode === "aggressive") {
+    viable.sort((a,b)=>a.heldCount - b.heldCount || b.evUX - a.evUX);
+    chosen = viable[0];
+  } else {
+    viable.sort((a,b)=>b.heldCount - a.heldCount || b.evUX - a.evUX);
+    chosen = viable[0];
   }
 
   return {
-    best_hold: bestMask,
-    ev_with_multiplier: Number(bestUX.toFixed(6)),
-    ev_without_multiplier: Number(bestBase.toFixed(6))
+    best_hold: chosen.holdMask,
+    ev_with_multiplier: Number(chosen.evUX.toFixed(6)),
+    ev_without_multiplier: Number(chosen.evBase.toFixed(6)),
+    mode
   };
 }
