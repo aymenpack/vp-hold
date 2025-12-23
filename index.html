@@ -220,7 +220,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </div>
 
 <script type="module">
-import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
+import { positionGreenFrame } from "./capture/capture.js";
+import { safeSnap } from "./capture/safeSnap.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 const REQUEST_TIMEOUT_MS = 45000;
@@ -322,7 +323,7 @@ snap.onclick = async ()=>{
 
   try{
     statusEl.textContent="Capturing…";
-    const img=await captureFromGreenFrame({video,band,scanner});
+    const img = await safeSnap({ video, band, scanner });
 
     statusEl.textContent="Sending to worker…";
     const res = await fetchWithTimeout(
