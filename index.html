@@ -220,11 +220,10 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </div>
 
 <script type="module">
-import { positionGreenFrame } from "./capture/capture.js";
-import { safeSnap } from "./capture/safeSnap.js";
+import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
+import { callWorkerJSON } from "./net/workerClient.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
-const REQUEST_TIMEOUT_MS = 45000;
 
 const video = document.getElementById("video");
 const band = document.getElementById("band");
@@ -283,26 +282,6 @@ function explainHold(multiplier, mode){
   whyText.textContent = "Conservative mode prefers lower-variance holds while maximizing expected value.";
 }
 
-async function fetchWithTimeout(url, options, timeoutMs){
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), timeoutMs);
-  try{
-    const res = await fetch(url, { ...options, signal: controller.signal, cache: "no-store" });
-    return res;
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-async function readJsonOrText(res){
-  const text = await res.text();
-  try{
-    return { ok: res.ok, status: res.status, data: JSON.parse(text), raw: text };
-  }catch{
-    return { ok: res.ok, status: res.status, data: null, raw: text };
-  }
-}
-
 /* CAMERA */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
@@ -321,34 +300,34 @@ snap.onclick = async ()=>{
   snapInProgress=true;
   snap.disabled=true;
 
+  let img = null;
+
   try{
     statusEl.textContent="Capturing…";
-    const img = await safeSnap({ video, band, scanner });
+    img = await captureFromGreenFrame({video,band,scanner});
 
     statusEl.textContent="Sending to worker…";
-    const res = await fetchWithTimeout(
+    const parsed = await callWorkerJSON(
       WORKER_URL,
       {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
-          imageBase64: img,
-          paytable: paytableSelect.value,
-          mode: modeSelect.value
-        })
+        imageBase64: img,
+        paytable: paytableSelect.value,
+        mode: modeSelect.value
       },
-      REQUEST_TIMEOUT_MS
+      { timeoutMs: 45000, retries: 2 }
     );
 
-    const parsed = await readJsonOrText(res);
+    // Free big string ASAP (helps Safari/Chrome memory behavior)
+    img = null;
 
-    // Always show something useful
     debugEl.textContent = parsed.data
       ? JSON.stringify(parsed.data, null, 2)
-      : `HTTP ${parsed.status}\n\nNon-JSON response:\n${parsed.raw.slice(0, 2000)}`;
+      : `HTTP ${parsed.status || 0}\n\n${parsed.raw?.slice(0, 2000)}`;
 
     if(!parsed.ok || !parsed.data){
-      statusEl.textContent = `Worker error (HTTP ${parsed.status})`;
+      statusEl.textContent = parsed.status
+        ? `Worker error (HTTP ${parsed.status})`
+        : "Network error (load failed)";
       return;
     }
 
@@ -361,14 +340,11 @@ snap.onclick = async ()=>{
 
     statusEl.textContent="Done ✅";
   }catch(e){
-    const msg =
-      e?.name === "AbortError"
-        ? `Timeout after ${REQUEST_TIMEOUT_MS/1000}s`
-        : (e?.message || String(e));
-
     statusEl.textContent="Client error";
-    debugEl.textContent = msg + (e?.stack ? "\n\n" + e.stack : "");
+    debugEl.textContent = (e?.message || String(e)) + (e?.stack ? "\n\n" + e.stack : "");
   }finally{
+    // ensure we always release
+    img = null;
     snapInProgress=false;
     snap.disabled=false;
   }
