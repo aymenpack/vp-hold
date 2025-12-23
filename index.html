@@ -75,7 +75,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 }
 .ev-box.ux .value{ color:#22c55e; }
 
-/* REAL CARDS */
+/* CARDS */
 .cards{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -96,9 +96,24 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .card.red{color:#c1121f}
 .card.held{
   transform:translateY(-10px);
-  box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6)
+  box-shadow:0 0 0 3px #22c55e,
+             0 18px 35px rgba(34,197,94,.6);
+}
+.card.held::after{
+  content:"HOLD";
+  position:absolute;
+  top:-10px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#22c55e;
+  color:#000;
+  font-size:11px;
+  font-weight:900;
+  padding:4px 10px;
+  border-radius:999px;
 }
 
+/* WHY */
 #whyBox{
   margin-top:16px;
   padding:16px;
@@ -106,7 +121,8 @@ button:disabled{opacity:.6;cursor:not-allowed}
   background:#020617;
   border:1px solid #333;
 }
-#whyText{margin-top:8px;font-size:14px;color:#e5e7eb}
+#whyTitle{font-size:14px;font-weight:900;color:#22c55e}
+#whyText{margin-top:8px;font-size:14px;color:#e5e7eb;line-height:1.4}
 
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{
@@ -196,6 +212,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
   <!-- WHY -->
   <div id="whyBox">
+    <div id="whyTitle">Why this hold?</div>
     <div id="whyText"></div>
   </div>
 
@@ -204,16 +221,14 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </div>
 
 <script type="module">
-import { positionGreenFrame } from "./capture/capture.js";
-import { initSnapController } from "./ui/snapController.js";
+import { positionGreenFrame, captureFromGreenFrame } from "./capture/capture.js";
 
 const WORKER_URL = "https://vp-hold.azimaymen.workers.dev";
 
-/* DOM refs */
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
-const snapButton = document.getElementById("snap");
+const snap = document.getElementById("snap");
 const paytableSelect = document.getElementById("paytableSelect");
 const modeSelect = document.getElementById("modeSelect");
 const statusEl = document.getElementById("status");
@@ -227,7 +242,9 @@ const evUXEl = document.getElementById("evUX");
 const cardsBox = document.getElementById("cardsBox");
 const whyText = document.getElementById("whyText");
 
-/* render helpers */
+let snapInProgress = false;
+
+/* RENDER HELPERS */
 function renderMultipliers(m){
   multTop.textContent = "×" + m.top;
   multMid.textContent = "×" + m.middle;
@@ -245,7 +262,8 @@ function renderCards(cards, bestHold){
     el.className="card";
     if(bestHold[i]) el.classList.add("held");
     if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
+    el.innerHTML=`<div class="rank">${c.rank}</div>
+                  <div class="suit">${SUIT[c.suit]}</div>`;
     cardsBox.appendChild(el);
   });
 }
@@ -256,7 +274,7 @@ function explainHold(multiplier, mode){
       : "Maximizing expected value with lower variance.";
 }
 
-/* camera init */
+/* CAMERA INIT */
 navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 .then(stream=>{
   video.srcObject=stream;
@@ -264,22 +282,44 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
   requestAnimationFrame(()=>positionGreenFrame(scanner, band));
 });
 
-/* snap init — ONLY PLACE */
-initSnapController({
-  video,
-  band,
-  scanner,
-  snapButton,
-  workerUrl: WORKER_URL,
-  paytableSelect,
-  modeSelect,
-  statusEl,
-  debugEl,
-  renderMultipliers,
-  renderEVs,
-  renderCards,
-  explainHold
-});
+/* SNAP — INLINE & STABLE */
+snap.onclick = async ()=>{
+  if(snapInProgress) return;
+  snapInProgress=true;
+  snap.disabled=true;
+
+  try{
+    statusEl.textContent="Capturing…";
+    const img=await captureFromGreenFrame({video,band,scanner});
+
+    statusEl.textContent="Sending to worker…";
+    const res=await fetch(WORKER_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
+        imageBase64: img,
+        paytable: paytableSelect.value,
+        mode: modeSelect.value
+      })
+    });
+
+    const data=await res.json();
+    debugEl.textContent=JSON.stringify(data,null,2);
+
+    renderMultipliers(data.multipliers);
+    renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
+    renderCards(data.cards, data.best_hold);
+    explainHold(data.multipliers.bottom, data.mode);
+
+    statusEl.textContent="Done ✅";
+  }catch(e){
+    statusEl.textContent="Client error";
+    debugEl.textContent=e.message||String(e);
+  }finally{
+    snapInProgress=false;
+    snap.disabled=false;
+  }
+};
 </script>
 </body>
 </html>
