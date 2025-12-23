@@ -4,15 +4,33 @@ import fetch from "node-fetch";
 
 import { bestHoldEV } from "../strategy/ev.js";
 import { PAYTABLES } from "../strategy/paytables.js";
-import { runVision } from "../vision/vision.js";
 import { parseVisionResponse } from "../vision/parser.js";
 import { VISION_PROMPT } from "../vision/prompt.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/* ===============================
+   MIDDLEWARE
+   =============================== */
+
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
+
+// 🔍 LOG EVERY REQUEST (helps debug routing issues)
+app.use((req, res, next) => {
+  console.log(`➡️ ${req.method} ${req.url}`);
+  next();
+});
+
+/* ===============================
+   CORS PREFLIGHT (CRITICAL)
+   =============================== */
+
+// Explicitly handle OPTIONS so we NEVER return HTML
+app.options("/analyze", (req, res) => {
+  res.status(200).json({ ok: true });
+});
 
 /* ===============================
    ANALYZE ENDPOINT
@@ -40,7 +58,7 @@ app.post("/analyze", async (req, res) => {
     }
 
     /* ===============================
-       OPENAI VISION (SAFE)
+       OPENAI VISION (SAFE PARSING)
        =============================== */
 
     const openaiRes = await fetch(
@@ -68,7 +86,6 @@ app.post("/analyze", async (req, res) => {
       }
     );
 
-    // --- SAFE READ ---
     const rawText = await openaiRes.text();
 
     if (!rawText || !rawText.trim()) {
@@ -80,7 +97,7 @@ app.post("/analyze", async (req, res) => {
       openaiJson = JSON.parse(rawText);
     } catch {
       throw new Error(
-        "OpenAI JSON parse failed:\n" + rawText.slice(0, 500)
+        "OpenAI returned non-JSON:\n" + rawText.slice(0, 500)
       );
     }
 
@@ -138,12 +155,23 @@ app.post("/analyze", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Analyze error:", err);
-
     return res.status(500).json({
       error: "Server error",
       message: err.message
     });
   }
+});
+
+/* ===============================
+   JSON 404 HANDLER (NEVER HTML)
+   =============================== */
+
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Not found",
+    method: req.method,
+    path: req.path
+  });
 });
 
 /* ===============================
