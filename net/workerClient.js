@@ -13,9 +13,12 @@ async function fetchWithTimeout(url, options, timeoutMs) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
 
+  // 🔒 FORCE A NEW CONNECTION PER REQUEST
+  const uniqueUrl =
+    url + (url.includes("?") ? "&" : "?") + "req=" + crypto.randomUUID();
+
   try {
-    // keepalive:false prevents some browsers from trying to keep connections around
-    const res = await fetch(url, {
+    const res = await fetch(uniqueUrl, {
       ...options,
       signal: controller.signal,
       cache: "no-store",
