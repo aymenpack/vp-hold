@@ -1,80 +1,162 @@
-// ui/snapWorker.js
-// One-shot worker: encode ImageBitmap → POST to backend → return JSON
+import express from "express";
+import cors from "cors";
+import fetch from "node-fetch";
 
-function arrayBufferToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(binary);
-}
+import { bestHoldEV } from "../strategy/ev.js";
+import { PAYTABLES } from "../strategy/paytables.js";
+import { parseVisionResponse } from "../vision/parser.js";
+import { VISION_PROMPT } from "../vision/prompt.js";
 
-self.onmessage = async (e) => {
-  const {
-    bitmap,
-    workerUrl,     // MUST be absolute: https://xxx.up.railway.app/analyze
-    paytable,
-    mode
-  } = e.data;
+const app = express();
+const PORT = process.env.PORT || 3000;
 
+/* ===============================
+   MIDDLEWARE
+   =============================== */
+
+app.use(cors());
+app.use(express.json({ limit: "20mb" }));
+
+// 🔍 LOG EVERY REQUEST (CRITICAL FOR DEBUGGING)
+app.use((req, res, next) => {
+  console.log(`➡️ ${req.method} ${req.url}`);
+  next();
+});
+
+/* ===============================
+   ANALYZE ENDPOINT
+   =============================== */
+
+app.post("/analyze", async (req, res) => {
   try {
-    // --- Encode bitmap to JPEG ---
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(bitmap, 0, 0);
+    const {
+      imageBase64,
+      paytable = "DDB_9_6",
+      mode = "conservative"
+    } = req.body || {};
 
-    // Free bitmap ASAP
-    if (bitmap.close) bitmap.close();
+    if (!imageBase64) {
+      return res.status(400).json({ error: "Missing imageBase64" });
+    }
 
-    const blob = await canvas.convertToBlob({
-      type: "image/jpeg",
-      quality: 0.7   // slightly lower to reduce payload size
-    });
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "OPENAI_API_KEY not set" });
+    }
 
-    const ab = await blob.arrayBuffer();
-    const base64 = arrayBufferToBase64(ab);
+    const pt = PAYTABLES[paytable];
+    if (!pt) {
+      return res.status(400).json({ error: "Unknown paytable" });
+    }
 
-    // --- POST to backend ---
-    const res = await fetch(workerUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        imageBase64: `data:image/jpeg;base64,${base64}`,
-        paytable,
-        mode
-      })
-    });
+    /* ---------- OpenAI Vision ---------- */
+    const openaiRes = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1",
+          temperature: 0,
+          messages: [
+            { role: "system", content: "Return STRICT JSON only." },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: VISION_PROMPT },
+                { type: "image_url", image_url: { url: imageBase64 } }
+              ]
+            }
+          ]
+        })
+      }
+    );
 
-    const text = await res.text();
+    const rawText = await openaiRes.text();
 
-    let data;
+    if (!rawText || !rawText.trim()) {
+      throw new Error("OpenAI returned empty response");
+    }
+
+    let openaiJson;
     try {
-      data = JSON.parse(text);
+      openaiJson = JSON.parse(rawText);
     } catch {
       throw new Error(
-        `Backend returned non-JSON:\n${text.slice(0, 300)}`
+        "OpenAI returned non-JSON:\n" + rawText.slice(0, 500)
       );
     }
 
-    if (!res.ok) {
+    if (!openaiRes.ok) {
       throw new Error(
-        `Backend error ${res.status}: ${JSON.stringify(data)}`
+        `OpenAI error ${openaiRes.status}: ` +
+        JSON.stringify(openaiJson)
       );
     }
 
-    self.postMessage({
-      ok: true,
-      data
+    /* ---------- Parse Vision ---------- */
+    const vision = parseVisionResponse(openaiJson);
+
+    vision.multipliers = {
+      top: vision.multipliers?.top ?? 1,
+      middle: vision.multipliers?.middle ?? 1,
+      bottom: vision.multipliers?.bottom ?? 1
+    };
+
+    if (!Array.isArray(vision.cards) || vision.cards.length !== 5) {
+      return res.status(502).json({
+        error: "Invalid vision output",
+        vision
+      });
+    }
+
+    /* ---------- EV ---------- */
+    const strategy = bestHoldEV(
+      vision.cards,
+      pt,
+      vision.multipliers.bottom,
+      paytable,
+      mode
+    );
+
+    return res.json({
+      paytable: pt.name,
+      multipliers: vision.multipliers,
+      cards: vision.cards,
+      best_hold: strategy.best_hold,
+      ev_with_multiplier: strategy.ev_with_multiplier,
+      ev_without_multiplier: strategy.ev_without_multiplier,
+      mode
     });
 
   } catch (err) {
-    self.postMessage({
-      ok: false,
-      error: err?.message || String(err)
+    console.error("❌ Analyze error:", err);
+    return res.status(500).json({
+      error: "Server error",
+      message: err.message
     });
   }
-};
+});
+
+/* ===============================
+   JSON 404 / 405 HANDLER (IMPORTANT)
+   =============================== */
+
+// Anything NOT matched above returns JSON (never HTML)
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Not found",
+    method: req.method,
+    path: req.path
+  });
+});
+
+/* ===============================
+   START
+   =============================== */
+
+app.listen(PORT, () => {
+  console.log(`✅ Backend running on port ${PORT}`);
+});
