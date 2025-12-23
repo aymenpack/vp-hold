@@ -2,10 +2,11 @@ import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 
-// ⬇️ reuse your existing logic
 import { bestHoldEV } from "../strategy/ev.js";
 import { PAYTABLES } from "../strategy/paytables.js";
 import { runVision } from "../vision/vision.js";
+import { parseVisionResponse } from "../vision/parser.js";
+import { VISION_PROMPT } from "../vision/prompt.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,13 +14,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
+/* ===============================
+   ANALYZE ENDPOINT
+   =============================== */
+
 app.post("/analyze", async (req, res) => {
   try {
     const {
       imageBase64,
       paytable = "DDB_9_6",
       mode = "conservative"
-    } = req.body;
+    } = req.body || {};
 
     if (!imageBase64) {
       return res.status(400).json({ error: "Missing imageBase64" });
@@ -34,11 +39,63 @@ app.post("/analyze", async (req, res) => {
       return res.status(400).json({ error: "Unknown paytable" });
     }
 
-    // ---- Vision ----
-    const vision = await runVision({
-      imageBase64,
-      apiKey: process.env.OPENAI_API_KEY
-    });
+    /* ===============================
+       OPENAI VISION (SAFE)
+       =============================== */
+
+    const openaiRes = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1",
+          temperature: 0,
+          messages: [
+            { role: "system", content: "Return STRICT JSON only." },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: VISION_PROMPT },
+                { type: "image_url", image_url: { url: imageBase64 } }
+              ]
+            }
+          ]
+        })
+      }
+    );
+
+    // --- SAFE READ ---
+    const rawText = await openaiRes.text();
+
+    if (!rawText || !rawText.trim()) {
+      throw new Error("OpenAI returned empty response");
+    }
+
+    let openaiJson;
+    try {
+      openaiJson = JSON.parse(rawText);
+    } catch {
+      throw new Error(
+        "OpenAI JSON parse failed:\n" + rawText.slice(0, 500)
+      );
+    }
+
+    if (!openaiRes.ok) {
+      throw new Error(
+        `OpenAI error ${openaiRes.status}: ` +
+        JSON.stringify(openaiJson)
+      );
+    }
+
+    /* ===============================
+       PARSE VISION OUTPUT
+       =============================== */
+
+    const vision = parseVisionResponse(openaiJson);
 
     vision.multipliers = {
       top: vision.multipliers?.top ?? 1,
@@ -47,10 +104,16 @@ app.post("/analyze", async (req, res) => {
     };
 
     if (!Array.isArray(vision.cards) || vision.cards.length !== 5) {
-      return res.status(502).json({ error: "Invalid vision output", vision });
+      return res.status(502).json({
+        error: "Invalid vision output",
+        vision
+      });
     }
 
-    // ---- EV ----
+    /* ===============================
+       EV STRATEGY
+       =============================== */
+
     const strategy = bestHoldEV(
       vision.cards,
       pt,
@@ -59,7 +122,11 @@ app.post("/analyze", async (req, res) => {
       mode
     );
 
-    res.json({
+    /* ===============================
+       RESPONSE
+       =============================== */
+
+    return res.json({
       paytable: pt.name,
       multipliers: vision.multipliers,
       cards: vision.cards,
@@ -70,12 +137,18 @@ app.post("/analyze", async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({
+    console.error("❌ Analyze error:", err);
+
+    return res.status(500).json({
       error: "Server error",
       message: err.message
     });
   }
 });
+
+/* ===============================
+   START SERVER
+   =============================== */
 
 app.listen(PORT, () => {
   console.log(`✅ Backend running on port ${PORT}`);
