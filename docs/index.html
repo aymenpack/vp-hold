@@ -32,6 +32,13 @@
   --accent:#60a5fa;
 }
 
+.theme-purple{
+  --bg:#160b2e;
+  --panel:#1e1147;
+  --border:#6d28d9;
+  --accent:#a855f7;
+}
+
 /* ===============================
    INLINE camera.css (LOCKED)
    =============================== */
@@ -59,7 +66,7 @@ video{
   right:8%;
   border:4px dashed var(--accent);
   border-radius:18px;
-  background:rgba(34,197,94,0.12);
+  background:rgba(168,85,247,0.15);
   pointer-events:none;
   height:58%;
   top:50%;
@@ -95,17 +102,21 @@ button:disabled{opacity:.6}
 .tabs{
   display:flex;
   gap:8px;
-  margin-bottom:12px;
+  margin-bottom:14px;
 }
 .tab{
   flex:1;
   padding:10px;
   text-align:center;
-  border-radius:12px;
+  border-radius:14px;
   border:1px solid var(--border);
   background:var(--panel);
   cursor:pointer;
   font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
 }
 .tab.active{
   background:var(--accent);
@@ -142,13 +153,8 @@ button:disabled{opacity:.6}
 }
 
 /* Settings */
-.setting{
-  margin-top:16px;
-}
-.setting label{
-  font-size:13px;
-  color:var(--muted);
-}
+.setting{margin-top:16px}
+.setting label{font-size:13px;color:var(--muted)}
 select{
   width:100%;
   margin-top:6px;
@@ -170,13 +176,13 @@ select{
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- TABS -->
+  <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" data-tab="main">Main</div>
-    <div class="tab" data-tab="settings">Settings</div>
+    <div class="tab active" data-tab="main">🎰 Play</div>
+    <div class="tab" data-tab="settings">⚙️ Settings</div>
   </div>
 
-  <!-- MAIN PANEL -->
+  <!-- MAIN -->
   <div class="panel active" id="main">
     <div class="scanner">
       <video id="video" autoplay playsinline muted></video>
@@ -203,18 +209,28 @@ select{
     </div>
 
     <div class="cards" id="cardsBox"></div>
+
     <div id="status">Starting camera…</div>
     <pre id="debug"></pre>
   </div>
 
-  <!-- SETTINGS PANEL -->
+  <!-- SETTINGS -->
   <div class="panel" id="settings">
 
     <div class="setting">
-      <label>Strategy Mode</label>
+      <label>Game</label>
+      <select id="gameSelect">
+        <option value="ultimate_x">Ultimate X</option>
+        <option disabled>Jacks or Better (coming)</option>
+        <option disabled>Double Bonus (coming)</option>
+      </select>
+    </div>
+
+    <div class="setting">
+      <label>Strategy</label>
       <select id="modeSelect">
-        <option value="conservative">Conservative (lock value)</option>
-        <option value="aggressive">Aggressive (chase multipliers)</option>
+        <option value="conservative">🛡️ Conservative</option>
+        <option value="aggressive">🔥 Aggressive</option>
       </select>
     </div>
 
@@ -231,6 +247,7 @@ select{
         <option value="">Dark</option>
         <option value="theme-green">Casino Green</option>
         <option value="theme-blue">Midnight Blue</option>
+        <option value="theme-purple">Royal Purple</option>
       </select>
     </div>
 
@@ -238,103 +255,6 @@ select{
 </div>
 
 <script>
-/* ===============================
-   CAMERA (UNCHANGED)
-   =============================== */
-navigator.mediaDevices.getUserMedia({
-  video:{ facingMode:"environment" }
-}).then(stream=>{
-  video.srcObject = stream;
-  video.play();
-  status.textContent = "Camera ready";
-}).catch(err=>{
-  status.textContent = "Camera error";
-  debug.textContent = err.message;
-});
-
-/* ===============================
-   CAPTURE (~20% ZOOM)
-   =============================== */
-function captureZoomedFrame(){
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  const ZOOM = 0.8;
-
-  const cw = vw * ZOOM;
-  const ch = vh * ZOOM;
-  const cx = (vw - cw) / 2;
-  const cy = (vh - ch) / 2;
-
-  const c = document.createElement("canvas");
-  c.width = cw;
-  c.height = ch;
-  c.getContext("2d").drawImage(video,cx,cy,cw,ch,0,0,cw,ch);
-  return c.toDataURL("image/jpeg",0.85);
-}
-
-/* ===============================
-   BACKEND
-   =============================== */
-const API_URL = "https://vp-hold-production.up.railway.app/analyze";
-let busy = false;
-
-snap.onclick = async ()=>{
-  if(busy) return;
-  busy = true;
-  snap.disabled = true;
-  status.textContent = "Processing…";
-
-  try{
-    const imageBase64 = captureZoomedFrame();
-
-    const res = await fetch(API_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        imageBase64,
-        mode: modeSelect.value,
-        paytable: paytableSelect.value
-      })
-    });
-
-    const data = await res.json();
-    debug.textContent = JSON.stringify(data,null,2);
-
-    multTop.textContent = "×" + data.multipliers.top;
-    multMid.textContent = "×" + data.multipliers.middle;
-    multBot.textContent = "×" + data.multipliers.bottom;
-
-    evBase.textContent = data.ev_without_multiplier.toFixed(4);
-    evUX.textContent = data.ev_with_multiplier.toFixed(4);
-
-    renderCards(data.cards, data.best_hold);
-
-    status.textContent = "Done ✅";
-  }catch(e){
-    status.textContent = "Error";
-    debug.textContent = e.message;
-  }finally{
-    busy = false;
-    snap.disabled = false;
-  }
-};
-
-/* ===============================
-   UI HELPERS
-   =============================== */
-function renderCards(cards, bestHold){
-  cardsBox.innerHTML="";
-  const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-  cards.forEach((c,i)=>{
-    const el=document.createElement("div");
-    el.className="card";
-    if(bestHold?.[i]) el.classList.add("held");
-    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
-    cardsBox.appendChild(el);
-  });
-}
-
 /* Tabs */
 document.querySelectorAll(".tab").forEach(t=>{
   t.onclick=()=>{
