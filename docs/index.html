@@ -384,10 +384,20 @@ wireSnapWorker({
   }
 });
 
-newHandBtn.onclick=()=>{
+newHandBtn.onclick = ()=>{
+  // Restore camera
   scanner.classList.remove("collapsed");
-  newHandBtn.style.display="none";
+  welcomeBox.style.display = "block";
+  newHandBtn.style.display = "none";
 
+  // 🔥 REMOVE dynamic result sections completely
+  document.querySelector(".evSection")?.remove();
+  document.querySelector(".multSection")?.remove();
+
+  // Clear cards + explanation
+  cardsBox.innerHTML = "";
+  whyBox.innerHTML = "";
+};
   // reset visibility
   welcomeBox.style.display="block";
   evSection.style.display="none";
