@@ -8,4 +8,6 @@ cmds = [
 ]
 
 [phases.start]
-cmd = "cd backend && node server.js"
+cmds = [
+  "cd backend && node server.js"
+]
