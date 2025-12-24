@@ -35,8 +35,8 @@ video{
   position:absolute;
   left:3%;
   right:3%;
-  height:64%;              /* 🔥 reduced from 82% */
-  top:52%;                 /* slight downward shift */
+  height:70%;
+  top:70%;
   transform:translateY(-50%);
   border:3px dashed var(--accent);
   border-radius:18px;
@@ -127,18 +127,40 @@ navigator.mediaDevices.getUserMedia({
   video.onloadedmetadata = () => video.play();
 });
 
-/* EXACT GREEN FRAME CROP */
+/* 🔥 EXACT GREEN-FRAME CROP UNDER object-fit: cover */
 function captureGreenFrame(){
-  const vr = video.getBoundingClientRect();
-  const br = band.getBoundingClientRect();
+  const scannerRect = scanner.getBoundingClientRect();
+  const bandRect = band.getBoundingClientRect();
 
-  const scaleX = video.videoWidth  / vr.width;
-  const scaleY = video.videoHeight / vr.height;
+  const videoW = video.videoWidth;
+  const videoH = video.videoHeight;
 
-  const sx = (br.left - vr.left) * scaleX;
-  const sy = (br.top  - vr.top ) * scaleY;
-  const sw = br.width  * scaleX;
-  const sh = br.height * scaleY;
+  const scannerAspect = scannerRect.width / scannerRect.height;
+  const videoAspect = videoW / videoH;
+
+  let visibleX, visibleY, visibleW, visibleH;
+
+  if (videoAspect > scannerAspect) {
+    // video wider than container → crop left/right
+    visibleH = videoH;
+    visibleW = videoH * scannerAspect;
+    visibleX = (videoW - visibleW) / 2;
+    visibleY = 0;
+  } else {
+    // video taller than container → crop top/bottom
+    visibleW = videoW;
+    visibleH = videoW / scannerAspect;
+    visibleX = 0;
+    visibleY = (videoH - visibleH) / 2;
+  }
+
+  const scaleX = visibleW / scannerRect.width;
+  const scaleY = visibleH / scannerRect.height;
+
+  const sx = visibleX + (bandRect.left - scannerRect.left) * scaleX;
+  const sy = visibleY + (bandRect.top  - scannerRect.top ) * scaleY;
+  const sw = bandRect.width  * scaleX;
+  const sh = bandRect.height * scaleY;
 
   const canvas = document.createElement("canvas");
   canvas.width = sw;
@@ -154,27 +176,11 @@ function captureGreenFrame(){
 }
 
 /* TAP CAMERA */
-const API_URL = "https://vp-hold-production.up.railway.app/analyze";
-let busy = false;
-
 scanner.onclick = async () => {
-  if (busy) return;
-  busy = true;
   spinner.style.display = "block";
-
-  try{
-    const imageBase64 = captureGreenFrame();
-    previewImg.src = imageBase64;
-
-    await fetch(API_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ imageBase64 })
-    });
-  } finally {
-    spinner.style.display = "none";
-    busy = false;
-  }
+  const img = captureGreenFrame();
+  previewImg.src = img;
+  spinner.style.display = "none";
 };
 </script>
 </body>
