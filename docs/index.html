@@ -17,24 +17,9 @@
   --text:#ffffff;
   --muted:#9ca3af;
 }
-.theme-green{
-  --bg:#041b12;
-  --panel:#052e1b;
-  --border:#0f5132;
-  --accent:#22c55e;
-}
-.theme-blue{
-  --bg:#020b1f;
-  --panel:#020b1f;
-  --border:#1e3a8a;
-  --accent:#60a5fa;
-}
-.theme-purple{
-  --bg:#160b2e;
-  --panel:#1e1147;
-  --border:#6d28d9;
-  --accent:#a855f7;
-}
+.theme-green{--bg:#041b12;--panel:#052e1b;--border:#0f5132;--accent:#22c55e}
+.theme-blue{--bg:#020b1f;--panel:#020b1f;--border:#1e3a8a;--accent:#60a5fa}
+.theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
 
 /* ===============================
    CAMERA CSS (INLINE, LOCKED)
@@ -75,7 +60,6 @@ video{
    =============================== */
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui}
 .app{max-width:900px;margin:auto;padding:16px 16px 160px}
-h2{margin:0}
 .subtitle{font-size:14px;color:var(--muted);margin-bottom:12px}
 
 button{
@@ -86,7 +70,6 @@ button{
 }
 button:disabled{opacity:.6}
 
-/* Tabs */
 .tabs{display:flex;gap:8px;margin-bottom:14px}
 .tab{
   flex:1;padding:10px;border-radius:14px;
@@ -98,36 +81,24 @@ button:disabled{opacity:.6}
 }
 .tab.active{background:var(--accent);color:#000}
 
-/* Panels */
 .panel{display:none}
 .panel.active{display:block}
 
-/* Multipliers */
 .multipliers{display:flex;gap:12px;margin-top:16px}
 .mult{flex:1;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--panel);text-align:center}
 .mult .label{font-size:12px;color:var(--muted)}
 .mult .value{font-size:22px;font-weight:900;margin-top:6px}
 
-/* EV */
 .ev-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
 .ev-box{padding:14px;border-radius:14px;background:var(--panel);border:1px solid var(--border);text-align:center}
 .ev-box .label{font-size:12px;color:var(--muted)}
 .ev-box .value{font-size:24px;font-weight:900}
 .ev-box.ux .value{color:var(--accent)}
 
-/* Cards */
 .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
 .card{background:#fff;color:#000;border-radius:14px;padding:14px 6px 10px;text-align:center}
 .card.red{color:#c1121f}
 .card.held{transform:translateY(-10px);box-shadow:0 0 0 3px var(--accent)}
-
-.setting{margin-top:16px}
-.setting label{font-size:13px;color:var(--muted)}
-select{
-  width:100%;margin-top:6px;padding:12px;
-  border-radius:12px;background:var(--panel);
-  color:var(--text);border:1px solid var(--border)
-}
 
 #status{margin-top:10px;font-size:14px;color:var(--muted)}
 #debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:var(--muted)}
@@ -144,7 +115,6 @@ select{
     <div class="tab" data-tab="settings">⚙️ Settings</div>
   </div>
 
-  <!-- MAIN -->
   <div class="panel active" id="main">
     <div class="scanner">
       <video id="video" autoplay playsinline muted></video>
@@ -169,41 +139,36 @@ select{
     <pre id="debug"></pre>
   </div>
 
-  <!-- SETTINGS -->
   <div class="panel" id="settings">
-    <div class="setting">
-      <label>Game</label>
-      <select><option>Ultimate X</option></select>
-    </div>
-    <div class="setting">
-      <label>Strategy</label>
-      <select id="modeSelect">
-        <option value="conservative">🛡️ Conservative</option>
-        <option value="aggressive">🔥 Aggressive</option>
-      </select>
-    </div>
-    <div class="setting">
-      <label>Theme</label>
-      <select id="themeSelect">
-        <option value="">Dark</option>
-        <option value="theme-green">Casino Green</option>
-        <option value="theme-blue">Midnight Blue</option>
-        <option value="theme-purple">Royal Purple</option>
-      </select>
-    </div>
+    <label>Strategy</label>
+    <select id="modeSelect">
+      <option value="conservative">🛡️ Conservative</option>
+      <option value="aggressive">🔥 Aggressive</option>
+    </select>
+
+    <label style="margin-top:16px">Theme</label>
+    <select id="themeSelect">
+      <option value="">Dark</option>
+      <option value="theme-green">Casino Green</option>
+      <option value="theme-blue">Midnight Blue</option>
+      <option value="theme-purple">Royal Purple</option>
+    </select>
   </div>
 </div>
 
 <script>
 /* ===============================
-   CAMERA START (RESTORED)
+   CAMERA START (STATUS FIXED)
    =============================== */
 navigator.mediaDevices.getUserMedia({
   video:{ facingMode:"environment" }
 }).then(stream=>{
   video.srcObject = stream;
-  video.play();
-  status.textContent = "Camera ready";
+
+  video.onloadedmetadata = () => {
+    video.play();
+    status.textContent = "Camera ready — align machine";
+  };
 }).catch(err=>{
   status.textContent = "Camera error";
   debug.textContent = err.message;
@@ -214,39 +179,35 @@ navigator.mediaDevices.getUserMedia({
    =============================== */
 function captureZoomedFrame(){
   const vw = video.videoWidth, vh = video.videoHeight;
-  const ZOOM = 0.8;
-  const cw = vw * ZOOM, ch = vh * ZOOM;
-  const cx = (vw - cw)/2, cy = (vh - ch)/2;
-
+  const Z = 0.8;
+  const cw = vw*Z, ch = vh*Z;
+  const cx = (vw-cw)/2, cy = (vh-ch)/2;
   const c = document.createElement("canvas");
-  c.width = cw; c.height = ch;
+  c.width=cw; c.height=ch;
   c.getContext("2d").drawImage(video,cx,cy,cw,ch,0,0,cw,ch);
   return c.toDataURL("image/jpeg",0.85);
 }
 
 /* ===============================
-   BACKEND
+   SNAP
    =============================== */
-const API_URL = "https://vp-hold-production.up.railway.app/analyze";
+const API_URL="https://vp-hold-production.up.railway.app/analyze";
 let busy=false;
 
 snap.onclick=async()=>{
   if(busy) return;
   busy=true; snap.disabled=true;
-  status.textContent="Processing…";
+  status.textContent="Capturing…";
 
   try{
-    const imageBase64 = captureZoomedFrame();
-    const res = await fetch(API_URL,{
+    const imageBase64=captureZoomedFrame();
+    const res=await fetch(API_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        imageBase64,
-        mode: modeSelect.value
-      })
+      body:JSON.stringify({ imageBase64, mode:modeSelect.value })
     });
-    const data = await res.json();
-    debug.textContent = JSON.stringify(data,null,2);
+    const data=await res.json();
+    debug.textContent=JSON.stringify(data,null,2);
 
     multTop.textContent="×"+data.multipliers.top;
     multMid.textContent="×"+data.multipliers.middle;
@@ -263,9 +224,7 @@ snap.onclick=async()=>{
   }
 };
 
-/* ===============================
-   UI
-   =============================== */
+/* Tabs + Theme */
 document.querySelectorAll(".tab").forEach(t=>{
   t.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
