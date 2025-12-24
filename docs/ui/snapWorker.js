@@ -1,9 +1,9 @@
 /*
   ✏️ SAFE FILE
-  UI interaction wiring.
+  Handles user interaction and backend call.
 */
 
-import { captureGreenFrame } from "/vp-hold/capture/capture.js";
+import { captureGreenFrame } from "../capture/capture.js";
 
 export function wireSnapWorker({
   video,
