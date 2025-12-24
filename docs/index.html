@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Ultimate X – Vision UI</title>
+<title>Ultimate X Vision</title>
 
 <style>
 /* ===============================
@@ -22,7 +22,7 @@
 .theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
 
 /* ===============================
-   CAMERA CSS (INLINE, LOCKED)
+   CAMERA CSS (LOCKED)
    =============================== */
 .scanner{
   position:relative;
@@ -66,9 +66,11 @@ button{
   margin-top:18px;width:100%;padding:18px;
   font-size:20px;font-weight:900;
   background:var(--accent);color:#000;
-  border:none;border-radius:18px;cursor:pointer
+  border:none;border-radius:18px;cursor:pointer;
+  transition:transform .15s ease;
 }
 button:disabled{opacity:.6}
+button:active{transform:scale(.97)}
 
 .tabs{display:flex;gap:8px;margin-bottom:14px}
 .tab{
@@ -95,10 +97,29 @@ button:disabled{opacity:.6}
 .ev-box .value{font-size:24px;font-weight:900}
 .ev-box.ux .value{color:var(--accent)}
 
-.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
-.card{background:#fff;color:#000;border-radius:14px;padding:14px 6px 10px;text-align:center}
+.cards{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+  margin-top:18px;
+  opacity:0;
+  transform:translateY(10px);
+  transition:all .35s ease;
+}
+.cards.show{
+  opacity:1;
+  transform:none;
+}
+.card{
+  background:#fff;color:#000;border-radius:14px;
+  padding:14px 6px 10px;text-align:center;
+}
 .card.red{color:#c1121f}
-.card.held{transform:translateY(-10px);box-shadow:0 0 0 3px var(--accent)}
+.card.held{
+  transform:translateY(-10px);
+  box-shadow:0 0 0 3px var(--accent);
+  animation:glow 1.4s ease-in-out infinite;
+}
 
 #whyBox{
   margin-top:16px;
@@ -106,6 +127,13 @@ button:disabled{opacity:.6}
   border-radius:14px;
   background:var(--panel);
   border:1px solid var(--border);
+  opacity:0;
+  transform:translateY(6px);
+  transition:all .35s ease;
+}
+#whyBox.show{
+  opacity:1;
+  transform:none;
 }
 #whyTitle{font-size:14px;font-weight:900;color:var(--accent)}
 #whyText{margin-top:8px;font-size:14px;line-height:1.4}
@@ -119,13 +147,39 @@ select{
 }
 
 #status{margin-top:10px;font-size:14px;color:var(--muted)}
+.status-dots::after{
+  content:"";
+  animation:dots 1.2s infinite steps(1,end);
+}
+.status-ready{animation:glow 1.6s ease-in-out infinite}
+.status-done{animation:success-pop .4s ease-out}
+
+/* ===============================
+   ANIMATIONS
+   =============================== */
+@keyframes dots{
+  0%{content:""}
+  33%{content:"."}
+  66%{content:".."}
+  100%{content:"..."}
+}
+@keyframes glow{
+  0%{box-shadow:0 0 0 rgba(34,197,94,0)}
+  50%{box-shadow:0 0 12px rgba(34,197,94,.6)}
+  100%{box-shadow:0 0 0 rgba(34,197,94,0)}
+}
+@keyframes success-pop{
+  0%{transform:scale(.9);opacity:0}
+  60%{transform:scale(1.05);opacity:1}
+  100%{transform:scale(1)}
+}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Wizard-style EV comparison</div>
+  <h2>Ultimate X Vision</h2>
+  <div class="subtitle">Perfect play, every hand.</div>
 
   <div class="tabs">
     <div class="tab active" data-tab="main">🎰 Play</div>
@@ -186,7 +240,7 @@ select{
 
 <script>
 /* ===============================
-   DOM REFERENCES
+   DOM
    =============================== */
 const video = document.getElementById("video");
 const snap = document.getElementById("snap");
@@ -198,115 +252,59 @@ const multBot = document.getElementById("multBot");
 const evBase = document.getElementById("evBase");
 const evUX = document.getElementById("evUX");
 const whyText = document.getElementById("whyText");
-const themeSelect = document.getElementById("themeSelect");
+const whyBox = document.getElementById("whyBox");
 const modeSelect = document.getElementById("modeSelect");
-const tabs = document.querySelectorAll(".tab");
-const panels = document.querySelectorAll(".panel");
+const themeSelect = document.getElementById("themeSelect");
 
 /* ===============================
    PERSISTENCE
    =============================== */
-const THEME_KEY = "vp_theme";
-const MODE_KEY  = "vp_mode";
-const TAB_KEY   = "vp_tab";
-
-// restore
-const savedTheme = localStorage.getItem(THEME_KEY);
-if (savedTheme) {
-  document.documentElement.className = savedTheme;
-  themeSelect.value = savedTheme;
+const THEME_KEY="vp_theme", MODE_KEY="vp_mode", TAB_KEY="vp_tab";
+if(localStorage.getItem(THEME_KEY)){
+  document.documentElement.className=localStorage.getItem(THEME_KEY);
+  themeSelect.value=localStorage.getItem(THEME_KEY);
 }
+if(localStorage.getItem(MODE_KEY)) modeSelect.value=localStorage.getItem(MODE_KEY);
+themeSelect.onchange=()=>{document.documentElement.className=themeSelect.value;localStorage.setItem(THEME_KEY,themeSelect.value)};
+modeSelect.onchange=()=>localStorage.setItem(MODE_KEY,modeSelect.value);
 
-const savedMode = localStorage.getItem(MODE_KEY);
-if (savedMode) {
-  modeSelect.value = savedMode;
-}
-
-const savedTab = localStorage.getItem(TAB_KEY);
-if (savedTab) {
-  tabs.forEach(t => t.classList.remove("active"));
-  panels.forEach(p => p.classList.remove("active"));
-  document.querySelector(`.tab[data-tab="${savedTab}"]`).classList.add("active");
-  document.getElementById(savedTab).classList.add("active");
-}
-
-// save on change
-themeSelect.onchange = () => {
-  document.documentElement.className = themeSelect.value;
-  localStorage.setItem(THEME_KEY, themeSelect.value);
-};
-
-modeSelect.onchange = () => {
-  localStorage.setItem(MODE_KEY, modeSelect.value);
-};
-
-tabs.forEach(t => {
-  t.onclick = () => {
-    tabs.forEach(x => x.classList.remove("active"));
-    panels.forEach(p => p.classList.remove("active"));
+/* Tabs */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
     t.classList.add("active");
     document.getElementById(t.dataset.tab).classList.add("active");
-    localStorage.setItem(TAB_KEY, t.dataset.tab);
+    localStorage.setItem(TAB_KEY,t.dataset.tab);
   };
 });
-
-/* ===============================
-   CAMERA START
-   =============================== */
-navigator.mediaDevices.getUserMedia({
-  video:{ facingMode:"environment" }
-}).then(stream=>{
-  video.srcObject = stream;
-  video.onloadedmetadata = () => {
-    video.play();
-    statusEl.textContent = "Camera ready — align machine";
-  };
-}).catch(err=>{
-  statusEl.textContent = "Camera error";
-});
-
-/* ===============================
-   CAPTURE (~20% ZOOM)
-   =============================== */
-function captureZoomedFrame(){
-  const vw = video.videoWidth, vh = video.videoHeight;
-  const Z = 0.8;
-  const cw = vw*Z, ch = vh*Z;
-  const cx = (vw-cw)/2, cy = (vh-ch)/2;
-  const c = document.createElement("canvas");
-  c.width=cw; c.height=ch;
-  c.getContext("2d").drawImage(video,cx,cy,cw,ch,0,0,cw,ch);
-  return c.toDataURL("image/jpeg",0.85);
+if(localStorage.getItem(TAB_KEY)){
+  document.querySelector(`.tab[data-tab="${localStorage.getItem(TAB_KEY)}"]`).click();
 }
 
 /* ===============================
-   WHY THIS HOLD
+   CAMERA
    =============================== */
-function explainHold(cards, bestHold, multiplier, mode){
-  const held = cards.filter((_,i)=>bestHold[i]);
-  const counts = {};
-  held.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
-  const values = Object.values(counts);
+navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+.then(stream=>{
+  video.srcObject=stream;
+  video.onloadedmetadata=()=>{
+    video.play();
+    statusEl.className="status-ready";
+    statusEl.textContent="Camera ready — align machine";
+  };
+});
 
-  if (values.includes(4))
-    return "Four of a kind locks in the highest immediate payout.";
-
-  if (values.includes(3) && values.includes(2))
-    return "A full house provides strong value and future multiplier growth.";
-
-  if (values.includes(3))
-    return "Holding three of a kind maximizes full house and quad potential.";
-
-  if (values.filter(v=>v===2).length===2)
-    return "Two pair is strong, but Ultimate X often favors breaking it for multiplier growth.";
-
-  if (values.includes(2))
-    return "Holding a pair maximizes expected value versus drawing five new cards.";
-
-  if (mode === "aggressive" && multiplier >= 2)
-    return "Aggressive mode favors chasing multiplier growth over immediate payout.";
-
-  return "This draw provides the highest expected value given the current conditions.";
+/* ===============================
+   CAPTURE
+   =============================== */
+function captureZoomedFrame(){
+  const vw=video.videoWidth,vh=video.videoHeight,Z=.8;
+  const cw=vw*Z,ch=vh*Z,cx=(vw-cw)/2,cy=(vh-ch)/2;
+  const c=document.createElement("canvas");
+  c.width=cw;c.height=ch;
+  c.getContext("2d").drawImage(video,cx,cy,cw,ch,0,0,cw,ch);
+  return c.toDataURL("image/jpeg",.85);
 }
 
 /* ===============================
@@ -317,55 +315,36 @@ let busy=false;
 
 snap.onclick=async()=>{
   if(busy) return;
-  busy=true; snap.disabled=true;
-  statusEl.textContent="Capturing…";
+  busy=true;
+  snap.disabled=true;
+  statusEl.className="status-dots";
+  statusEl.textContent="Capturing";
 
   try{
-    const imageBase64=captureZoomedFrame();
     const res=await fetch(API_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ imageBase64, mode:modeSelect.value })
+      body:JSON.stringify({imageBase64:captureZoomedFrame(),mode:modeSelect.value})
     });
-    const data=await res.json();
+    const d=await res.json();
 
-    multTop.textContent="×"+data.multipliers.top;
-    multMid.textContent="×"+data.multipliers.middle;
-    multBot.textContent="×"+data.multipliers.bottom;
-    evBase.textContent=data.ev_without_multiplier.toFixed(4);
-    evUX.textContent=data.ev_with_multiplier.toFixed(4);
+    multTop.textContent="×"+d.multipliers.top;
+    multMid.textContent="×"+d.multipliers.middle;
+    multBot.textContent="×"+d.multipliers.bottom;
+    evBase.textContent=d.ev_without_multiplier.toFixed(4);
+    evUX.textContent=d.ev_with_multiplier.toFixed(4);
 
-    renderCards(data.cards, data.best_hold);
-    whyText.textContent = explainHold(
-      data.cards,
-      data.best_hold,
-      data.multipliers.bottom,
-      modeSelect.value
-    );
-
+    cardsBox.classList.add("show");
+    whyBox.classList.add("show");
+    statusEl.className="status-done";
     statusEl.textContent="Done ✅";
-  }catch(e){
+  }catch{
     statusEl.textContent="Error";
   }finally{
-    busy=false; snap.disabled=false;
+    busy=false;
+    snap.disabled=false;
   }
 };
-
-/* ===============================
-   RENDER CARDS
-   =============================== */
-function renderCards(cards, bestHold){
-  cardsBox.innerHTML="";
-  const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-  cards.forEach((c,i)=>{
-    const el=document.createElement("div");
-    el.className="card";
-    if(bestHold?.[i]) el.classList.add("held");
-    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
-    cardsBox.appendChild(el);
-  });
-}
 </script>
 </body>
 </html>
