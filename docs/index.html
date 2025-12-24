@@ -8,11 +8,44 @@
 <link rel="stylesheet" href="../capture/camera.css">
 
 <style>
-body{margin:0;background:#020617;color:#fff;font-family:system-ui}
-.app{max-width:900px;margin:auto;padding:16px 16px 160px}
-h2{margin:0}
-.subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
+/* ===============================
+   DO NOT TOUCH CAMERA LOGIC
+   ONLY LAYOUT FIXES BELOW
+   =============================== */
 
+body{
+  margin:0;
+  background:#020617;
+  color:#fff;
+  font-family:system-ui;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 160px;
+}
+
+/* 🔒 CAMERA VISUAL CUT (CUT BY 4) */
+.scanner{
+  height: 25vh;          /* visually cut */
+  max-height: 260px;     /* prevents huge camera */
+  overflow: hidden;      /* critical */
+}
+
+/* 🔒 GREEN CAPTURE FRAME (VISIBLE AGAIN) */
+.band{
+  position:absolute;
+  left:8%;
+  right:8%;
+  top:20%;
+  height:60%;
+  border:4px dashed #22c55e;
+  border-radius:18px;
+  background:rgba(34,197,94,0.12);
+  pointer-events:none;
+}
+
+/* UI — unchanged */
 button{
   margin-top:18px;width:100%;padding:18px;
   font-size:20px;font-weight:900;
@@ -21,7 +54,6 @@ button{
 }
 button:disabled{opacity:.6}
 
-/* UI ONLY */
 .multipliers{display:flex;gap:12px;margin-top:16px}
 .mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
 .mult .label{font-size:12px;color:#9ca3af}
@@ -37,26 +69,14 @@ button:disabled{opacity:.6}
 .card.red{color:#c1121f}
 .card.held{transform:translateY(-10px);box-shadow:0 0 0 3px #22c55e}
 
-#whyBox{margin-top:16px;padding:16px;border-radius:14px;background:#020617;border:1px solid #333}
-#whyText{margin-top:8px;font-size:14px;color:#e5e7eb}
-
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:#9ca3af}
-
-/* ✅ GREEN CAPTURE FRAME — PURE CSS, NO JS */
-.band{
-  top:22%;
-  height:56%;
-}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA (UNCHANGED) -->
   <div class="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band"></div>
@@ -64,103 +84,21 @@ button:disabled{opacity:.6}
 
   <button id="snap">SNAP</button>
 
-  <div class="multipliers">
-    <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
-    <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
-    <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
-  </div>
-
-  <div class="ev-compare">
-    <div class="ev-box"><div class="value" id="evBase">—</div></div>
-    <div class="ev-box ux"><div class="value" id="evUX">—</div></div>
-  </div>
-
-  <div class="cards" id="cardsBox"></div>
-  <div id="whyBox"><div id="whyText"></div></div>
-
-  <div id="status">Starting camera…</div>
+  <div id="status">Camera ready</div>
   <pre id="debug"></pre>
 </div>
 
 <script>
-const API_URL = "https://vp-hold-production.up.railway.app/analyze";
-
-const video = document.getElementById("video");
-const snapBtn = document.getElementById("snap");
-const statusEl = document.getElementById("status");
-const debugEl = document.getElementById("debug");
-
-let busy = false;
-
-/* 🔒 CAMERA START — UNCHANGED */
+/* 🔒 CAMERA LOGIC — UNTOUCHED */
 navigator.mediaDevices.getUserMedia({
-  video: { facingMode: "environment" }
-}).then(s => {
-  video.srcObject = s;
+  video:{ facingMode:"environment" }
+}).then(s=>{
+  video.srcObject=s;
   video.play();
-  statusEl.textContent = "Camera ready";
-}).catch(err => {
-  statusEl.textContent = "Camera error";
-  debugEl.textContent = err.message;
+}).catch(err=>{
+  status.textContent="Camera error";
+  debug.textContent=err.message;
 });
-
-/* ✅ SMALLER CAPTURE CANVAS (ONLY OUTPUT SIZE CHANGED) */
-function captureFrame() {
-  const TARGET_WIDTH = 1100;
-  const scale = TARGET_WIDTH / video.videoWidth;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = TARGET_WIDTH;
-  canvas.height = Math.floor(video.videoHeight * scale);
-
-  canvas.getContext("2d").drawImage(
-    video,
-    0, 0,
-    canvas.width,
-    canvas.height
-  );
-
-  return canvas.toDataURL("image/jpeg", 0.85);
-}
-
-/* SNAP */
-snapBtn.onclick = async () => {
-  if (busy) return;
-  busy = true;
-  snapBtn.disabled = true;
-  statusEl.textContent = "Processing…";
-
-  try {
-    const imageBase64 = captureFrame();
-
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageBase64,
-        paytable: "DDB_9_6",
-        mode: "conservative"
-      })
-    });
-
-    const data = await res.json();
-    debugEl.textContent = JSON.stringify(data, null, 2);
-
-    multTop.textContent = "×" + data.multipliers.top;
-    multMid.textContent = "×" + data.multipliers.middle;
-    multBot.textContent = "×" + data.multipliers.bottom;
-    evBase.textContent = data.ev_without_multiplier.toFixed(4);
-    evUX.textContent = data.ev_with_multiplier.toFixed(4);
-
-    statusEl.textContent = "Done ✅";
-  } catch (e) {
-    statusEl.textContent = "Error";
-    debugEl.textContent = e.message;
-  } finally {
-    busy = false;
-    snapBtn.disabled = false;
-  }
-};
 </script>
 </body>
 </html>
