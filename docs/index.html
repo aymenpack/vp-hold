@@ -35,7 +35,7 @@ body{
 h2{
   font-size:24px;
   font-weight:800;
-  text-align:center;                 /* ① centered title */
+  text-align:center;
 }
 .subtitle{
   font-size:13px;
@@ -44,11 +44,7 @@ h2{
   text-align:center;
 }
 
-/* CAMERA */
-.scanner{
-  position:relative;
-  margin-top:18px;
-}
+/* CAMERA TEXT */
 .scanHint{
   position:absolute;
   inset:0;
@@ -76,9 +72,31 @@ h2{
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* SPACING */
-.section-gap{
-  margin-top:28px;                  /* ③ more space after camera */
+.section-gap{margin-top:28px}
+
+/* TABS */
+.tabs{
+  display:flex;
+  gap:10px;
+  margin:18px 0 12px;
 }
+.tab{
+  flex:1;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  text-align:center;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.tab.active{
+  background:var(--accent);
+  color:#000;
+}
+.panel{display:none}
+.panel.active{display:block}
 
 /* CARDS */
 .cards{
@@ -108,9 +126,7 @@ h2{
 .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}
 
 /* MULTIPLIERS + EV */
-.multipliers,.ev{
-  display:flex;gap:10px;margin-top:18px
-}
+.multipliers,.ev{display:flex;gap:10px;margin-top:18px}
 .box{
   flex:1;padding:10px;border-radius:14px;
   background:var(--panel);border:1px solid var(--border);text-align:center
@@ -128,20 +144,6 @@ h2{
 }
 #whyBox.show{opacity:1;transform:none}
 
-/* TABS */
-.tabs{
-  display:flex;gap:10px;margin:18px 0 12px
-}
-.tab{
-  flex:1;padding:10px;border-radius:14px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  text-align:center;font-weight:700;font-size:14px;cursor:pointer
-}
-.tab.active{background:var(--accent);color:#000}
-.panel{display:none}
-.panel.active{display:block}
-
 /* SETTINGS */
 .setting{margin-top:18px}
 .setting label{font-size:12px;color:var(--muted)}
@@ -152,8 +154,24 @@ select{
 }
 
 /* DEBUG */
-.debugBox{
+.preview{
   margin-top:18px;
+  padding:10px;
+  border-radius:14px;
+  background:#0b0f1a;
+  border:1px solid var(--border);
+}
+.preview label{
+  font-size:11px;
+  color:var(--muted);
+}
+.preview img{
+  width:100%;
+  margin-top:6px;
+  border-radius:10px;
+}
+.debugBox{
+  margin-top:12px;
   padding:12px;
   border-radius:14px;
   background:#0b0f1a;
@@ -161,7 +179,6 @@ select{
   font-size:12px;
   white-space:pre-wrap;
   color:#9ca3af;
-  display:none;
 }
 </style>
 </head>
@@ -181,12 +198,12 @@ select{
     <div class="scanner" id="scanner">
       <video id="video" autoplay playsinline muted></video>
       <div class="band"></div>
-      <div class="scanHint">Tap anywhere inside the frame to analyze</div> <!-- ② -->
+      <div class="scanHint">Tap anywhere inside the frame to analyze</div>
     </div>
 
     <div class="spinner" id="spinner"></div>
 
-    <div class="section-gap"></div> <!-- ③ -->
+    <div class="section-gap"></div>
 
     <div class="cards" id="cardsBox"></div>
 
@@ -228,11 +245,16 @@ select{
       <label>Debug</label>
       <select id="debugSelect">
         <option value="off">Off</option>
-        <option value="on">Show OpenAI response</option>
+        <option value="on">Show capture & OpenAI response</option>
       </select>
     </div>
 
-    <div class="debugBox" id="debugBox"></div> <!-- ④ -->
+    <div class="preview" id="previewBox" style="display:none">
+      <label>Image sent to OpenAI</label>
+      <img id="previewImg">
+    </div>
+
+    <div class="debugBox" id="debugBox" style="display:none"></div>
   </div>
 </div>
 
@@ -257,6 +279,8 @@ const whyBox=document.getElementById("whyBox");
 const modeSelect=document.getElementById("modeSelect");
 const themeSelect=document.getElementById("themeSelect");
 const debugSelect=document.getElementById("debugSelect");
+const previewImg=document.getElementById("previewImg");
+const previewBox=document.getElementById("previewBox");
 const debugBox=document.getElementById("debugBox");
 
 /* persistence */
@@ -272,7 +296,9 @@ themeSelect.onchange=()=>{document.documentElement.className=themeSelect.value;l
 modeSelect.onchange=()=>localStorage.setItem(MODE_KEY,modeSelect.value);
 debugSelect.onchange=()=>{
   localStorage.setItem(DEBUG_KEY,debugSelect.value);
-  debugBox.style.display = debugSelect.value==="on" ? "block" : "none";
+  const show = debugSelect.value==="on";
+  previewBox.style.display = show ? "block" : "none";
+  debugBox.style.display   = show ? "block" : "none";
 };
 
 /* tabs */
@@ -292,6 +318,7 @@ wireSnapWorker({
   scanner,
   band,
   spinner,
+  previewImg,
   cardsBox,
   multTop,
   multMid,
@@ -301,8 +328,9 @@ wireSnapWorker({
   whyBox,
   modeSelect,
   debugSelect,
-  previewImg:null,
-  renderDebug:(json)=>{ debugBox.textContent = JSON.stringify(json,null,2); }
+  onDebugJson:(json)=>{
+    debugBox.textContent = JSON.stringify(json,null,2);
+  }
 });
 </script>
 </body>
