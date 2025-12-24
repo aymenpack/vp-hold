@@ -11,8 +11,6 @@
   --panel:#020617;
   --border:#2a2f3a;
   --accent:#22c55e;
-  --text:#ffffff;
-  --muted:#9ca3af;
 }
 
 /* CAMERA */
@@ -50,7 +48,7 @@ video{
 body{
   margin:0;
   background:var(--bg);
-  color:var(--text);
+  color:#fff;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 .app{
@@ -65,12 +63,12 @@ h2{font-size:22px;font-weight:800}
   margin-top:14px;
   padding:10px;
   border-radius:14px;
-  background:var(--panel);
+  background:#111;
   border:1px solid var(--border);
 }
 .preview label{
   font-size:11px;
-  color:var(--muted);
+  color:#9ca3af;
 }
 .preview img{
   width:100%;
@@ -105,8 +103,8 @@ h2{font-size:22px;font-weight:800}
 
   <div class="spinner" id="spinner"></div>
 
-  <div class="preview" id="previewBox">
-    <label>Image sent to AI (exact crop, upscaled)</label>
+  <div class="preview">
+    <label>Image sent to AI (exact crop)</label>
     <img id="previewImg">
   </div>
 </div>
@@ -116,85 +114,55 @@ const video = document.getElementById("video");
 const scanner = document.getElementById("scanner");
 const band = document.getElementById("band");
 const spinner = document.getElementById("spinner");
-const previewBox = document.getElementById("previewBox");
 const previewImg = document.getElementById("previewImg");
 
-/* CAMERA */
-navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
-.then(s=>{
-  video.srcObject = s;
+/* ✅ REQUEST HIGH-RES CAMERA */
+navigator.mediaDevices.getUserMedia({
+  video:{
+    facingMode:"environment",
+    width:{ ideal:1920 },
+    height:{ ideal:1080 }
+  }
+}).then(stream=>{
+  video.srcObject = stream;
   video.onloadedmetadata = () => video.play();
 });
 
-/* CAPTURE GREEN FRAME + HORIZONTAL PADDING + 2× UPSCALE */
+/* CROP + PAD + UPSCALE */
 function captureGreenFrame(){
-  const videoRect = video.getBoundingClientRect();
-  const bandRect = band.getBoundingClientRect();
+  const vr = video.getBoundingClientRect();
+  const br = band.getBoundingClientRect();
 
-  const scaleX = video.videoWidth  / videoRect.width;
-  const scaleY = video.videoHeight / videoRect.height;
+  const sx0 = (br.left - vr.left) * (video.videoWidth / vr.width);
+  const sy0 = (br.top  - vr.top ) * (video.videoHeight/ vr.height);
+  let sw = br.width  * (video.videoWidth / vr.width);
+  let sh = br.height * (video.videoHeight/ vr.height);
 
-  let sx = (bandRect.left - videoRect.left) * scaleX;
-  let sy = (bandRect.top  - videoRect.top)  * scaleY;
-  let sw = bandRect.width  * scaleX;
-  let sh = bandRect.height * scaleY;
+  let sx = sx0 - sw*0.15;
+  sw += sw*0.3;
 
-  // horizontal padding
-  const padX = sw * 0.15;
-  sx -= padX;
-  sw += padX * 2;
+  if(sx<0){ sw+=sx; sx=0 }
+  if(sx+sw>video.videoWidth) sw=video.videoWidth-sx;
 
-  if (sx < 0) {
-    sw += sx;
-    sx = 0;
-  }
-  if (sx + sw > video.videoWidth) {
-    sw = video.videoWidth - sx;
-  }
+  const base=document.createElement("canvas");
+  base.width=sw; base.height=sh;
+  base.getContext("2d").drawImage(video,sx,sy0,sw,sh,0,0,sw,sh);
 
-  // base crop
-  const base = document.createElement("canvas");
-  base.width = sw;
-  base.height = sh;
-  base.getContext("2d").drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+  const SCALE=2;
+  const out=document.createElement("canvas");
+  out.width=sw*SCALE;
+  out.height=sh*SCALE;
+  out.getContext("2d").drawImage(base,0,0,sw,sh,0,0,out.width,out.height);
 
-  // 🔥 UPSCALE 2×
-  const SCALE = 2;
-  const out = document.createElement("canvas");
-  out.width  = sw * SCALE;
-  out.height = sh * SCALE;
-
-  out.getContext("2d").drawImage(
-    base,
-    0, 0, sw, sh,
-    0, 0, out.width, out.height
-  );
-
-  return out.toDataURL("image/jpeg", 0.9);
+  return out.toDataURL("image/jpeg",0.9);
 }
 
 /* TAP CAMERA */
-const API_URL="https://vp-hold-production.up.railway.app/analyze";
-let busy=false;
-
-scanner.onclick = async () => {
-  if (busy) return;
-  busy = true;
-  spinner.style.display = "block";
-
-  try{
-    const imageBase64 = captureGreenFrame();
-    previewImg.src = imageBase64;
-
-    await fetch(API_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ imageBase64 })
-    });
-  } finally {
-    spinner.style.display = "none";
-    busy = false;
-  }
+scanner.onclick=async()=>{
+  spinner.style.display="block";
+  const img=captureGreenFrame();
+  previewImg.src=img;
+  spinner.style.display="none";
 };
 </script>
 </body>
