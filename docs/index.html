@@ -100,6 +100,14 @@ button:disabled{opacity:.6}
 .card.red{color:#c1121f}
 .card.held{transform:translateY(-10px);box-shadow:0 0 0 3px var(--accent)}
 
+.setting{margin-top:16px}
+.setting label{font-size:13px;color:var(--muted)}
+select{
+  width:100%;margin-top:6px;padding:12px;
+  border-radius:12px;background:var(--panel);
+  color:var(--text);border:1px solid var(--border)
+}
+
 #status{margin-top:10px;font-size:14px;color:var(--muted)}
 #debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:var(--muted)}
 </style>
@@ -115,6 +123,7 @@ button:disabled{opacity:.6}
     <div class="tab" data-tab="settings">⚙️ Settings</div>
   </div>
 
+  <!-- MAIN -->
   <div class="panel active" id="main">
     <div class="scanner">
       <video id="video" autoplay playsinline muted></video>
@@ -139,24 +148,42 @@ button:disabled{opacity:.6}
     <pre id="debug"></pre>
   </div>
 
+  <!-- SETTINGS -->
   <div class="panel" id="settings">
-    <label>Strategy</label>
-    <select id="modeSelect">
-      <option value="conservative">🛡️ Conservative</option>
-      <option value="aggressive">🔥 Aggressive</option>
-    </select>
-
-    <label style="margin-top:16px">Theme</label>
-    <select id="themeSelect">
-      <option value="">Dark</option>
-      <option value="theme-green">Casino Green</option>
-      <option value="theme-blue">Midnight Blue</option>
-      <option value="theme-purple">Royal Purple</option>
-    </select>
+    <div class="setting">
+      <label>Strategy</label>
+      <select id="modeSelect">
+        <option value="conservative">🛡️ Conservative</option>
+        <option value="aggressive">🔥 Aggressive</option>
+      </select>
+    </div>
+    <div class="setting">
+      <label>Theme</label>
+      <select id="themeSelect">
+        <option value="">Dark</option>
+        <option value="theme-green">Casino Green</option>
+        <option value="theme-blue">Midnight Blue</option>
+        <option value="theme-purple">Royal Purple</option>
+      </select>
+    </div>
   </div>
 </div>
 
 <script>
+/* ===============================
+   DOM REFERENCES (FIX)
+   =============================== */
+const video = document.getElementById("video");
+const snap = document.getElementById("snap");
+const statusEl = document.getElementById("status");
+const debug = document.getElementById("debug");
+const cardsBox = document.getElementById("cardsBox");
+const multTop = document.getElementById("multTop");
+const multMid = document.getElementById("multMid");
+const multBot = document.getElementById("multBot");
+const evBase = document.getElementById("evBase");
+const evUX = document.getElementById("evUX");
+
 /* ===============================
    CAMERA START (STATUS FIXED)
    =============================== */
@@ -164,13 +191,12 @@ navigator.mediaDevices.getUserMedia({
   video:{ facingMode:"environment" }
 }).then(stream=>{
   video.srcObject = stream;
-
   video.onloadedmetadata = () => {
     video.play();
-    status.textContent = "Camera ready — align machine";
+    statusEl.textContent = "Camera ready — align machine";
   };
 }).catch(err=>{
-  status.textContent = "Camera error";
+  statusEl.textContent = "Camera error";
   debug.textContent = err.message;
 });
 
@@ -197,7 +223,7 @@ let busy=false;
 snap.onclick=async()=>{
   if(busy) return;
   busy=true; snap.disabled=true;
-  status.textContent="Capturing…";
+  statusEl.textContent="Capturing…";
 
   try{
     const imageBase64=captureZoomedFrame();
@@ -215,9 +241,9 @@ snap.onclick=async()=>{
     evBase.textContent=data.ev_without_multiplier.toFixed(4);
     evUX.textContent=data.ev_with_multiplier.toFixed(4);
 
-    status.textContent="Done ✅";
+    statusEl.textContent="Done ✅";
   }catch(e){
-    status.textContent="Error";
+    statusEl.textContent="Error";
     debug.textContent=e.message;
   }finally{
     busy=false; snap.disabled=false;
