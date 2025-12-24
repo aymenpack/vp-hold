@@ -23,6 +23,7 @@ export function wireSnapWorker({
 
   whyBox,
   welcomeBox,
+  modeSelect,
   onSnapComplete
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
@@ -39,7 +40,11 @@ export function wireSnapWorker({
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({ imageBase64 })
+        body: JSON.stringify({
+          imageBase64,
+          paytable: "DDB_9_6",
+          mode: modeSelect.value
+        })
       });
 
       const d = await res.json();
@@ -50,13 +55,13 @@ export function wireSnapWorker({
       multSection.style.display="block";
 
       const baseEV = d.ev_without_multiplier;
-      const uxEV   = d.ev_with_multiplier;
-      const maxEV  = Math.max(baseEV, uxEV, 0.0001);
+      const uxEV = d.ev_with_multiplier;
+      const maxEV = Math.max(baseEV, uxEV, 0.0001);
 
       evBaseValue.textContent = baseEV.toFixed(4);
-      evUXValue.textContent   = uxEV.toFixed(4);
+      evUXValue.textContent = uxEV.toFixed(4);
       evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
-      evUXBar.style.width   = (uxEV   / maxEV * 100) + "%";
+      evUXBar.style.width = (uxEV / maxEV * 100) + "%";
 
       multTopValue.textContent = "×" + d.multipliers.top;
       multMidValue.textContent = "×" + d.multipliers.middle;
@@ -85,9 +90,14 @@ export function wireSnapWorker({
       });
 
       whyBox.innerHTML = `
-        <b>Why this hold?</b><br>
-        This play maximizes expected value for the current hand
-        given the active multipliers.
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:18px">💡</span>
+          <div>
+            <b>Why this hold?</b><br>
+            This play maximizes <b>expected value</b> given the current hand,
+            the paytable, and the active multipliers.
+          </div>
+        </div>
       `;
 
       onSnapComplete();
