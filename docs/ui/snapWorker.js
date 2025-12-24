@@ -46,7 +46,6 @@ export function wireSnapWorker({
 
       renderResults(d);
 
-      // 🔥 collapse camera AFTER successful render
       if (typeof onSnapComplete === "function") {
         onSnapComplete();
       }
@@ -60,16 +59,13 @@ export function wireSnapWorker({
   };
 
   function renderResults(d) {
-    // multipliers
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
     multBot.textContent = "×" + d.multipliers.bottom;
 
-    // EVs
     evBase.textContent = d.ev_without_multiplier.toFixed(4);
     evUX.textContent   = d.ev_with_multiplier.toFixed(4);
 
-    // cards
     cardsBox.innerHTML = "";
     const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -91,11 +87,14 @@ export function wireSnapWorker({
     cardsBox.classList.add("show");
 
     whyBox.innerHTML = `
-      <div style="font-weight:800;margin-bottom:8px">Why this hold?</div>
-      <div style="line-height:1.5">
-        This play maximizes <b>expected value</b> for the current hand,
-        considering the paytable and active multipliers.
-        Breaking this hold would reduce long-term return.
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:18px">💡</span>
+        <div>
+          <b>Why this hold?</b><br>
+          This play maximizes <b>expected value</b> for the current hand,
+          given the paytable and active multipliers.  
+          Breaking this hold would reduce long-term return.
+        </div>
       </div>
     `;
     whyBox.classList.add("show");
