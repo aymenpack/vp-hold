@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X – Vision UI</title>
 
-<link rel="stylesheet" href="../capture/camera.css">
-
 <style>
 body{margin:0;background:#020617;color:#fff;font-family:system-ui}
 .app{max-width:900px;margin:auto;padding:16px 16px 160px}
@@ -21,6 +19,33 @@ button{
 }
 button:disabled{opacity:.6}
 
+/* CAMERA */
+.scanner{
+  position:relative;
+  width:100%;
+  height:42vh;
+  max-height:420px;
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid #1f2937;
+  background:#000;
+}
+video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+.band{
+  position:absolute;
+  left:8%;
+  right:8%;
+  top:30%;
+  height:40%;
+  border:4px dashed #22c55e;
+  border-radius:18px;
+  pointer-events:none;
+}
+
 /* MULTIPLIERS */
 .multipliers{display:flex;gap:12px;margin-top:16px}
 .mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
@@ -30,9 +55,8 @@ button:disabled{opacity:.6}
 /* EV */
 .ev-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
 .ev-box{padding:14px;border-radius:14px;background:#020617;border:1px solid #333;text-align:center}
-.ev-box .label{font-size:12px;color:#9ca3af}
-.ev-box .value{margin-top:6px;font-size:24px;font-weight:900}
 .ev-box.ux .value{color:#22c55e}
+.ev-box .value{font-size:24px;font-weight:900}
 
 /* CARDS */
 .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
@@ -54,10 +78,9 @@ button:disabled{opacity:.6}
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA -->
-  <div class="scanner" id="scanner">
-    <video id="video" playsinline muted></video>
-    <div class="band" id="band"></div>
+  <div class="scanner">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="band"></div>
   </div>
 
   <button id="snap">SNAP</button>
@@ -69,8 +92,8 @@ button:disabled{opacity:.6}
   </div>
 
   <div class="ev-compare">
-    <div class="ev-box"><div class="label">Base EV</div><div class="value" id="evBase">—</div></div>
-    <div class="ev-box ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
+    <div class="ev-box"><div class="value" id="evBase">—</div></div>
+    <div class="ev-box ux"><div class="value" id="evUX">—</div></div>
   </div>
 
   <div class="cards" id="cardsBox"></div>
@@ -81,124 +104,76 @@ button:disabled{opacity:.6}
   <pre id="debug"></pre>
 </div>
 
-<script type="module">
-import { positionGreenFrame, captureBitmapFromGreenFrame } from "../capture/capture.js";
-
+<script>
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
 const video = document.getElementById("video");
-const band = document.getElementById("band");
-const scanner = document.getElementById("scanner");
 const snapBtn = document.getElementById("snap");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
-const multTop = document.getElementById("multTop");
-const multMid = document.getElementById("multMid");
-const multBot = document.getElementById("multBot");
-const evBaseEl = document.getElementById("evBase");
-const evUXEl = document.getElementById("evUX");
-const cardsBox = document.getElementById("cardsBox");
-const whyText = document.getElementById("whyText");
-
 let stream = null;
-let cameraReady = false;
 let busy = false;
 
-/* RENDER */
-function renderMultipliers(m){
-  multTop.textContent = "×" + (m?.top ?? "—");
-  multMid.textContent = "×" + (m?.middle ?? "—");
-  multBot.textContent = "×" + (m?.bottom ?? "—");
-}
-function renderEVs(base, ux){
-  evBaseEl.textContent = base?.toFixed?.(4) ?? "—";
-  evUXEl.textContent = ux?.toFixed?.(4) ?? "—";
-}
-function renderCards(cards, bestHold){
-  cardsBox.innerHTML="";
-  const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
-  cards.forEach((c,i)=>{
-    const el=document.createElement("div");
-    el.className="card";
-    if(bestHold?.[i]) el.classList.add("held");
-    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
-    cardsBox.appendChild(el);
-  });
-}
-
-/* CAMERA (Safari-safe) */
-async function ensureCamera(){
-  if(cameraReady) return;
-  stream = await navigator.mediaDevices.getUserMedia({ video:true });
+/* START CAMERA — SAME AS YOUR ORIGINAL WORKING VERSION */
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: "environment" }
+}).then(s => {
+  stream = s;
   video.srcObject = stream;
-  await video.play();
+  video.play();
+  statusEl.textContent = "Camera ready";
+}).catch(err => {
+  statusEl.textContent = "Camera error";
+  debugEl.textContent = err.message;
+});
 
-  const track = stream.getVideoTracks()[0];
-  if(track?.applyConstraints){
-    try{ await track.applyConstraints({ facingMode:{ ideal:"environment" }}); }catch{}
-  }
-
-  cameraReady = true;
-  requestAnimationFrame(()=>positionGreenFrame(scanner, band));
+/* CAPTURE FRAME */
+function captureFrame() {
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  return canvas.toDataURL("image/jpeg", 0.75);
 }
-
-/* Attempt auto-start (desktop / permissive browsers) */
-(async ()=>{
-  try{
-    await ensureCamera();
-    statusEl.textContent="Camera ready";
-  }catch{
-    statusEl.textContent="Tap SNAP to start camera";
-  }
-})();
 
 /* SNAP */
-snapBtn.onclick = async ()=>{
-  if(busy) return;
-  busy=true;
-  snapBtn.disabled=true;
+snapBtn.onclick = async () => {
+  if (busy) return;
+  busy = true;
+  snapBtn.disabled = true;
+  statusEl.textContent = "Processing…";
 
-  try{
-    statusEl.textContent="Starting camera…";
-    await ensureCamera();
+  try {
+    const imageBase64 = captureFrame();
 
-    statusEl.textContent="Capturing…";
-    const bitmap = await captureBitmapFromGreenFrame({ video, band, scanner });
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageBase64,
+        paytable: "DDB_9_6",
+        mode: "conservative"
+      })
+    });
 
-    statusEl.textContent="Processing…";
-    const worker = new Worker("../ui/snapWorker.js",{type:"module"});
+    const data = await res.json();
+    debugEl.textContent = JSON.stringify(data, null, 2);
 
-    worker.onmessage=(e)=>{
-      const {ok,data,error}=e.data;
-      try{
-        if(!ok){ statusEl.textContent="Worker error"; debugEl.textContent=error; return; }
-        renderMultipliers(data.multipliers);
-        renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
-        renderCards(data.cards, data.best_hold);
-        whyText.textContent="Best expected value hold.";
-        debugEl.textContent=JSON.stringify(data,null,2);
-        statusEl.textContent="Done ✅";
-      }finally{
-        worker.terminate();
-        busy=false;
-        snapBtn.disabled=false;
-      }
-    };
+    document.getElementById("multTop").textContent = "×" + data.multipliers.top;
+    document.getElementById("multMid").textContent = "×" + data.multipliers.middle;
+    document.getElementById("multBot").textContent = "×" + data.multipliers.bottom;
+    document.getElementById("evBase").textContent = data.ev_without_multiplier.toFixed(4);
+    document.getElementById("evUX").textContent = data.ev_with_multiplier.toFixed(4);
 
-    worker.postMessage({
-      bitmap,
-      workerUrl:API_URL,
-      paytable:"DDB_9_6",
-      mode:"conservative"
-    },[bitmap]);
+    statusEl.textContent = "Done ✅";
 
-  }catch(e){
-    statusEl.textContent="Camera error";
-    debugEl.textContent=e.message;
-    busy=false;
-    snapBtn.disabled=false;
+  } catch (e) {
+    statusEl.textContent = "Error";
+    debugEl.textContent = e.message;
+  } finally {
+    busy = false;
+    snapBtn.disabled = false;
   }
 };
 </script>
