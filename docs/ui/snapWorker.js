@@ -42,11 +42,11 @@ export function wireSnapWorker({
       });
 
       const d = await res.json();
-      if (!d || !d.cards) return;
+      if (!d || !d.cards || !d.best_hold) return;
 
       renderResults(d);
 
-      // tell UI that snap is done
+      // ✅ notify UI AFTER render
       if (typeof onSnapComplete === "function") {
         onSnapComplete();
       }
@@ -90,21 +90,16 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    // WHY (extended)
-    whyBox.innerHTML = buildWhy(d);
-    whyBox.classList.add("show");
-  }
-
-  function buildWhy(d) {
-    return `
+    // extended WHY
+    whyBox.innerHTML = `
       <div style="font-weight:800;margin-bottom:8px">Why this hold?</div>
       <div style="line-height:1.5">
-        This choice maximizes <b>expected value</b> given the current
-        hand, paytable, and active multipliers.
-        <br><br>
+        This choice maximizes <b>expected value</b> given the current hand,
+        paytable, and active multipliers.  
         Holding these cards preserves the strongest payout paths
         while avoiding lower-EV speculative draws.
       </div>
     `;
+    whyBox.classList.add("show");
   }
 }
