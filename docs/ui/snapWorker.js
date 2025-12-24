@@ -18,7 +18,8 @@ export function wireSnapWorker({
   evUX,
   whyBox,
   modeSelect,
-  onSnapComplete
+  onSnapComplete,
+  onHaptic
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
@@ -26,6 +27,8 @@ export function wireSnapWorker({
   scanner.onclick = async () => {
     if (busy) return;
     busy = true;
+
+    if (onHaptic) onHaptic("light");
     spinner.style.display = "block";
 
     try {
@@ -42,13 +45,12 @@ export function wireSnapWorker({
       });
 
       const d = await res.json();
-      if (!d || !d.cards || !d.best_hold) return;
+      if (!d || !d.cards) return;
 
       renderResults(d);
 
-      if (typeof onSnapComplete === "function") {
-        onSnapComplete();
-      }
+      if (onSnapComplete) onSnapComplete();
+      if (onHaptic) onHaptic("success");
 
     } catch (err) {
       console.error("Snap failed:", err);
@@ -91,9 +93,8 @@ export function wireSnapWorker({
         <span style="font-size:18px">💡</span>
         <div>
           <b>Why this hold?</b><br>
-          This play maximizes <b>expected value</b> for the current hand,
-          given the paytable and active multipliers.  
-          Breaking this hold would reduce long-term return.
+          This play maximizes <b>expected value</b> given the
+          current hand, paytable, and multipliers.
         </div>
       </div>
     `;
