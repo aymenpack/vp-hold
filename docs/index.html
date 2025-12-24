@@ -66,10 +66,9 @@ button:disabled{opacity:.6}
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA (EXACT MARKUP REQUIRED) -->
+  <!-- CAMERA (UNCHANGED STRUCTURE) -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
-    <!-- ✅ GREEN FRAME -->
     <div class="band" id="band"></div>
   </div>
 
@@ -100,9 +99,8 @@ button:disabled{opacity:.6}
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
 /* ===============================
-   CAMERA + CAPTURE (INLINE, NO IMPORTS)
+   CAMERA + CAPTURE (INLINE)
    =============================== */
-
 const CAPTURE_CONFIG = {
   FRAME_SCALE: 0.58,
   CAPTURE_Y_ADJUST: 0.03,
@@ -121,7 +119,7 @@ const debugEl = document.getElementById("debug");
 
 let busy = false;
 
-/* POSITION GREEN FRAME (EXACT LOGIC YOU HAD) */
+/* POSITION GREEN FRAME */
 function positionGreenFrame() {
   const h = scanner.getBoundingClientRect().height * CAPTURE_CONFIG.FRAME_SCALE;
   band.style.top =
@@ -129,7 +127,7 @@ function positionGreenFrame() {
   band.style.height = h + "px";
 }
 
-/* CAPTURE FROM GREEN FRAME (EXACT LOGIC YOU HAD) */
+/* CAPTURE FROM GREEN FRAME */
 async function captureFromGreenFrame() {
   await new Promise(r => requestAnimationFrame(r));
 
@@ -176,15 +174,19 @@ async function captureFromGreenFrame() {
 }
 
 /* ===============================
-   CAMERA START — EXACT WORKING BEHAVIOR
+   CAMERA START (FIXED TIMING)
    =============================== */
 navigator.mediaDevices.getUserMedia({
   video: { facingMode: "environment" }
 }).then(stream => {
   video.srcObject = stream;
   video.play();
-  requestAnimationFrame(positionGreenFrame);
-  statusEl.textContent = "Camera ready";
+
+  // 🔒 FIX: wait for metadata before positioning frame
+  video.onloadedmetadata = () => {
+    positionGreenFrame();
+    statusEl.textContent = "Camera ready — align machine";
+  };
 }).catch(err => {
   statusEl.textContent = "Camera error";
   debugEl.textContent = err.message;
@@ -215,13 +217,11 @@ snapBtn.onclick = async () => {
     const data = await res.json();
     debugEl.textContent = JSON.stringify(data, null, 2);
 
-    document.getElementById("multTop").textContent = "×" + data.multipliers.top;
-    document.getElementById("multMid").textContent = "×" + data.multipliers.middle;
-    document.getElementById("multBot").textContent = "×" + data.multipliers.bottom;
-    document.getElementById("evBase").textContent =
-      data.ev_without_multiplier.toFixed(4);
-    document.getElementById("evUX").textContent =
-      data.ev_with_multiplier.toFixed(4);
+    multTop.textContent = "×" + data.multipliers.top;
+    multMid.textContent = "×" + data.multipliers.middle;
+    multBot.textContent = "×" + data.multipliers.bottom;
+    evBase.textContent = data.ev_without_multiplier.toFixed(4);
+    evUX.textContent = data.ev_with_multiplier.toFixed(4);
 
     statusEl.textContent = "Done ✅";
   } catch (e) {
