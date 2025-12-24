@@ -7,7 +7,5 @@ cmds = [
   "npm install"
 ]
 
-[phases.start]
-cmds = [
-  "cd backend && node server.js"
-]
+[start]
+cmd = "cd backend && node server.js"
