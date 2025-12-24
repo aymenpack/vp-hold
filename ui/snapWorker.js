@@ -3,7 +3,7 @@
   UI interaction wiring.
 */
 
-import { captureGreenFrame } from "../capture/capture.js";
+import { captureGreenFrame } from "/vp-hold/capture/capture.js";
 
 export function wireSnapWorker({
   video,
@@ -25,9 +25,7 @@ export function wireSnapWorker({
     try{
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-      if (previewImg) {
-        previewImg.src = imageBase64;
-      }
+      if (previewImg) previewImg.src = imageBase64;
 
       const res = await fetch(API_URL,{
         method:"POST",
