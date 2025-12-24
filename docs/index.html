@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X – Vision UI</title>
 
-<!-- 🔒 IMPORTANT: ABSOLUTE PATH so it does NOT 404 on GitHub Pages -->
-<link rel="stylesheet" href="/capture/camera.css">
+<!-- ✅ IMPORTANT: GitHub Pages project path -->
+<link rel="stylesheet" href="/vp-hold/capture/camera.css" id="cameraCss">
 
 <style>
 body{
@@ -38,89 +38,27 @@ button{
 button:disabled{opacity:.6;cursor:not-allowed}
 
 /* MULTIPLIERS */
-.multipliers{
-  display:flex;
-  gap:12px;
-  margin-top:16px;
-}
-.mult{
-  flex:1;
-  padding:14px;
-  border:1px solid #333;
-  border-radius:14px;
-  background:#020617;
-  text-align:center;
-}
+.multipliers{display:flex;gap:12px;margin-top:16px}
+.mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
 .mult .label{font-size:12px;color:#9ca3af}
 .mult .value{font-size:22px;font-weight:900;margin-top:6px}
 
 /* EV */
-.ev-compare{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:16px;
-}
-.ev-box{
-  padding:14px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #333;
-  text-align:center;
-}
+.ev-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.ev-box{padding:14px;border-radius:14px;background:#020617;border:1px solid #333;text-align:center}
 .ev-box .label{font-size:12px;color:#9ca3af}
-.ev-box .value{
-  margin-top:6px;
-  font-size:24px;
-  font-weight:900;
-}
-.ev-box.ux .value{ color:#22c55e; }
+.ev-box .value{margin-top:6px;font-size:24px;font-weight:900}
+.ev-box.ux .value{color:#22c55e}
 
 /* CARDS */
-.cards{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:14px;
-  margin-top:18px;
-}
-.card{
-  position:relative;
-  background:#fff;
-  color:#000;
-  border-radius:14px;
-  padding:14px 6px 10px;
-  text-align:center;
-  box-shadow:0 8px 18px rgba(0,0,0,.35);
-}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
+.card{position:relative;background:#fff;color:#000;border-radius:14px;padding:14px 6px 10px;text-align:center;box-shadow:0 8px 18px rgba(0,0,0,.35)}
 .card .rank{font-size:28px;font-weight:900}
 .card .suit{font-size:22px;margin-top:4px}
 .card.red{color:#c1121f}
-.card.held{
-  transform:translateY(-10px);
-  box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6)
-}
-.card.held::after{
-  content:"HOLD";
-  position:absolute;
-  top:-10px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#22c55e;
-  color:#000;
-  font-size:11px;
-  font-weight:900;
-  padding:4px 10px;
-  border-radius:999px;
-}
+.card.held{transform:translateY(-10px);box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6)}
 
-/* WHY */
-#whyBox{
-  margin-top:16px;
-  padding:16px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #333;
-}
+#whyBox{margin-top:16px;padding:16px;border-radius:14px;background:#020617;border:1px solid #333}
 #whyTitle{font-size:14px;font-weight:900;color:#22c55e}
 #whyText{margin-top:8px;font-size:14px;color:#e5e7eb;line-height:1.4}
 
@@ -137,15 +75,46 @@ button:disabled{opacity:.6;cursor:not-allowed}
   max-height:260px;
   overflow:auto;
 }
+
+/* ✅ Fallback (only used if camera.css fails to load) */
+.fallback .scanner{
+  position:relative;
+  width:100%;
+  height:42vh;
+  max-height:420px;
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid #1f2937;
+  background:#000;
+}
+.fallback video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000;
+  transform:scale(1.4);
+  transform-origin:center;
+}
+.fallback .band{
+  position:absolute;
+  left:8%;
+  right:8%;
+  border:4px dashed #22c55e;
+  border-radius:18px;
+  background:rgba(34,197,94,0.12);
+  pointer-events:none;
+  top:50%;
+  height:58%;
+  transform:translateY(-50%);
+}
 </style>
 </head>
 
 <body>
-<div class="app">
+<div class="app" id="appRoot">
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA (CSS CONTROLS SIZE + FRAME) -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
@@ -153,29 +122,19 @@ button:disabled{opacity:.6;cursor:not-allowed}
 
   <button id="snap">SNAP</button>
 
-  <!-- MULTIPLIERS -->
   <div class="multipliers">
     <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
     <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
     <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
   </div>
 
-  <!-- EV -->
   <div class="ev-compare">
-    <div class="ev-box">
-      <div class="label">Base EV</div>
-      <div class="value" id="evBase">—</div>
-    </div>
-    <div class="ev-box ux">
-      <div class="label">Ultimate X EV</div>
-      <div class="value" id="evUX">—</div>
-    </div>
+    <div class="ev-box"><div class="label">Base EV</div><div class="value" id="evBase">—</div></div>
+    <div class="ev-box ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
   </div>
 
-  <!-- CARDS -->
   <div class="cards" id="cardsBox"></div>
 
-  <!-- WHY -->
   <div id="whyBox">
     <div id="whyTitle">Why this hold?</div>
     <div id="whyText"></div>
@@ -186,62 +145,79 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </div>
 
 <script>
-/* ===============================
-   CAMERA LOGIC — UNCHANGED
-   =============================== */
-navigator.mediaDevices.getUserMedia({
-  video:{ facingMode:"environment" }
-}).then(stream=>{
-  video.srcObject = stream;
-  video.play();
-  status.textContent = "Camera ready";
-}).catch(err=>{
-  status.textContent = "Camera error";
-  debug.textContent = err.message;
-});
-
-/* ===============================
-   BACKEND
-   =============================== */
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
+const appRoot = document.getElementById("appRoot");
+const scanner = document.getElementById("scanner");
+const video = document.getElementById("video");
 const snapBtn = document.getElementById("snap");
+const statusEl = document.getElementById("status");
+const debugEl = document.getElementById("debug");
+
 let busy = false;
 
-snapBtn.onclick = async ()=>{
-  if(busy) return;
+/* Detect if camera.css loaded by checking scanner height */
+function ensureCameraCssOrFallback() {
+  const h = scanner.getBoundingClientRect().height;
+  // If css didn't load, height often collapses or becomes huge/0; treat "too big" or "too small" as failure
+  if (h < 80 || h > 700) {
+    appRoot.classList.add("fallback");
+    statusEl.textContent = "Loaded fallback camera layout (camera.css missing)";
+  }
+}
+
+window.addEventListener("load", ensureCameraCssOrFallback);
+
+/* Camera logic — unchanged */
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: "environment" }
+}).then(s => {
+  video.srcObject = s;
+  video.play();
+  statusEl.textContent = "Camera ready";
+}).catch(err => {
+  statusEl.textContent = "Camera error";
+  debugEl.textContent = err.message;
+});
+
+/* Simple capture (you can replace with your green-frame crop later) */
+function captureFrame() {
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  return canvas.toDataURL("image/jpeg", 0.8);
+}
+
+snapBtn.onclick = async () => {
+  if (busy) return;
   busy = true;
   snapBtn.disabled = true;
-  status.textContent = "Processing…";
+  statusEl.textContent = "Processing…";
 
-  try{
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video,0,0);
+  try {
+    const imageBase64 = captureFrame();
 
-    const imageBase64 = canvas.toDataURL("image/jpeg",0.8);
-
-    const res = await fetch(API_URL,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ imageBase64 })
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64 })
     });
 
     const data = await res.json();
-    debug.textContent = JSON.stringify(data,null,2);
+    debugEl.textContent = JSON.stringify(data, null, 2);
 
-    multTop.textContent = "×" + data.multipliers.top;
-    multMid.textContent = "×" + data.multipliers.middle;
-    multBot.textContent = "×" + data.multipliers.bottom;
-    evBase.textContent = data.ev_without_multiplier.toFixed(4);
-    evUX.textContent = data.ev_with_multiplier.toFixed(4);
+    document.getElementById("multTop").textContent = "×" + data.multipliers.top;
+    document.getElementById("multMid").textContent = "×" + data.multipliers.middle;
+    document.getElementById("multBot").textContent = "×" + data.multipliers.bottom;
+    document.getElementById("evBase").textContent = data.ev_without_multiplier.toFixed(4);
+    document.getElementById("evUX").textContent = data.ev_with_multiplier.toFixed(4);
 
-    status.textContent = "Done ✅";
-  }catch(e){
-    status.textContent = "Error";
-    debug.textContent = e.message;
-  }finally{
+    statusEl.textContent = "Done ✅";
+  } catch (e) {
+    statusEl.textContent = "Error";
+    debugEl.textContent = e.message;
+  } finally {
     busy = false;
     snapBtn.disabled = false;
   }
