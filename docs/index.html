@@ -30,7 +30,7 @@ body{
   padding:12px 14px 160px;
 }
 
-/* header spacing */
+/* Header */
 h2{
   text-align:center;
   font-size:24px;
@@ -44,30 +44,7 @@ h2{
   margin:2px 0 10px;
 }
 
-/* tabs */
-.tabs{
-  display:flex;
-  gap:10px;
-  margin:14px 0 10px;
-}
-.tab{
-  flex:1;
-  padding:10px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  text-align:center;
-  font-weight:700;
-  cursor:pointer;
-}
-.tab.active{
-  background:var(--accent);
-  color:#000;
-}
-.panel{display:none}
-.panel.active{display:block}
-
-/* camera */
+/* Camera */
 .scanner.collapsed{display:none}
 .scanHint{
   position:absolute;
@@ -79,7 +56,7 @@ h2{
   font-weight:600;
 }
 
-/* divider */
+/* Divider */
 .divider{
   height:1px;
   margin:10px 0 14px;
@@ -91,7 +68,7 @@ h2{
   );
 }
 
-/* spinner */
+/* Spinner */
 .spinner{
   width:34px;height:34px;
   border-radius:50%;
@@ -103,7 +80,7 @@ h2{
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* cards */
+/* Cards */
 .cards{
   margin-top:12px;
   padding:22px 16px;
@@ -115,16 +92,10 @@ h2{
   display:flex;
   justify-content:center;
   gap:12px;
-  opacity:0;
-  transform:translateY(8px);
-  transition:.3s ease;
 }
-.cards.show{opacity:1;transform:none}
-
 .card{
   width:76px;height:108px;
-  background:#fff;
-  color:#111;
+  background:#fff;color:#111;
   border-radius:12px;
   position:relative;
 }
@@ -139,69 +110,61 @@ h2{
 .corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
 .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}
 
-/* EV BARS */
-.ev{
+/* EV + MULTIPLIER BARS */
+.barSection{
+  margin-top:16px;
   display:flex;
   flex-direction:column;
-  gap:10px;
-  margin-top:14px;
+  gap:12px;
 }
 
-.evRow{
+.barRow{
   display:flex;
   align-items:center;
   gap:10px;
 }
 
-.evLabel{
-  width:90px;
+.barLabel{
+  width:80px;
   font-size:12px;
   color:var(--muted);
 }
 
-.evBar{
+.barTrack{
   flex:1;
-  height:10px;
+  height:14px;                /* BIGGER BAR */
+  background:rgba(255,255,255,0.12);
   border-radius:999px;
-  background:rgba(255,255,255,0.1);
   overflow:hidden;
 }
 
-.evBarFill{
+.barFill{
   height:100%;
   width:0%;
   border-radius:999px;
   transition:width .4s ease;
 }
 
-.evBarFill.base{
-  background:rgba(255,255,255,0.45);
-}
+.barFill.base{background:rgba(255,255,255,0.45)}
+.barFill.ux{background:var(--accent)}
 
-.evBarFill.ux{
-  background:var(--accent);
-}
-
-.evValue{
+.barValue{
   width:80px;
   text-align:right;
   font-weight:800;
 }
 
-/* why */
+/* Why */
 #whyBox{
   max-width:540px;
-  margin:16px auto 0;
-  padding:18px;
+  margin:18px auto 0;
+  padding:18px 20px;
   border-radius:18px;
   background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.06);
-  opacity:0;
-  transition:.3s ease;
 }
-#whyBox.show{opacity:1}
 
-/* new hand */
+/* New hand */
 .newHand{
   margin:24px auto 0;
   padding:14px 20px;
@@ -222,46 +185,52 @@ h2{
   <h2>Ultimate X Vision</h2>
   <div class="subtitle">Smart video poker analysis</div>
 
-  <div class="tabs">
-    <div class="tab active" data-tab="play">Play</div>
-    <div class="tab" data-tab="settings">Settings</div>
+  <div class="scanner" id="scanner">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="band"></div>
+    <div class="scanHint">Tap anywhere inside the frame to analyze</div>
   </div>
 
-  <div class="panel active" id="play">
-    <div class="scanner" id="scanner">
-      <video id="video" autoplay playsinline muted></video>
-      <div class="band"></div>
-      <div class="scanHint">Tap anywhere inside the frame to analyze</div>
+  <div class="divider"></div>
+
+  <div class="spinner" id="spinner"></div>
+
+  <div class="cards" id="cardsBox"></div>
+
+  <div class="barSection">
+    <div class="barRow">
+      <div class="barLabel">Base EV</div>
+      <div class="barTrack"><div class="barFill base" id="evBaseBar"></div></div>
+      <div class="barValue" id="evBase">—</div>
     </div>
 
-    <div class="divider"></div>
-
-    <div class="spinner" id="spinner"></div>
-
-    <div class="cards" id="cardsBox"></div>
-
-    <div class="ev">
-      <div class="evRow">
-        <div class="evLabel">Base EV</div>
-        <div class="evBar"><div class="evBarFill base" id="evBaseBar"></div></div>
-        <div class="evValue" id="evBase">—</div>
-      </div>
-      <div class="evRow">
-        <div class="evLabel">Ultimate X EV</div>
-        <div class="evBar"><div class="evBarFill ux" id="evUXBar"></div></div>
-        <div class="evValue" id="evUX">—</div>
-      </div>
+    <div class="barRow">
+      <div class="barLabel">Ultimate X EV</div>
+      <div class="barTrack"><div class="barFill ux" id="evUXBar"></div></div>
+      <div class="barValue" id="evUX">—</div>
     </div>
 
-    <div class="multipliers">
-      <div class="box"><div class="label">Top</div><div class="value" id="multTop">—</div></div>
-      <div class="box"><div class="label">Middle</div><div class="value" id="multMid">—</div></div>
-      <div class="box"><div class="label">Bottom</div><div class="value" id="multBot">—</div></div>
+    <div class="barRow">
+      <div class="barLabel">Top</div>
+      <div class="barTrack"><div class="barFill ux" id="multTopBar"></div></div>
+      <div class="barValue" id="multTop">—</div>
     </div>
 
-    <div id="whyBox"></div>
-    <div class="newHand" id="newHandBtn">New hand</div>
+    <div class="barRow">
+      <div class="barLabel">Middle</div>
+      <div class="barTrack"><div class="barFill ux" id="multMidBar"></div></div>
+      <div class="barValue" id="multMid">—</div>
+    </div>
+
+    <div class="barRow">
+      <div class="barLabel">Bottom</div>
+      <div class="barTrack"><div class="barFill ux" id="multBotBar"></div></div>
+      <div class="barValue" id="multBot">—</div>
+    </div>
   </div>
+
+  <div id="whyBox"></div>
+  <div class="newHand" id="newHandBtn">New hand</div>
 </div>
 
 <script type="module">
@@ -277,13 +246,17 @@ const cardsBox=document.getElementById("cardsBox");
 const multTop=document.getElementById("multTop");
 const multMid=document.getElementById("multMid");
 const multBot=document.getElementById("multBot");
+const multTopBar=document.getElementById("multTopBar");
+const multMidBar=document.getElementById("multMidBar");
+const multBotBar=document.getElementById("multBotBar");
+
 const evBase=document.getElementById("evBase");
 const evUX=document.getElementById("evUX");
 const evBaseBar=document.getElementById("evBaseBar");
 const evUXBar=document.getElementById("evUXBar");
+
 const whyBox=document.getElementById("whyBox");
 const newHandBtn=document.getElementById("newHandBtn");
-const modeSelect=document.getElementById("modeSelect");
 
 await initCamera(video);
 
@@ -296,12 +269,14 @@ wireSnapWorker({
   multTop,
   multMid,
   multBot,
+  multTopBar,
+  multMidBar,
+  multBotBar,
   evBase,
   evUX,
   evBaseBar,
   evUXBar,
   whyBox,
-  modeSelect,
   onSnapComplete:()=>{
     scanner.classList.add("collapsed");
     newHandBtn.style.display="block";
