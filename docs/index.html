@@ -46,13 +46,17 @@ h2{text-align:center;font-size:24px;font-weight:800}
 .panel{display:none}
 .panel.active{display:block}
 
-/* camera */
-.cameraWrap{margin-top:16px}
-.cameraWrap.hidden{display:none}
+/* collapse scanner directly */
+.scanner.collapsed{
+  display:none;
+}
+
+/* scan hint */
 .scanHint{
   position:absolute;inset:0;
   display:flex;align-items:center;justify-content:center;
-  color:rgba(255,255,255,.75);font-weight:600;
+  color:rgba(255,255,255,.75);
+  font-weight:600;
 }
 
 /* spinner */
@@ -92,6 +96,7 @@ h2{text-align:center;font-size:24px;font-weight:800}
   color:#000;font-weight:800;
   text-align:center;cursor:pointer;
   max-width:220px;
+  display:none;
 }
 </style>
 </head>
@@ -107,12 +112,10 @@ h2{text-align:center;font-size:24px;font-weight:800}
   </div>
 
   <div class="panel active" id="play">
-    <div class="cameraWrap" id="cameraWrap">
-      <div class="scanner" id="scanner">
-        <video id="video" autoplay playsinline muted></video>
-        <div class="band"></div>
-        <div class="scanHint">Tap anywhere inside the frame to analyze</div>
-      </div>
+    <div class="scanner" id="scanner">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="band"></div>
+      <div class="scanHint">Tap anywhere inside the frame to analyze</div>
     </div>
 
     <div class="spinner" id="spinner"></div>
@@ -162,7 +165,6 @@ const video=document.getElementById("video");
 const scanner=document.getElementById("scanner");
 const band=document.querySelector(".band");
 const spinner=document.getElementById("spinner");
-const cameraWrap=document.getElementById("cameraWrap");
 const newHandBtn=document.getElementById("newHandBtn");
 
 const cardsBox=document.getElementById("cardsBox");
@@ -175,15 +177,22 @@ const whyBox=document.getElementById("whyBox");
 const modeSelect=document.getElementById("modeSelect");
 const themeSelect=document.getElementById("themeSelect");
 
-/* theme persistence */
-const THEME_KEY="vp_theme";
+/* persistence */
+const THEME_KEY="vp_theme",MODE_KEY="vp_mode";
 if(localStorage.getItem(THEME_KEY)){
   document.documentElement.className=localStorage.getItem(THEME_KEY);
   themeSelect.value=localStorage.getItem(THEME_KEY);
 }
+if(localStorage.getItem(MODE_KEY)){
+  modeSelect.value=localStorage.getItem(MODE_KEY);
+}
+
 themeSelect.onchange=()=>{
   document.documentElement.className=themeSelect.value;
   localStorage.setItem(THEME_KEY,themeSelect.value);
+};
+modeSelect.onchange=()=>{
+  localStorage.setItem(MODE_KEY,modeSelect.value);
 };
 
 /* tabs */
@@ -212,13 +221,13 @@ wireSnapWorker({
   whyBox,
   modeSelect,
   onSnapComplete:()=>{
-    cameraWrap.classList.add("hidden");
+    scanner.classList.add("collapsed");
     newHandBtn.style.display="block";
   }
 });
 
 newHandBtn.onclick=()=>{
-  cameraWrap.classList.remove("hidden");
+  scanner.classList.remove("collapsed");
   newHandBtn.style.display="none";
   cardsBox.innerHTML="";
   whyBox.innerHTML="";
