@@ -62,10 +62,41 @@ export function wireSnapWorker({
     }
   };
 
-  function renderResults(d){
-    welcomeBox.style.display = "none";
-    evSection.style.display = "block";
-    multSection.style.display = "block";
+  function renderResults(d) {
+
+  /* --- CREATE EV SECTION --- */
+  const evSection = document.createElement("div");
+  evSection.className = "evSection";
+  evSection.innerHTML = `
+    <div class="evRow">
+      <div class="evLabel">Base EV</div>
+      <div class="evTrack"><div class="evFill base" id="evBaseBar"></div></div>
+      <div class="evValue" id="evBase"></div>
+    </div>
+    <div class="evRow">
+      <div class="evLabel">Ultimate X EV</div>
+      <div class="evTrack"><div class="evFill ux" id="evUXBar"></div></div>
+      <div class="evValue" id="evUX"></div>
+    </div>
+  `;
+
+  cardsBox.before(evSection);
+
+  const evBaseValue = evSection.querySelector("#evBase");
+  const evUXValue   = evSection.querySelector("#evUX");
+  const evBaseBar   = evSection.querySelector("#evBaseBar");
+  const evUXBar     = evSection.querySelector("#evUXBar");
+
+  /* --- CREATE MULTIPLIER SECTION --- */
+  const multSection = document.createElement("div");
+  multSection.className = "multSection";
+  multSection.innerHTML = `
+    <div class="multRow"><div class="multLabel">Top</div><div class="multCells"></div><div class="multValue"></div></div>
+    <div class="multRow"><div class="multLabel">Middle</div><div class="multCells"></div><div class="multValue"></div></div>
+    <div class="multRow"><div class="multLabel">Bottom</div><div class="multCells"></div><div class="multValue"></div></div>
+  `;
+
+  cardsBox.after(multSection);
 
     // EV continuous
     const baseEV = d.ev_without_multiplier;
