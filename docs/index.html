@@ -19,6 +19,10 @@ body{
   margin:auto;
   padding:18px 14px 140px;
 }
+h2{font-size:22px;font-weight:800}
+.subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
+
+/* spinner */
 .spinner{
   width:34px;height:34px;
   border-radius:50%;
@@ -29,12 +33,62 @@ body{
   display:none;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* cards */
+.cards{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:16px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:.3s ease;
+}
+.cards.show{opacity:1;transform:none}
+.card{
+  width:76px;height:108px;
+  background:#fff;color:#111;
+  border-radius:12px;
+  position:relative;
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+}
+.card.red{color:#c1121f}
+.card.held{
+  transform:translateY(-12px);
+  box-shadow:0 0 0 3px #22c55e,0 10px 24px rgba(0,0,0,.45);
+}
+.corner{position:absolute;font-weight:900;font-size:14px;line-height:1.1;text-align:center}
+.corner.top{top:6px;left:6px}
+.corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
+.pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}
+
+/* multipliers + ev */
+.multipliers,.ev{
+  display:flex;gap:10px;margin-top:16px
+}
+.box{
+  flex:1;padding:10px;border-radius:14px;
+  background:#020617;border:1px solid #2a2f3a;text-align:center
+}
+.label{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em}
+.value{font-size:20px;font-weight:900;margin-top:4px}
+.ev .ux .value{color:#22c55e}
+
+/* why */
+#whyBox{
+  margin-top:14px;padding:14px;border-radius:14px;
+  background:#020617;border:1px solid #2a2f3a;
+  font-size:14px;line-height:1.4;
+  opacity:0;transform:translateY(6px);transition:.3s ease
+}
+#whyBox.show{opacity:1;transform:none}
 </style>
 </head>
 
 <body>
 <div class="app">
   <h2>Ultimate X Vision</h2>
+  <div class="subtitle">Tap the camera to analyze.</div>
 
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
@@ -43,10 +97,23 @@ body{
 
   <div class="spinner" id="spinner"></div>
 
-  <!-- DEBUG PREVIEW -->
-  <img id="previewImg" style="width:100%;margin-top:12px;display:none">
+  <!-- debug preview (optional) -->
+  <img id="previewImg" style="display:none;width:100%;margin-top:12px">
 
-  <div id="results"></div>
+  <div class="cards" id="cardsBox"></div>
+
+  <div class="multipliers">
+    <div class="box"><div class="label">Top</div><div class="value" id="multTop">—</div></div>
+    <div class="box"><div class="label">Middle</div><div class="value" id="multMid">—</div></div>
+    <div class="box"><div class="label">Bottom</div><div class="value" id="multBot">—</div></div>
+  </div>
+
+  <div class="ev">
+    <div class="box"><div class="label">Base EV</div><div class="value" id="evBase">—</div></div>
+    <div class="box ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
+  </div>
+
+  <div id="whyBox">—</div>
 </div>
 
 <script type="module">
@@ -61,18 +128,20 @@ const previewImg = document.getElementById("previewImg");
 
 await initCamera(video);
 
-function renderResults(data){
-  console.log("RESULT:", data);
-  // plug your full card / EV rendering here
-}
-
 wireSnapWorker({
   video,
   scanner,
   band,
   spinner,
   previewImg,
-  renderResults
+  cardsBox:document.getElementById("cardsBox"),
+  multTop:document.getElementById("multTop"),
+  multMid:document.getElementById("multMid"),
+  multBot:document.getElementById("multBot"),
+  evBase:document.getElementById("evBase"),
+  evUX:document.getElementById("evUX"),
+  whyBox:document.getElementById("whyBox"),
+  modeSelect:null
 });
 </script>
 </body>
