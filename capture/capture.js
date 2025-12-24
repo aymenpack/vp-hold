@@ -1,143 +1,62 @@
-// capture/capture.js
-// 🔒 DO NOT MODIFY — pixel-perfect capture
-// This file is safe for both base64 and ImageBitmap pipelines
+/*
+  🔒 LOCKED FILE
+  Green-frame → pixel-perfect capture math.
+  Validated under object-fit: cover on iOS Safari.
+*/
 
-export const CAPTURE_CONFIG = {
-  FRAME_SCALE: 0.58,
-  CAPTURE_Y_ADJUST: 0.03,
-  CAPTURE_H_ADJUST: 0.94,
-  CAPTURE_X_PAD: 0.17,
-  OUTPUT_WIDTH: 1100,
-  JPEG_QUALITY: 0.85
-};
-
-/* ===============================
-   FRAME POSITIONING
-   =============================== */
-
-export function positionGreenFrame(scanner, band) {
-  const h = scanner.getBoundingClientRect().height * CAPTURE_CONFIG.FRAME_SCALE;
-  band.style.top =
-    (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
-  band.style.height = h + "px";
+export async function initCamera(videoEl){
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video:{
+      facingMode:"environment",
+      width:{ ideal:1920 },
+      height:{ ideal:1080 }
+    }
+  });
+  videoEl.srcObject = stream;
+  await videoEl.play();
 }
 
-/* ===============================
-   BASE64 CAPTURE (LEGACY / SAFE)
-   =============================== */
-
-export async function captureFromGreenFrame({
-  video,
-  band,
-  scanner
-}) {
-  await new Promise(r => requestAnimationFrame(r));
-
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if (!vw || !vh) throw new Error("Camera not ready");
-
-  const videoRect = video.getBoundingClientRect();
+export function captureGreenFrame({ video, scanner, band }){
+  const scannerRect = scanner.getBoundingClientRect();
   const bandRect = band.getBoundingClientRect();
 
-  const scaleX = vw / videoRect.width;
-  const scaleY = vh / videoRect.height;
+  const videoW = video.videoWidth;
+  const videoH = video.videoHeight;
 
-  const baseX = (bandRect.left - videoRect.left) * scaleX;
-  const baseY =
-    ((bandRect.top - videoRect.top) * scaleY) +
-    (bandRect.height * CAPTURE_CONFIG.CAPTURE_Y_ADJUST * scaleY);
+  const scannerAspect = scannerRect.width / scannerRect.height;
+  const videoAspect = videoW / videoH;
 
-  const baseW = bandRect.width * scaleX;
-  const baseH = bandRect.height * CAPTURE_CONFIG.CAPTURE_H_ADJUST * scaleY;
+  let visibleX, visibleY, visibleW, visibleH;
 
-  const padX = baseW * CAPTURE_CONFIG.CAPTURE_X_PAD;
+  if (videoAspect > scannerAspect) {
+    visibleH = videoH;
+    visibleW = videoH * scannerAspect;
+    visibleX = (videoW - visibleW) / 2;
+    visibleY = 0;
+  } else {
+    visibleW = videoW;
+    visibleH = videoW / scannerAspect;
+    visibleX = 0;
+    visibleY = (videoH - visibleH) / 2;
+  }
 
-  const cropX = Math.max(0, baseX - padX);
-  const cropW = Math.min(vw - cropX, baseW + padX * 2);
-  const cropY = baseY;
-  const cropH = baseH;
+  const scaleX = visibleW / scannerRect.width;
+  const scaleY = visibleH / scannerRect.height;
 
-  const raw = document.createElement("canvas");
-  raw.width = cropW;
-  raw.height = cropH;
-  raw.getContext("2d").drawImage(
+  const sx = visibleX + (bandRect.left - scannerRect.left) * scaleX;
+  const sy = visibleY + (bandRect.top  - scannerRect.top ) * scaleY;
+  const sw = bandRect.width  * scaleX;
+  const sh = bandRect.height * scaleY;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = sw;
+  canvas.height = sh;
+
+  canvas.getContext("2d").drawImage(
     video,
-    cropX, cropY, cropW, cropH,
-    0, 0, cropW, cropH
+    sx, sy, sw, sh,
+    0,  0, sw, sh
   );
 
-  const out = document.createElement("canvas");
-  out.width = CAPTURE_CONFIG.OUTPUT_WIDTH;
-  out.height = Math.floor(
-    cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW)
-  );
-  out.getContext("2d").drawImage(
-    raw,
-    0, 0,
-    out.width, out.height
-  );
-
-  return out.toDataURL("image/jpeg", CAPTURE_CONFIG.JPEG_QUALITY);
-}
-
-/* ===============================
-   IMAGEBITMAP CAPTURE (WORKER SAFE)
-   =============================== */
-
-export async function captureBitmapFromGreenFrame({
-  video,
-  band,
-  scanner
-}) {
-  await new Promise(r => requestAnimationFrame(r));
-
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if (!vw || !vh) throw new Error("Camera not ready");
-
-  const videoRect = video.getBoundingClientRect();
-  const bandRect = band.getBoundingClientRect();
-
-  const scaleX = vw / videoRect.width;
-  const scaleY = vh / videoRect.height;
-
-  const baseX = (bandRect.left - videoRect.left) * scaleX;
-  const baseY =
-    ((bandRect.top - videoRect.top) * scaleY) +
-    (bandRect.height * CAPTURE_CONFIG.CAPTURE_Y_ADJUST * scaleY);
-
-  const baseW = bandRect.width * scaleX;
-  const baseH = bandRect.height * CAPTURE_CONFIG.CAPTURE_H_ADJUST * scaleY;
-
-  const padX = baseW * CAPTURE_CONFIG.CAPTURE_X_PAD;
-
-  const cropX = Math.max(0, baseX - padX);
-  const cropW = Math.min(vw - cropX, baseW + padX * 2);
-  const cropY = baseY;
-  const cropH = baseH;
-
-  const raw = document.createElement("canvas");
-  raw.width = cropW;
-  raw.height = cropH;
-  raw.getContext("2d").drawImage(
-    video,
-    cropX, cropY, cropW, cropH,
-    0, 0, cropW, cropH
-  );
-
-  const out = document.createElement("canvas");
-  out.width = CAPTURE_CONFIG.OUTPUT_WIDTH;
-  out.height = Math.floor(
-    cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW)
-  );
-  out.getContext("2d").drawImage(
-    raw,
-    0, 0,
-    out.width, out.height
-  );
-
-  // ✅ CRITICAL: return ImageBitmap (transferable, no giant strings)
-  const bitmap = await createImageBitmap(out);
-  return bitmap;
+  return canvas.toDataURL("image/jpeg", 0.9);
 }
