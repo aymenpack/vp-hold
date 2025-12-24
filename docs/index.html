@@ -5,13 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X – Vision UI</title>
 
-<!-- Your original camera CSS (kept) -->
-<link rel="stylesheet" href="../capture/camera.css">
+<!-- 🔒 IMPORTANT: ABSOLUTE PATH so it does NOT 404 on GitHub Pages -->
+<link rel="stylesheet" href="/capture/camera.css">
 
 <style>
-/* ===============================
-   UI (unchanged style)
-   =============================== */
 body{
   margin:0;
   background:#020617;
@@ -40,6 +37,7 @@ button{
 }
 button:disabled{opacity:.6;cursor:not-allowed}
 
+/* MULTIPLIERS */
 .multipliers{
   display:flex;
   gap:12px;
@@ -56,6 +54,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .mult .label{font-size:12px;color:#9ca3af}
 .mult .value{font-size:22px;font-weight:900;margin-top:6px}
 
+/* EV */
 .ev-compare{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -77,6 +76,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 }
 .ev-box.ux .value{ color:#22c55e; }
 
+/* CARDS */
 .cards{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -97,9 +97,23 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .card.red{color:#c1121f}
 .card.held{
   transform:translateY(-10px);
-  box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6);
+  box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6)
+}
+.card.held::after{
+  content:"HOLD";
+  position:absolute;
+  top:-10px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#22c55e;
+  color:#000;
+  font-size:11px;
+  font-weight:900;
+  padding:4px 10px;
+  border-radius:999px;
 }
 
+/* WHY */
 #whyBox{
   margin-top:16px;
   padding:16px;
@@ -123,28 +137,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
   max-height:260px;
   overflow:auto;
 }
-
-/* ===============================
-   IMPORTANT: Camera sizing + green frame
-   - We do NOT use transform scaling (breaks layout)
-   - We reduce scanner HEIGHT (true 4× smaller visually)
-   =============================== */
-
-/* camera.css uses height: 42vh and max-height: 420px.
-   4× smaller => 10.5vh and 105px */
-.scanner{
-  height: 10.5vh !important;
-  max-height: 105px !important;
-}
-
-/* Green frame math equivalent to your original JS:
-   height = 0.58 * scanner height
-   top = center it */
-.band{
-  height: 58% !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-}
 </style>
 </head>
 
@@ -153,45 +145,10 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA (same structure you used when it worked) -->
+  <!-- CAMERA (CSS CONTROLS SIZE + FRAME) -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
-  </div>
-
-  <!-- PAYTABLE -->
-  <div style="margin-top:16px">
-    <label style="font-size:13px;color:#9ca3af">Paytable</label>
-    <select id="paytableSelect" style="
-      width:100%;
-      margin-top:6px;
-      padding:12px;
-      border-radius:12px;
-      background:#020617;
-      color:#fff;
-      border:1px solid #333;
-      font-size:14px
-    ">
-      <option value="DDB_9_6">Double Double Bonus 9/6</option>
-    </select>
-  </div>
-
-  <!-- MODE -->
-  <div style="margin-top:14px">
-    <label style="font-size:13px;color:#9ca3af">Play Style</label>
-    <select id="modeSelect" style="
-      width:100%;
-      margin-top:6px;
-      padding:12px;
-      border-radius:12px;
-      background:#020617;
-      color:#fff;
-      border:1px solid #333;
-      font-size:14px
-    ">
-      <option value="conservative">Conservative</option>
-      <option value="aggressive">Aggressive</option>
-    </select>
   </div>
 
   <button id="snap">SNAP</button>
@@ -229,147 +186,62 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </div>
 
 <script>
-/* Backend */
-const API_URL = "https://vp-hold-production.up.railway.app/analyze";
-
-/* DOM */
-const video = document.getElementById("video");
-const band = document.getElementById("band");
-const scanner = document.getElementById("scanner");
-const snapBtn = document.getElementById("snap");
-const paytableSelect = document.getElementById("paytableSelect");
-const modeSelect = document.getElementById("modeSelect");
-const statusEl = document.getElementById("status");
-const debugEl = document.getElementById("debug");
-
-const multTop = document.getElementById("multTop");
-const multMid = document.getElementById("multMid");
-const multBot = document.getElementById("multBot");
-const evBaseEl = document.getElementById("evBase");
-const evUXEl = document.getElementById("evUX");
-const cardsBox = document.getElementById("cardsBox");
-const whyText = document.getElementById("whyText");
-
-let busy = false;
-
-/* 🔒 CAMERA LOGIC — UNCHANGED (LOCKED) */
+/* ===============================
+   CAMERA LOGIC — UNCHANGED
+   =============================== */
 navigator.mediaDevices.getUserMedia({
-  video: { facingMode: "environment" }
-}).then(s => {
-  video.srcObject = s;
+  video:{ facingMode:"environment" }
+}).then(stream=>{
+  video.srcObject = stream;
   video.play();
-  statusEl.textContent = "Camera ready";
-}).catch(err => {
-  statusEl.textContent = "Camera error";
-  debugEl.textContent = err.message;
+  status.textContent = "Camera ready";
+}).catch(err=>{
+  status.textContent = "Camera error";
+  debug.textContent = err.message;
 });
 
-/* Capture crop EXACTLY like your tuned logic, but inline */
-const CAPTURE_CONFIG = {
-  CAPTURE_Y_ADJUST: 0.03,
-  CAPTURE_H_ADJUST: 0.94,
-  CAPTURE_X_PAD: 0.17,
-  OUTPUT_WIDTH: 1100,
-  JPEG_QUALITY: 0.85
-};
+/* ===============================
+   BACKEND
+   =============================== */
+const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
-async function captureFromGreenFrame() {
-  await new Promise(r => requestAnimationFrame(r));
+const snapBtn = document.getElementById("snap");
+let busy = false;
 
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if (!vw || !vh) throw new Error("Camera not ready");
-
-  const videoRect = video.getBoundingClientRect();
-  const bandRect = band.getBoundingClientRect();
-
-  const scaleX = vw / videoRect.width;
-  const scaleY = vh / videoRect.height;
-
-  const baseX = (bandRect.left - videoRect.left) * scaleX;
-  const baseY =
-    ((bandRect.top - videoRect.top) * scaleY) +
-    (bandRect.height * CAPTURE_CONFIG.CAPTURE_Y_ADJUST * scaleY);
-
-  const baseW = bandRect.width * scaleX;
-  const baseH = bandRect.height * CAPTURE_CONFIG.CAPTURE_H_ADJUST * scaleY;
-
-  const padX = baseW * CAPTURE_CONFIG.CAPTURE_X_PAD;
-
-  const cropX = Math.max(0, baseX - padX);
-  const cropW = Math.min(vw - cropX, baseW + padX * 2);
-  const cropY = baseY;
-  const cropH = baseH;
-
-  const raw = document.createElement("canvas");
-  raw.width = cropW;
-  raw.height = cropH;
-  raw.getContext("2d").drawImage(
-    video,
-    cropX, cropY, cropW, cropH,
-    0, 0, cropW, cropH
-  );
-
-  const out = document.createElement("canvas");
-  out.width = CAPTURE_CONFIG.OUTPUT_WIDTH;
-  out.height = Math.floor(cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW));
-  out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
-
-  return out.toDataURL("image/jpeg", CAPTURE_CONFIG.JPEG_QUALITY);
-}
-
-/* UI render */
-function renderCards(cards, bestHold){
-  cardsBox.innerHTML = "";
-  const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
-  cards.forEach((c,i)=>{
-    const el=document.createElement("div");
-    el.className="card";
-    if(bestHold?.[i]) el.classList.add("held");
-    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
-    cardsBox.appendChild(el);
-  });
-}
-
-/* SNAP */
-snapBtn.onclick = async () => {
-  if (busy) return;
+snapBtn.onclick = async ()=>{
+  if(busy) return;
   busy = true;
   snapBtn.disabled = true;
-  statusEl.textContent = "Capturing…";
+  status.textContent = "Processing…";
 
-  try {
-    const imageBase64 = await captureFromGreenFrame();
+  try{
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video,0,0);
 
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageBase64,
-        paytable: paytableSelect.value,
-        mode: modeSelect.value
-      })
+    const imageBase64 = canvas.toDataURL("image/jpeg",0.8);
+
+    const res = await fetch(API_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ imageBase64 })
     });
 
     const data = await res.json();
-    debugEl.textContent = JSON.stringify(data, null, 2);
+    debug.textContent = JSON.stringify(data,null,2);
 
     multTop.textContent = "×" + data.multipliers.top;
     multMid.textContent = "×" + data.multipliers.middle;
     multBot.textContent = "×" + data.multipliers.bottom;
+    evBase.textContent = data.ev_without_multiplier.toFixed(4);
+    evUX.textContent = data.ev_with_multiplier.toFixed(4);
 
-    evBaseEl.textContent = data.ev_without_multiplier.toFixed(4);
-    evUXEl.textContent = data.ev_with_multiplier.toFixed(4);
-
-    renderCards(data.cards, data.best_hold);
-    whyText.textContent = "Best expected value hold.";
-
-    statusEl.textContent = "Done ✅";
-  } catch (e) {
-    statusEl.textContent = "Error";
-    debugEl.textContent = e.message;
-  } finally {
+    status.textContent = "Done ✅";
+  }catch(e){
+    status.textContent = "Error";
+    debug.textContent = e.message;
+  }finally{
     busy = false;
     snapBtn.disabled = false;
   }
