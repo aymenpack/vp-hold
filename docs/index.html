@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X Vision</title>
 
-<link rel="stylesheet" href="../capture/camera.css">
+<link rel="stylesheet" href="/vp-hold/capture/camera.css">
 
 <style>
 body{
@@ -43,16 +43,14 @@ body{
 
   <div class="spinner" id="spinner"></div>
 
-  <!-- DEBUG PREVIEW -->
   <img id="previewImg" style="width:100%;margin-top:12px;display:none">
 
-  <!-- RESULTS -->
   <div id="results"></div>
 </div>
 
 <script type="module">
-import { initCamera } from "../capture/capture.js";
-import { wireSnapWorker } from "../ui/snapWorker.js";
+import { initCamera } from "/vp-hold/capture/capture.js";
+import { wireSnapWorker } from "/vp-hold/ui/snapWorker.js";
 
 const video = document.getElementById("video");
 const scanner = document.getElementById("scanner");
@@ -64,7 +62,7 @@ await initCamera(video);
 
 function renderResults(data){
   console.log("RESULT:", data);
-  // your existing renderCards / EV / multipliers logic lives here
+  // your existing UI render logic plugs back in here
 }
 
 wireSnapWorker({
