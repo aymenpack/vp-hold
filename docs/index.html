@@ -14,14 +14,19 @@ h2{margin:0}
 .subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
 
 button{
-  margin-top:18px;width:100%;padding:18px;
-  font-size:20px;font-weight:900;
-  background:#22c55e;color:#000;
-  border:none;border-radius:18px;cursor:pointer
+  margin-top:18px;
+  width:100%;
+  padding:18px;
+  font-size:20px;
+  font-weight:900;
+  background:#22c55e;
+  color:#000;
+  border:none;
+  border-radius:18px;
+  cursor:pointer
 }
-button:disabled{opacity:.6}
+button:disabled{opacity:.6;cursor:not-allowed}
 
-/* UI ONLY — CAMERA STYLES ARE IN camera.css */
 .multipliers{display:flex;gap:12px;margin-top:16px}
 .mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
 .mult .label{font-size:12px;color:#9ca3af}
@@ -50,10 +55,8 @@ button:disabled{opacity:.6}
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA -->
   <div class="scanner" id="scanner">
-    <video id="video" autoplay playsinline muted></video>
-    <!-- ✅ GREEN FRAME RESTORED -->
+    <video id="video" playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
@@ -71,79 +74,69 @@ button:disabled{opacity:.6}
   </div>
 
   <div class="cards" id="cardsBox"></div>
-
   <div id="whyBox"><div id="whyText"></div></div>
 
-  <div id="status">Starting camera…</div>
+  <div id="status">Tap SNAP to start camera</div>
   <pre id="debug"></pre>
 </div>
 
 <script type="module">
-import {
-  positionGreenFrame,
-  captureFromGreenFrame
-} from "../capture/capture.js";
+import { positionGreenFrame, captureFromGreenFrame } from "../capture/capture.js";
 
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
 const video = document.getElementById("video");
-const scanner = document.getElementById("scanner");
 const band = document.getElementById("band");
+const scanner = document.getElementById("scanner");
 const snapBtn = document.getElementById("snap");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
 let stream = null;
+let cameraReady = false;
 let busy = false;
 
-/* ✅ CAMERA START — EXACTLY AS YOUR WORKING VERSION */
-navigator.mediaDevices.getUserMedia({
-  video: { facingMode: "environment" }
-}).then(s => {
-  stream = s;
+async function startCamera() {
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" }
+  });
   video.srcObject = stream;
-  video.play();
-  requestAnimationFrame(() =>
-    positionGreenFrame(scanner, band)
-  );
-  statusEl.textContent = "Camera ready";
-}).catch(err => {
-  statusEl.textContent = "Camera error";
-  debugEl.textContent = err.message;
-});
+  await video.play();
+  requestAnimationFrame(() => positionGreenFrame(scanner, band));
+  cameraReady = true;
+  statusEl.textContent = "Camera ready — align machine";
+}
 
-/* SNAP — USE CORRECT CAPTURE LOGIC */
 snapBtn.onclick = async () => {
   if (busy) return;
   busy = true;
   snapBtn.disabled = true;
-  statusEl.textContent = "Capturing…";
 
   try {
-    const imageBase64 = await captureFromGreenFrame({
-      video,
-      band,
-      scanner
-    });
+    if (!cameraReady) {
+      await startCamera();
+      busy = false;
+      snapBtn.disabled = false;
+      return; // first tap only starts camera
+    }
+
+    statusEl.textContent = "Capturing…";
+    const img = await captureFromGreenFrame({ video, band, scanner });
 
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageBase64,
-        paytable: "DDB_9_6",
-        mode: "conservative"
-      })
+      body: JSON.stringify({ imageBase64: img })
     });
 
     const data = await res.json();
     debugEl.textContent = JSON.stringify(data, null, 2);
 
-    document.getElementById("multTop").textContent = "×" + data.multipliers.top;
-    document.getElementById("multMid").textContent = "×" + data.multipliers.middle;
-    document.getElementById("multBot").textContent = "×" + data.multipliers.bottom;
-    document.getElementById("evBase").textContent = data.ev_without_multiplier.toFixed(4);
-    document.getElementById("evUX").textContent = data.ev_with_multiplier.toFixed(4);
+    multTop.textContent = "×" + data.multipliers.top;
+    multMid.textContent = "×" + data.multipliers.middle;
+    multBot.textContent = "×" + data.multipliers.bottom;
+    evBase.textContent = data.ev_without_multiplier.toFixed(4);
+    evUX.textContent = data.ev_with_multiplier.toFixed(4);
 
     statusEl.textContent = "Done ✅";
   } catch (e) {
