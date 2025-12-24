@@ -1,222 +1,110 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X Vision</title>
 
 <link rel="stylesheet" href="./capture/camera.css">
 
 <style>
-:root{
-  --bg:#020617;
-  --panel:#020617;
-  --border:#2a2f3a;
-  --accent:#22c55e;
-  --text:#ffffff;
-  --muted:#9ca3af;
-}
+body{margin:0;background:#020617;color:#fff;font-family:system-ui}
+.app{max-width:860px;margin:auto;padding:14px}
 
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-}
+h1{text-align:center;margin:4px 0}
+p{text-align:center;color:#9ca3af;margin:4px 0 12px}
 
-.app{
-  max-width:860px;
-  margin:auto;
-  padding:12px 14px 160px;
-}
+.tabs{display:flex;gap:10px;margin-bottom:12px}
+.tab{flex:1;padding:10px;border-radius:14px;border:1px solid #333;text-align:center;cursor:pointer}
+.tab.active{background:#22c55e;color:#000}
 
-/* header */
-h2{
-  text-align:center;
-  font-size:24px;
-  font-weight:800;
-  margin:2px 0 0;
-}
-.subtitle{
-  text-align:center;
-  font-size:13px;
-  color:var(--muted);
-  margin:2px 0 10px;
-}
-
-/* tabs */
-.tabs{
-  display:flex;
-  gap:10px;
-  margin:14px 0 10px;
-}
-.tab{
-  flex:1;
-  padding:10px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  text-align:center;
-  font-weight:700;
-  cursor:pointer;
-}
-.tab.active{
-  background:var(--accent);
-  color:#000;
-}
 .panel{display:none}
 .panel.active{display:block}
 
-/* camera */
-.scanner{
-  position:relative;
-}
+.scanner{position:relative}
 .scanner.collapsed{display:none}
+
 .scanHint{
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:rgba(255,255,255,.75);
-  font-weight:600;
-  pointer-events:none; /* 🔥 FIX TAP */
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;color:rgba(255,255,255,.7)
 }
 
-/* welcome */
-#welcomeBox{
-  text-align:center;
-  padding:16px 18px;
-  border-radius:18px;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.06);
-  margin-bottom:12px;
-  pointer-events:none;
-}
+.cards{display:flex;gap:10px;justify-content:center;margin-top:14px}
+.card{width:70px;height:100px;background:#fff;color:#111;border-radius:12px;position:relative}
+.card.red{color:#c1121f}
+.card.held{transform:translateY(-12px);box-shadow:0 0 0 3px #22c55e}
 
-/* divider */
-.divider{
-  height:1px;
-  margin:10px 0 14px;
-  background:linear-gradient(
-    to right,
-    transparent,
-    rgba(255,255,255,0.25),
-    transparent
-  );
-}
+.corner{position:absolute;font-weight:900;font-size:14px}
+.corner.top{top:6px;left:6px}
+.corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
+.pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px}
 
-/* spinner */
-.spinner{
-  width:34px;height:34px;
-  border-radius:50%;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  animation:spin 1s linear infinite;
-  margin:14px auto;
-  display:none;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
+.bar{height:12px;background:#333;border-radius:999px;overflow:hidden}
+.fill{height:100%;background:#22c55e;width:0%}
 
-/* cards */
-.cards{
-  margin-top:12px;
-  padding:22px 16px;
-  border-radius:22px;
-  background:rgba(255,255,255,0.05);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,0.06),
-    0 10px 30px rgba(0,0,0,0.35);
-  display:flex;
-  justify-content:center;
-  gap:12px;
-}
+.multRow{display:flex;align-items:center;gap:8px;margin-top:8px}
+.multCells{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;flex:1}
+.multCell{height:10px;background:#333;border-radius:3px}
+.multCell.g{background:#22c55e}
 
-/* EV */
-.evSection{
-  display:none;
-  margin-bottom:14px;
-}
-
-/* multiplier */
-.multSection{
-  display:none;
-  margin-top:14px;
-}
-
-/* why */
-#whyBox{
-  max-width:540px;
-  margin:18px auto 0;
-  padding:18px;
-  border-radius:18px;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.06);
-}
-
-/* new hand */
-.newHand{
-  margin:24px auto 0;
-  padding:14px 20px;
-  border-radius:16px;
-  background:var(--accent);
-  color:#000;
-  font-weight:800;
-  text-align:center;
-  cursor:pointer;
-  max-width:220px;
-  display:none;
-}
+button{margin:20px auto;display:block;padding:12px 18px;border-radius:16px;border:none;font-weight:800}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h2>Ultimate X Vision</h2>
-  <div class="subtitle">Smart video poker analysis</div>
+  <h1>Ultimate X Vision</h1>
+  <p>Tap the camera to analyze your hand</p>
 
   <div class="tabs">
     <div class="tab active" data-tab="play">Play</div>
     <div class="tab" data-tab="settings">Settings</div>
   </div>
 
-  <!-- PLAY -->
   <div class="panel active" id="play">
     <div class="scanner" id="scanner">
       <video id="video" autoplay playsinline muted></video>
       <div class="band"></div>
-      <div class="scanHint">Tap anywhere inside the frame to analyze</div>
+      <div class="scanHint">Tap to analyze</div>
     </div>
 
-    <div id="welcomeBox">
-      🎰 <b>Ultimate X Video Poker</b><br>
-      Analyze your hand using computer vision.<br><br>
-      <b>Expected Value (EV)</b> measures how profitable a decision is
-      over time — higher EV means better long-term results.<br><br>
-      Tap the camera to analyze your current hand. Good luck 🍀
+    <div style="margin-top:10px">
+      Base EV
+      <div class="bar"><div class="fill" id="evBaseBar"></div></div>
+      <div id="evBase"></div>
+
+      Ultimate X EV
+      <div class="bar"><div class="fill" id="evUXBar"></div></div>
+      <div id="evUX"></div>
     </div>
 
-    <div class="divider"></div>
-
-    <div class="spinner" id="spinner"></div>
-
-    <div class="evSection" id="evSection"></div>
     <div class="cards" id="cardsBox"></div>
-    <div class="multSection" id="multSection"></div>
 
-    <div id="whyBox"></div>
-    <div class="newHand" id="newHandBtn">New hand</div>
+    <div class="multRow">
+      <span>Top</span>
+      <div class="multCells" id="multTopCells"></div>
+      <span id="multTop"></span>
+    </div>
+
+    <div class="multRow">
+      <span>Middle</span>
+      <div class="multCells" id="multMidCells"></div>
+      <span id="multMid"></span>
+    </div>
+
+    <div class="multRow">
+      <span>Bottom</span>
+      <div class="multCells" id="multBotCells"></div>
+      <span id="multBot"></span>
+    </div>
+
+    <div id="whyBox" style="margin-top:12px"></div>
+
+    <button id="newHandBtn" style="display:none">New hand</button>
   </div>
 
-  <!-- SETTINGS -->
   <div class="panel" id="settings">
-    <div class="box">
-      <label>Strategy</label>
-      <select id="modeSelect">
-        <option value="conservative">Conservative</option>
-        <option value="aggressive">Aggressive</option>
-      </select>
-    </div>
+    <p>Settings page (restored)</p>
   </div>
 </div>
 
@@ -224,45 +112,47 @@ h2{
 import { initCamera } from "./capture/capture.js";
 import { wireSnapWorker } from "./ui/snapWorker.js";
 
-const video=document.getElementById("video");
-const scanner=document.getElementById("scanner");
-const band=document.querySelector(".band");
-const spinner=document.getElementById("spinner");
+const $ = id => document.getElementById(id);
 
-const cardsBox=document.getElementById("cardsBox");
-const evSection=document.getElementById("evSection");
-const multSection=document.getElementById("multSection");
-const whyBox=document.getElementById("whyBox");
-const welcomeBox=document.getElementById("welcomeBox");
-const newHandBtn=document.getElementById("newHandBtn");
-const modeSelect=document.getElementById("modeSelect");
-
-await initCamera(video);
+await initCamera($("video"));
 
 wireSnapWorker({
-  video,
-  scanner,
-  band,
-  spinner,
-  cardsBox,
-  evSection,
-  multSection,
-  whyBox,
-  welcomeBox,
-  modeSelect,
+  video:$("video"),
+  scanner:$("scanner"),
+  band:document.querySelector(".band"),
+  spinner:{style:{display:"none"}},
+  cardsBox:$("cardsBox"),
+  evBase:$("evBase"),
+  evUX:$("evUX"),
+  evBaseBar:$("evBaseBar"),
+  evUXBar:$("evUXBar"),
+  multTop:$("multTop"),
+  multMid:$("multMid"),
+  multBot:$("multBot"),
+  multTopCells:[...Array(12)].map(()=>$("multTopCells").appendChild(document.createElement("div"))),
+  multMidCells:[...Array(12)].map(()=>$("multMidCells").appendChild(document.createElement("div"))),
+  multBotCells:[...Array(12)].map(()=>$("multBotCells").appendChild(document.createElement("div"))),
+  whyBox:$("whyBox"),
   onSnapComplete:()=>{
-    scanner.classList.add("collapsed");
-    newHandBtn.style.display="block";
+    $("scanner").classList.add("collapsed");
+    $("newHandBtn").style.display="block";
   }
 });
 
-newHandBtn.onclick=()=>{
-  scanner.classList.remove("collapsed");
-  welcomeBox.style.display="block";
-  evSection.style.display="none";
-  multSection.style.display="none";
-  newHandBtn.style.display="none";
+$("newHandBtn").onclick=()=>{
+  $("scanner").classList.remove("collapsed");
+  $("newHandBtn").style.display="none";
 };
+
+// tabs
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById(t.dataset.tab).classList.add("active");
+  };
+});
 </script>
 </body>
 </html>
