@@ -20,7 +20,7 @@
 .theme-blue{--bg:#020b1f;--panel:#020b1f;--border:#1e3a8a;--accent:#60a5fa}
 .theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
 
-/* BASE */
+/* base */
 body{
   margin:0;
   background:var(--bg);
@@ -32,73 +32,25 @@ body{
   margin:auto;
   padding:20px 14px 160px;
 }
-h2{
-  font-size:24px;
-  font-weight:800;
-  text-align:center;
-}
-.subtitle{
-  font-size:13px;
-  color:var(--muted);
-  margin-top:6px;
-  text-align:center;
-}
+h2{text-align:center;font-size:24px;font-weight:800}
+.subtitle{text-align:center;font-size:13px;color:var(--muted);margin-top:6px}
 
-/* CAMERA TEXT */
-.scanHint{
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:14px;
-  font-weight:600;
-  color:rgba(255,255,255,.75);
-  pointer-events:none;
-  text-align:center;
-  padding:0 20px;
-}
-
-/* SPINNER */
+/* spinner */
 .spinner{
   width:34px;height:34px;
   border-radius:50%;
   border:3px solid rgba(255,255,255,.2);
   border-top-color:var(--accent);
   animation:spin 1s linear infinite;
-  margin:16px auto 0;
+  margin:16px auto;
   display:none;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* SPACING */
+/* spacing */
 .section-gap{margin-top:28px}
 
-/* TABS */
-.tabs{
-  display:flex;
-  gap:10px;
-  margin:18px 0 12px;
-}
-.tab{
-  flex:1;
-  padding:10px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:var(--panel);
-  text-align:center;
-  font-size:14px;
-  font-weight:700;
-  cursor:pointer;
-}
-.tab.active{
-  background:var(--accent);
-  color:#000;
-}
-.panel{display:none}
-.panel.active{display:block}
-
-/* CARDS */
+/* cards */
 .cards{
   display:flex;
   justify-content:center;
@@ -125,7 +77,7 @@ h2{
 .corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
 .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}
 
-/* MULTIPLIERS + EV */
+/* multipliers & ev */
 .multipliers,.ev{display:flex;gap:10px;margin-top:18px}
 .box{
   flex:1;padding:10px;border-radius:14px;
@@ -135,7 +87,7 @@ h2{
 .value{font-size:20px;font-weight:900;margin-top:4px}
 .ev .ux .value{color:var(--accent)}
 
-/* WHY */
+/* why */
 #whyBox{
   margin-top:18px;padding:16px;border-radius:14px;
   background:var(--panel);border:1px solid var(--border);
@@ -144,7 +96,19 @@ h2{
 }
 #whyBox.show{opacity:1;transform:none}
 
-/* SETTINGS */
+/* tabs */
+.tabs{display:flex;gap:10px;margin:18px 0 12px}
+.tab{
+  flex:1;padding:10px;border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  text-align:center;font-weight:700;font-size:14px;cursor:pointer
+}
+.tab.active{background:var(--accent);color:#000}
+.panel{display:none}
+.panel.active{display:block}
+
+/* settings */
 .setting{margin-top:18px}
 .setting label{font-size:12px;color:var(--muted)}
 select{
@@ -153,32 +117,17 @@ select{
   color:var(--text);border:1px solid var(--border)
 }
 
-/* DEBUG */
+/* debug */
 .preview{
-  margin-top:18px;
-  padding:10px;
-  border-radius:14px;
-  background:#0b0f1a;
-  border:1px solid var(--border);
+  margin-top:18px;padding:10px;border-radius:14px;
+  background:#0b0f1a;border:1px solid var(--border)
 }
-.preview label{
-  font-size:11px;
-  color:var(--muted);
-}
-.preview img{
-  width:100%;
-  margin-top:6px;
-  border-radius:10px;
-}
+.preview label{font-size:11px;color:var(--muted)}
+.preview img{width:100%;margin-top:6px;border-radius:10px}
 .debugBox{
-  margin-top:12px;
-  padding:12px;
-  border-radius:14px;
-  background:#0b0f1a;
-  border:1px solid var(--border);
-  font-size:12px;
-  white-space:pre-wrap;
-  color:#9ca3af;
+  margin-top:12px;padding:12px;border-radius:14px;
+  background:#0b0f1a;border:1px solid var(--border);
+  font-size:12px;white-space:pre-wrap;color:#9ca3af
 }
 </style>
 </head>
