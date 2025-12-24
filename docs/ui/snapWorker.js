@@ -46,7 +46,7 @@ export function wireSnapWorker({
 
       renderResults(d);
 
-      // ✅ notify UI AFTER render
+      // 🔥 collapse camera AFTER successful render
       if (typeof onSnapComplete === "function") {
         onSnapComplete();
       }
@@ -90,14 +90,12 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    // extended WHY
     whyBox.innerHTML = `
       <div style="font-weight:800;margin-bottom:8px">Why this hold?</div>
       <div style="line-height:1.5">
-        This choice maximizes <b>expected value</b> given the current hand,
-        paytable, and active multipliers.  
-        Holding these cards preserves the strongest payout paths
-        while avoiding lower-EV speculative draws.
+        This play maximizes <b>expected value</b> for the current hand,
+        considering the paytable and active multipliers.
+        Breaking this hold would reduce long-term return.
       </div>
     `;
     whyBox.classList.add("show");
