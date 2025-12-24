@@ -22,7 +22,7 @@
 .theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
 
 /* ===============================
-   CAMERA CSS (INLINE, LOCKED)
+   CAMERA CSS (LOCKED)
    =============================== */
 .scanner{
   position:relative;
@@ -100,6 +100,25 @@ button:disabled{opacity:.6}
 .card.red{color:#c1121f}
 .card.held{transform:translateY(-10px);box-shadow:0 0 0 3px var(--accent)}
 
+#whyBox{
+  margin-top:16px;
+  padding:16px;
+  border-radius:14px;
+  background:var(--panel);
+  border:1px solid var(--border);
+}
+#whyTitle{
+  font-size:14px;
+  font-weight:900;
+  color:var(--accent);
+}
+#whyText{
+  margin-top:8px;
+  font-size:14px;
+  line-height:1.4;
+  color:var(--text);
+}
+
 .setting{margin-top:16px}
 .setting label{font-size:13px;color:var(--muted)}
 select{
@@ -144,6 +163,13 @@ select{
     </div>
 
     <div class="cards" id="cardsBox"></div>
+
+    <!-- WHY THIS HOLD -->
+    <div id="whyBox">
+      <div id="whyTitle">Why this hold?</div>
+      <div id="whyText">—</div>
+    </div>
+
     <div id="status">Starting camera…</div>
     <pre id="debug"></pre>
   </div>
@@ -184,62 +210,8 @@ const multMid = document.getElementById("multMid");
 const multBot = document.getElementById("multBot");
 const evBase = document.getElementById("evBase");
 const evUX = document.getElementById("evUX");
-const themeSelect = document.getElementById("themeSelect");
+const whyText = document.getElementById("whyText");
 const modeSelect = document.getElementById("modeSelect");
-const tabs = document.querySelectorAll(".tab");
-const panels = document.querySelectorAll(".panel");
-
-/* ===============================
-   PERSISTENCE KEYS
-   =============================== */
-const THEME_KEY = "vp_theme";
-const MODE_KEY  = "vp_mode";
-const TAB_KEY   = "vp_tab";
-
-/* ===============================
-   RESTORE SAVED STATE
-   =============================== */
-const savedTheme = localStorage.getItem(THEME_KEY);
-if (savedTheme) {
-  document.documentElement.className = savedTheme;
-  themeSelect.value = savedTheme;
-}
-
-const savedMode = localStorage.getItem(MODE_KEY);
-if (savedMode) {
-  modeSelect.value = savedMode;
-}
-
-const savedTab = localStorage.getItem(TAB_KEY);
-if (savedTab) {
-  tabs.forEach(t => t.classList.remove("active"));
-  panels.forEach(p => p.classList.remove("active"));
-  document.querySelector(`.tab[data-tab="${savedTab}"]`).classList.add("active");
-  document.getElementById(savedTab).classList.add("active");
-}
-
-/* ===============================
-   SAVE ON CHANGE
-   =============================== */
-themeSelect.onchange = () => {
-  const theme = themeSelect.value;
-  document.documentElement.className = theme;
-  localStorage.setItem(THEME_KEY, theme);
-};
-
-modeSelect.onchange = () => {
-  localStorage.setItem(MODE_KEY, modeSelect.value);
-};
-
-tabs.forEach(t => {
-  t.onclick = () => {
-    tabs.forEach(x => x.classList.remove("active"));
-    panels.forEach(p => p.classList.remove("active"));
-    t.classList.add("active");
-    document.getElementById(t.dataset.tab).classList.add("active");
-    localStorage.setItem(TAB_KEY, t.dataset.tab);
-  };
-});
 
 /* ===============================
    CAMERA START
@@ -272,6 +244,36 @@ function captureZoomedFrame(){
 }
 
 /* ===============================
+   WHY THIS HOLD (EXPLAINER)
+   =============================== */
+function explainHold(cards, bestHold, multiplier, mode){
+  const held = cards.filter((_,i)=>bestHold[i]);
+  const counts = {};
+  held.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
+  const values = Object.values(counts);
+
+  if (values.includes(4))
+    return "Four of a kind locks in the highest immediate payout.";
+
+  if (values.includes(3) && values.includes(2))
+    return "A full house suggests strong value and future multiplier growth.";
+
+  if (values.includes(3))
+    return "Holding three of a kind maximizes full house and quad potential.";
+
+  if (values.filter(v=>v===2).length===2)
+    return "Two pair is strong, but Ultimate X often favors breaking it for multiplier growth.";
+
+  if (values.includes(2))
+    return "Holding a pair maximizes expected value versus drawing five new cards.";
+
+  if (mode === "aggressive" && multiplier >= 2)
+    return "Aggressive mode favors chasing multiplier growth over immediate payout.";
+
+  return "This draw provides the highest expected value given the current paytable and multipliers.";
+}
+
+/* ===============================
    SNAP
    =============================== */
 const API_URL="https://vp-hold-production.up.railway.app/analyze";
@@ -298,6 +300,14 @@ snap.onclick=async()=>{
     evBase.textContent=data.ev_without_multiplier.toFixed(4);
     evUX.textContent=data.ev_with_multiplier.toFixed(4);
 
+    renderCards(data.cards, data.best_hold);
+    whyText.textContent = explainHold(
+      data.cards,
+      data.best_hold,
+      data.multipliers.bottom,
+      modeSelect.value
+    );
+
     statusEl.textContent="Done ✅";
   }catch(e){
     statusEl.textContent="Error";
@@ -306,6 +316,32 @@ snap.onclick=async()=>{
     busy=false; snap.disabled=false;
   }
 };
+
+/* ===============================
+   UI HELPERS
+   =============================== */
+function renderCards(cards, bestHold){
+  cardsBox.innerHTML="";
+  const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
+  cards.forEach((c,i)=>{
+    const el=document.createElement("div");
+    el.className="card";
+    if(bestHold?.[i]) el.classList.add("held");
+    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
+    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
+    cardsBox.appendChild(el);
+  });
+}
+
+/* Tabs */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById(t.dataset.tab).classList.add("active");
+  };
+});
 </script>
 </body>
 </html>
