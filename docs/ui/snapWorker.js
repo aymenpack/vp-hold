@@ -67,12 +67,12 @@ export function wireSnapWorker({
   };
 
   function renderResults(d) {
-    /* SHOW SECTIONS */
+    /* show sections */
     welcomeBox.style.display = "none";
     evSection.style.display = "block";
     multSection.style.display = "block";
 
-    /* ===== EV (CONTINUOUS) ===== */
+    /* EV (continuous) */
     const baseEV = d.ev_without_multiplier;
     const uxEV   = d.ev_with_multiplier;
     const maxEV  = Math.max(baseEV, uxEV, 0.0001);
@@ -83,7 +83,7 @@ export function wireSnapWorker({
     evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
     evUXBar.style.width   = (uxEV   / maxEV * 100) + "%";
 
-    /* ===== MULTIPLIERS (DISCRETE 1–12) ===== */
+    /* multipliers (1–12 discrete) */
     multTopValue.textContent = "×" + d.multipliers.top;
     multMidValue.textContent = "×" + d.multipliers.middle;
     multBotValue.textContent = "×" + d.multipliers.bottom;
@@ -92,7 +92,7 @@ export function wireSnapWorker({
     fillMultiplier(multMidCells, d.multipliers.middle);
     fillMultiplier(multBotCells, d.multipliers.bottom);
 
-    /* ===== CARDS ===== */
+    /* cards */
     cardsBox.innerHTML = "";
     const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -113,14 +113,15 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    /* ===== WHY ===== */
+    /* why */
     whyBox.innerHTML = `
       <div style="display:flex;gap:10px;align-items:flex-start">
         <span style="font-size:18px">💡</span>
         <div>
           <b>Why this hold?</b><br>
-          This play maximizes <b>expected value</b> for the current hand,
-          given the paytable and active multipliers.
+          This play maximizes <b>expected value</b>, meaning it produces
+          the best long-term return given the current hand,
+          paytable, and active multipliers.
         </div>
       </div>
     `;
@@ -130,9 +131,7 @@ export function wireSnapWorker({
   function fillMultiplier(cells, value){
     cells.forEach((c,i)=>{
       c.className = "multCell";
-      if (i < value) {
-        c.classList.add(colorFor(i+1));
-      }
+      if (i < value) c.classList.add(colorFor(i+1));
     });
   }
 
