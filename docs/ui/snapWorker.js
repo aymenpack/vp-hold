@@ -20,7 +20,7 @@ export function wireSnapWorker({
   whyBox,
   modeSelect,
   debugSelect,
-  onDebugJson
+  debugBox
 }){
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
@@ -33,7 +33,7 @@ export function wireSnapWorker({
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-      // show image preview when debug ON
+      /* show preview if debug ON */
       if (debugSelect?.value === "on" && previewImg) {
         previewImg.src = imageBase64;
         previewImg.style.display = "block";
@@ -51,17 +51,23 @@ export function wireSnapWorker({
 
       const data = await res.json();
 
-      // 🔥 show raw JSON when debug ON
-      if (debugSelect?.value === "on" && typeof onDebugJson === "function") {
-        onDebugJson(data);
+      /* 🔥 FORCE SHOW RAW JSON WHEN DEBUG ON */
+      if (debugSelect?.value === "on" && debugBox) {
+        debugBox.style.display = "block";
+        debugBox.textContent = JSON.stringify(data, null, 2);
       }
 
       renderResults(data);
 
     } catch (err) {
       console.error("Analyze failed:", err);
-      if (debugSelect?.value === "on" && typeof onDebugJson === "function") {
-        onDebugJson({ error: String(err) });
+      if (debugSelect?.value === "on" && debugBox) {
+        debugBox.style.display = "block";
+        debugBox.textContent = JSON.stringify(
+          { error: String(err) },
+          null,
+          2
+        );
       }
     } finally {
       spinner.style.display = "none";
@@ -72,16 +78,16 @@ export function wireSnapWorker({
   function renderResults(d){
     if (!d || !d.cards || !d.best_hold) return;
 
-    // multipliers
+    /* multipliers */
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
     multBot.textContent = "×" + d.multipliers.bottom;
 
-    // EVs
+    /* EVs */
     evBase.textContent = d.ev_without_multiplier.toFixed(4);
     evUX.textContent   = d.ev_with_multiplier.toFixed(4);
 
-    // cards
+    /* cards */
     cardsBox.innerHTML = "";
     const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -102,7 +108,7 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    // why
+    /* why */
     whyBox.textContent = explainHold(
       d.cards,
       d.best_hold,
