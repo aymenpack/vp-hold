@@ -1,6 +1,6 @@
 /*
   ✏️ SAFE FILE
-  Handles snap interaction, rendering, and camera collapse
+  Snap handling + result rendering
 */
 
 import { captureGreenFrame } from "../capture/capture.js";
@@ -17,6 +17,7 @@ export function wireSnapWorker({
   evBase,
   evUX,
   whyBox,
+  modeSelect,
   onSnapComplete
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
@@ -25,7 +26,6 @@ export function wireSnapWorker({
   scanner.onclick = async () => {
     if (busy) return;
     busy = true;
-
     spinner.style.display = "block";
 
     try {
@@ -37,20 +37,16 @@ export function wireSnapWorker({
         body: JSON.stringify({
           imageBase64,
           paytable: "DDB_9_6",
-          mode: "conservative"
+          mode: modeSelect?.value || "conservative"
         })
       });
 
-      const data = await res.json();
+      const d = await res.json();
+      if (!d || !d.cards) return;
 
-      if (!data || !data.cards || !data.best_hold) {
-        console.warn("Invalid response from backend", data);
-        return;
-      }
+      renderResults(d);
 
-      renderResults(data);
-
-      // 🔥 collapse camera after successful snap
+      // tell UI that snap is done
       if (typeof onSnapComplete === "function") {
         onSnapComplete();
       }
@@ -64,18 +60,18 @@ export function wireSnapWorker({
   };
 
   function renderResults(d) {
-    /* multipliers */
+    // multipliers
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
     multBot.textContent = "×" + d.multipliers.bottom;
 
-    /* EVs */
+    // EVs
     evBase.textContent = d.ev_without_multiplier.toFixed(4);
     evUX.textContent   = d.ev_with_multiplier.toFixed(4);
 
-    /* cards */
+    // cards
     cardsBox.innerHTML = "";
-    const SUIT = { S: "♠", H: "♥", D: "♦", C: "♣" };
+    const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
     d.cards.forEach((c, i) => {
       const el = document.createElement("div");
@@ -94,65 +90,20 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    /* extended WHY explanation */
-    whyBox.innerHTML = buildWhyExplanation(
-      d.cards,
-      d.best_hold,
-      d.multipliers.bottom
-    );
+    // WHY (extended)
+    whyBox.innerHTML = buildWhy(d);
     whyBox.classList.add("show");
   }
 
-  function buildWhyExplanation(cards, hold, multiplier) {
-    const held = cards.filter((_, i) => hold[i]);
-    const counts = {};
-    held.forEach(c => counts[c.rank] = (counts[c.rank] || 0) + 1);
-    const values = Object.values(counts);
-
-    let explanation = "";
-
-    if (values.includes(4)) {
-      explanation = `
-        <b>Four of a Kind</b> is already complete.
-        In Double Double Bonus, quads dominate the EV table.
-        Any draw would strictly reduce expected value.
-      `;
-    } else if (values.includes(3)) {
-      explanation = `
-        Holding <b>Three of a Kind</b> preserves strong
-        <b>Full House</b> and <b>Four of a Kind</b> outs.
-        Breaking trips sacrifices too much guaranteed value.
-      `;
-    } else if (values.includes(2)) {
-      explanation = `
-        A <b>pair</b> provides the highest baseline EV
-        among all incomplete hands.
-        Drawing to trips, two pair, and full house
-        outperforms any speculative discard.
-      `;
-    } else {
-      explanation = `
-        This hold maximizes <b>expected value</b>
-        based on the current paytable and visible multipliers.
-        Alternative holds produce lower average return.
-      `;
-    }
-
-    if (multiplier > 1) {
-      explanation += `
-        <br><br>
-        The active <b>${multiplier}× multiplier</b>
-        further increases the value of made hands,
-        reinforcing this choice.
-      `;
-    }
-
+  function buildWhy(d) {
     return `
-      <div style="font-weight:800;margin-bottom:8px">
-        Why this hold?
-      </div>
-      <div style="color:#e5e7eb;line-height:1.5">
-        ${explanation}
+      <div style="font-weight:800;margin-bottom:8px">Why this hold?</div>
+      <div style="line-height:1.5">
+        This choice maximizes <b>expected value</b> given the current
+        hand, paytable, and active multipliers.
+        <br><br>
+        Holding these cards preserves the strongest payout paths
+        while avoiding lower-EV speculative draws.
       </div>
     `;
   }
