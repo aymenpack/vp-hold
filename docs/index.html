@@ -39,14 +39,14 @@ video{
   background:rgba(34,197,94,0.12);
   pointer-events:none;
 
-  /* exact same math as positionGreenFrame */
+  /* same math as positionGreenFrame */
   height:58%;
   top:50%;
   transform:translateY(-50%);
 }
 
 /* ===============================
-   UI (unchanged)
+   UI
    =============================== */
 
 body{
@@ -77,59 +77,26 @@ button{
 }
 button:disabled{opacity:.6}
 
-.multipliers{
-  display:flex;
-  gap:12px;
+/* Preview */
+.previewBox{
   margin-top:16px;
-}
-.mult{
-  flex:1;
-  padding:14px;
   border:1px solid #333;
   border-radius:14px;
+  padding:12px;
   background:#020617;
-  text-align:center;
 }
-.mult .label{font-size:12px;color:#9ca3af}
-.mult .value{font-size:22px;font-weight:900;margin-top:6px}
-
-.ev-compare{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:16px;
+.previewBox .label{
+  font-size:12px;
+  color:#9ca3af;
+  margin-bottom:8px;
 }
-.ev-box{
-  padding:14px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #333;
-  text-align:center;
-}
-.ev-box .value{font-size:24px;font-weight:900}
-.ev-box.ux .value{color:#22c55e}
-
-.cards{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:14px;
-  margin-top:18px;
-}
-.card{
-  position:relative;
-  background:#fff;
-  color:#000;
-  border-radius:14px;
-  padding:14px 6px 10px;
-  text-align:center;
-  box-shadow:0 8px 18px rgba(0,0,0,.35);
-}
-.card.red{color:#c1121f}
-.card.held{
-  transform:translateY(-10px);
-  box-shadow:0 0 0 3px #22c55e;
+.previewBox img{
+  width:100%;
+  border-radius:10px;
+  background:#000;
 }
 
+/* Status */
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:#9ca3af}
 </style>
@@ -149,18 +116,11 @@ button:disabled{opacity:.6}
 
   <button id="snap">SNAP</button>
 
-  <div class="multipliers">
-    <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
-    <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
-    <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
+  <!-- PREVIEW -->
+  <div class="previewBox" id="previewBox" style="display:none">
+    <div class="label">Image sent to backend</div>
+    <img id="previewImg" />
   </div>
-
-  <div class="ev-compare">
-    <div class="ev-box"><div class="value" id="evBase">—</div></div>
-    <div class="ev-box ux"><div class="value" id="evUX">—</div></div>
-  </div>
-
-  <div class="cards" id="cardsBox"></div>
 
   <div id="status">Starting camera…</div>
   <pre id="debug"></pre>
@@ -197,6 +157,7 @@ snap.onclick = async ()=>{
   status.textContent = "Processing…";
 
   try{
+    /* CAPTURE EXACT FRAME */
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -204,6 +165,11 @@ snap.onclick = async ()=>{
 
     const imageBase64 = canvas.toDataURL("image/jpeg",0.85);
 
+    /* SHOW PREVIEW */
+    previewImg.src = imageBase64;
+    previewBox.style.display = "block";
+
+    /* SEND TO BACKEND */
     const res = await fetch(API_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -212,12 +178,6 @@ snap.onclick = async ()=>{
 
     const data = await res.json();
     debug.textContent = JSON.stringify(data,null,2);
-
-    multTop.textContent = "×" + data.multipliers.top;
-    multMid.textContent = "×" + data.multipliers.middle;
-    multBot.textContent = "×" + data.multipliers.bottom;
-    evBase.textContent = data.ev_without_multiplier.toFixed(4);
-    evUX.textContent = data.ev_with_multiplier.toFixed(4);
 
     status.textContent = "Done ✅";
   }catch(e){
