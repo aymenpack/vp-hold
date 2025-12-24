@@ -7,6 +7,32 @@
 
 <style>
 /* ===============================
+   THEME VARIABLES
+   =============================== */
+:root{
+  --bg:#020617;
+  --panel:#020617;
+  --border:#333;
+  --accent:#22c55e;
+  --text:#ffffff;
+  --muted:#9ca3af;
+}
+
+.theme-green{
+  --bg:#041b12;
+  --panel:#052e1b;
+  --border:#0f5132;
+  --accent:#22c55e;
+}
+
+.theme-blue{
+  --bg:#020b1f;
+  --panel:#020b1f;
+  --border:#1e3a8a;
+  --accent:#60a5fa;
+}
+
+/* ===============================
    INLINE camera.css (LOCKED)
    =============================== */
 .scanner{
@@ -31,7 +57,7 @@ video{
   position:absolute;
   left:8%;
   right:8%;
-  border:4px dashed #22c55e;
+  border:4px dashed var(--accent);
   border-radius:18px;
   background:rgba(34,197,94,0.12);
   pointer-events:none;
@@ -43,77 +69,99 @@ video{
 /* ===============================
    UI
    =============================== */
-body{margin:0;background:#020617;color:#fff;font-family:system-ui}
-.app{max-width:900px;margin:auto;padding:16px 16px 160px}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 160px;
+}
 h2{margin:0}
-.subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
+.subtitle{font-size:14px;color:var(--muted);margin-bottom:12px}
 
 button{
   margin-top:18px;width:100%;padding:18px;
   font-size:20px;font-weight:900;
-  background:#22c55e;color:#000;
+  background:var(--accent);color:#000;
   border:none;border-radius:18px;cursor:pointer
 }
 button:disabled{opacity:.6}
 
+/* Tabs */
+.tabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:12px;
+}
+.tab{
+  flex:1;
+  padding:10px;
+  text-align:center;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  cursor:pointer;
+  font-weight:700;
+}
+.tab.active{
+  background:var(--accent);
+  color:#000;
+}
+
+/* Panels */
+.panel{display:none}
+.panel.active{display:block}
+
 /* Multipliers */
 .multipliers{display:flex;gap:12px;margin-top:16px}
-.mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
-.mult .label{font-size:12px;color:#9ca3af}
+.mult{flex:1;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--panel);text-align:center}
+.mult .label{font-size:12px;color:var(--muted)}
 .mult .value{font-size:22px;font-weight:900;margin-top:6px}
 
 /* EV */
 .ev-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
-.ev-box{padding:14px;border-radius:14px;background:#020617;border:1px solid #333;text-align:center}
-.ev-box .label{font-size:12px;color:#9ca3af}
+.ev-box{padding:14px;border-radius:14px;background:var(--panel);border:1px solid var(--border);text-align:center}
+.ev-box .label{font-size:12px;color:var(--muted)}
 .ev-box .value{font-size:24px;font-weight:900}
-.ev-box.ux .value{color:#22c55e}
+.ev-box.ux .value{color:var(--accent)}
 
 /* Cards */
 .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
 .card{
-  position:relative;
-  background:#fff;
-  color:#000;
-  border-radius:14px;
-  padding:14px 6px 10px;
-  text-align:center;
-  box-shadow:0 8px 18px rgba(0,0,0,.35)
+  background:#fff;color:#000;border-radius:14px;
+  padding:14px 6px 10px;text-align:center;
 }
-.card .rank{font-size:28px;font-weight:900}
-.card .suit{font-size:22px;margin-top:4px}
 .card.red{color:#c1121f}
 .card.held{
   transform:translateY(-10px);
-  box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6)
-}
-.card.held::after{
-  content:"HOLD";
-  position:absolute;
-  top:-10px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#22c55e;
-  color:#000;
-  font-size:11px;
-  font-weight:900;
-  padding:4px 10px;
-  border-radius:999px;
+  box-shadow:0 0 0 3px var(--accent);
 }
 
-/* WHY */
-#whyBox{
+/* Settings */
+.setting{
   margin-top:16px;
-  padding:16px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #333;
 }
-#whyTitle{font-size:14px;font-weight:900;color:#22c55e}
-#whyText{margin-top:8px;font-size:14px;color:#e5e7eb;line-height:1.4}
+.setting label{
+  font-size:13px;
+  color:var(--muted);
+}
+select{
+  width:100%;
+  margin-top:6px;
+  padding:12px;
+  border-radius:12px;
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--border);
+  font-size:14px;
+}
 
-#status{margin-top:10px;font-size:14px;color:#9ca3af}
-#debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:#9ca3af}
+#status{margin-top:10px;font-size:14px;color:var(--muted)}
+#debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:var(--muted)}
 </style>
 </head>
 
@@ -122,49 +170,76 @@ button:disabled{opacity:.6}
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA -->
-  <div class="scanner">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="band"></div>
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" data-tab="main">Main</div>
+    <div class="tab" data-tab="settings">Settings</div>
   </div>
 
-  <button id="snap">SNAP</button>
-
-  <!-- MULTIPLIERS -->
-  <div class="multipliers">
-    <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
-    <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
-    <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
-  </div>
-
-  <!-- EV -->
-  <div class="ev-compare">
-    <div class="ev-box">
-      <div class="label">Base EV</div>
-      <div class="value" id="evBase">—</div>
+  <!-- MAIN PANEL -->
+  <div class="panel active" id="main">
+    <div class="scanner">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="band"></div>
     </div>
-    <div class="ev-box ux">
-      <div class="label">Ultimate X EV</div>
-      <div class="value" id="evUX">—</div>
+
+    <button id="snap">SNAP</button>
+
+    <div class="multipliers">
+      <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
+      <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
+      <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
     </div>
+
+    <div class="ev-compare">
+      <div class="ev-box">
+        <div class="label">Base EV</div>
+        <div class="value" id="evBase">—</div>
+      </div>
+      <div class="ev-box ux">
+        <div class="label">Ultimate X EV</div>
+        <div class="value" id="evUX">—</div>
+      </div>
+    </div>
+
+    <div class="cards" id="cardsBox"></div>
+    <div id="status">Starting camera…</div>
+    <pre id="debug"></pre>
   </div>
 
-  <!-- CARDS -->
-  <div class="cards" id="cardsBox"></div>
+  <!-- SETTINGS PANEL -->
+  <div class="panel" id="settings">
 
-  <!-- WHY -->
-  <div id="whyBox">
-    <div id="whyTitle">Why this hold?</div>
-    <div id="whyText"></div>
+    <div class="setting">
+      <label>Strategy Mode</label>
+      <select id="modeSelect">
+        <option value="conservative">Conservative (lock value)</option>
+        <option value="aggressive">Aggressive (chase multipliers)</option>
+      </select>
+    </div>
+
+    <div class="setting">
+      <label>Paytable</label>
+      <select id="paytableSelect">
+        <option value="DDB_9_6">Double Double Bonus 9/6</option>
+      </select>
+    </div>
+
+    <div class="setting">
+      <label>Theme</label>
+      <select id="themeSelect">
+        <option value="">Dark</option>
+        <option value="theme-green">Casino Green</option>
+        <option value="theme-blue">Midnight Blue</option>
+      </select>
+    </div>
+
   </div>
-
-  <div id="status">Starting camera…</div>
-  <pre id="debug"></pre>
 </div>
 
 <script>
 /* ===============================
-   CAMERA LOGIC (UNCHANGED)
+   CAMERA (UNCHANGED)
    =============================== */
 navigator.mediaDevices.getUserMedia({
   video:{ facingMode:"environment" }
@@ -178,30 +253,23 @@ navigator.mediaDevices.getUserMedia({
 });
 
 /* ===============================
-   CAPTURE WITH ~20% ZOOM
+   CAPTURE (~20% ZOOM)
    =============================== */
-function captureZoomedFrame() {
+function captureZoomedFrame(){
   const vw = video.videoWidth;
   const vh = video.videoHeight;
+  const ZOOM = 0.8;
 
-  const ZOOM = 0.7; // 30% zoom
-  const cropW = vw * ZOOM;
-  const cropH = vh * ZOOM;
+  const cw = vw * ZOOM;
+  const ch = vh * ZOOM;
+  const cx = (vw - cw) / 2;
+  const cy = (vh - ch) / 2;
 
-  const cropX = (vw - cropW) / 2;
-  const cropY = (vh - cropH) / 2;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = cropW;
-  canvas.height = cropH;
-
-  canvas.getContext("2d").drawImage(
-    video,
-    cropX, cropY, cropW, cropH,
-    0, 0, cropW, cropH
-  );
-
-  return canvas.toDataURL("image/jpeg", 0.85);
+  const c = document.createElement("canvas");
+  c.width = cw;
+  c.height = ch;
+  c.getContext("2d").drawImage(video,cx,cy,cw,ch,0,0,cw,ch);
+  return c.toDataURL("image/jpeg",0.85);
 }
 
 /* ===============================
@@ -222,7 +290,11 @@ snap.onclick = async ()=>{
     const res = await fetch(API_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ imageBase64 })
+      body:JSON.stringify({
+        imageBase64,
+        mode: modeSelect.value,
+        paytable: paytableSelect.value
+      })
     });
 
     const data = await res.json();
@@ -236,7 +308,6 @@ snap.onclick = async ()=>{
     evUX.textContent = data.ev_with_multiplier.toFixed(4);
 
     renderCards(data.cards, data.best_hold);
-    explainHold(data.cards, data.best_hold, data.multipliers.bottom);
 
     status.textContent = "Done ✅";
   }catch(e){
@@ -252,8 +323,8 @@ snap.onclick = async ()=>{
    UI HELPERS
    =============================== */
 function renderCards(cards, bestHold){
-  cardsBox.innerHTML = "";
-  const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
+  cardsBox.innerHTML="";
+  const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
   cards.forEach((c,i)=>{
     const el=document.createElement("div");
     el.className="card";
@@ -264,15 +335,20 @@ function renderCards(cards, bestHold){
   });
 }
 
-function explainHold(cards, bestHold, multiplier){
-  if(multiplier >= 4){
-    whyText.textContent =
-      "High multiplier detected — maximizing future value.";
-    return;
-  }
-  whyText.textContent =
-    "This hold provides the highest expected value.";
-}
+/* Tabs */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById(t.dataset.tab).classList.add("active");
+  };
+});
+
+/* Theme */
+themeSelect.onchange=()=>{
+  document.documentElement.className = themeSelect.value;
+};
 </script>
 </body>
 </html>
