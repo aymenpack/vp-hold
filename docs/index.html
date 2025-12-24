@@ -6,9 +6,6 @@
 <title>Ultimate X Vision</title>
 
 <style>
-/* ===============================
-   THEME VARIABLES
-   =============================== */
 :root{
   --bg:#020617;
   --panel:#020617;
@@ -17,13 +14,8 @@
   --text:#ffffff;
   --muted:#9ca3af;
 }
-.theme-green{--bg:#041b12;--panel:#052e1b;--border:#0f5132;--accent:#22c55e}
-.theme-blue{--bg:#020b1f;--panel:#020b1f;--border:#1e3a8a;--accent:#60a5fa}
-.theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
 
-/* ===============================
-   CAMERA (LOCKED)
-   =============================== */
+/* CAMERA */
 .scanner{
   position:relative;
   width:100%;
@@ -54,9 +46,7 @@ video{
   pointer-events:none;
 }
 
-/* ===============================
-   BASE UI
-   =============================== */
+/* UI */
 body{
   margin:0;
   background:var(--bg);
@@ -70,9 +60,7 @@ body{
 }
 h2{font-size:22px;font-weight:800}
 
-/* ===============================
-   PREVIEW
-   =============================== */
+/* PREVIEW */
 .preview{
   margin-top:14px;
   padding:10px;
@@ -91,19 +79,7 @@ h2{font-size:22px;font-weight:800}
   background:#000;
 }
 
-/* ===============================
-   CARDS (unchanged)
-   =============================== */
-.cards{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin-top:16px;
-}
-
-/* ===============================
-   SPINNER
-   =============================== */
+/* SPINNER */
 .spinner{
   width:34px;
   height:34px;
@@ -132,7 +108,7 @@ h2{font-size:22px;font-weight:800}
 
   <!-- PREVIEW -->
   <div class="preview" id="previewBox" style="display:none">
-    <label>Image sent to AI (exact green frame)</label>
+    <label>Image sent to AI (green frame + padding)</label>
     <img id="previewImg">
   </div>
 </div>
@@ -159,27 +135,45 @@ navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }})
 
 /* ===============================
    CAPTURE INSIDE GREEN FRAME
+   + horizontal padding
    =============================== */
 function captureGreenFrame(){
   const videoRect = video.getBoundingClientRect();
   const bandRect = band.getBoundingClientRect();
 
-  const scaleX = video.videoWidth / videoRect.width;
+  const scaleX = video.videoWidth  / videoRect.width;
   const scaleY = video.videoHeight / videoRect.height;
 
-  const sx = (bandRect.left - videoRect.left) * scaleX;
-  const sy = (bandRect.top - videoRect.top) * scaleY;
-  const sw = bandRect.width * scaleX;
-  const sh = bandRect.height * scaleY;
+  // Base crop
+  let sx = (bandRect.left - videoRect.left) * scaleX;
+  let sy = (bandRect.top  - videoRect.top)  * scaleY;
+  let sw = bandRect.width  * scaleX;
+  let sh = bandRect.height * scaleY;
+
+  // Horizontal padding (15%)
+  const PAD_X_RATIO = 0.15;
+  const padX = sw * PAD_X_RATIO;
+
+  sx -= padX;
+  sw += padX * 2;
+
+  // Clamp bounds
+  if (sx < 0) {
+    sw += sx;
+    sx = 0;
+  }
+  if (sx + sw > video.videoWidth) {
+    sw = video.videoWidth - sx;
+  }
 
   const canvas = document.createElement("canvas");
-  canvas.width = sw;
+  canvas.width  = sw;
   canvas.height = sh;
 
   canvas.getContext("2d").drawImage(
     video,
     sx, sy, sw, sh,
-    0, 0, sw, sh
+    0,  0,  sw, sh
   );
 
   return canvas.toDataURL("image/jpeg", 0.9);
@@ -199,7 +193,7 @@ scanner.onclick = async () => {
   try{
     const imageBase64 = captureGreenFrame();
 
-    // preview EXACT payload
+    // Preview EXACT payload
     previewImg.src = imageBase64;
     previewBox.style.display = "block";
 
