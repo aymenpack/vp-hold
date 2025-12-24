@@ -16,6 +16,8 @@ export function wireSnapWorker({
   multBot,
   evBase,
   evUX,
+  evBaseBar,
+  evUXBar,
   whyBox,
   modeSelect,
   onSnapComplete
@@ -59,16 +61,27 @@ export function wireSnapWorker({
   };
 
   function renderResults(d) {
-    // Multipliers
+    /* multipliers */
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
     multBot.textContent = "×" + d.multipliers.bottom;
 
-    // EVs
-    evBase.textContent = d.ev_without_multiplier.toFixed(4);
-    evUX.textContent   = d.ev_with_multiplier.toFixed(4);
+    /* EV numbers */
+    const baseEV = d.ev_without_multiplier;
+    const uxEV   = d.ev_with_multiplier;
 
-    // Cards
+    evBase.textContent = baseEV.toFixed(4);
+    evUX.textContent   = uxEV.toFixed(4);
+
+    /* EV bars (relative) */
+    const maxEV = Math.max(baseEV, uxEV, 0.0001);
+    const basePct = Math.min(100, (baseEV / maxEV) * 100);
+    const uxPct   = Math.min(100, (uxEV   / maxEV) * 100);
+
+    evBaseBar.style.width = basePct + "%";
+    evUXBar.style.width   = uxPct + "%";
+
+    /* cards */
     cardsBox.innerHTML = "";
     const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -89,13 +102,15 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    // WHY
+    /* WHY */
     whyBox.innerHTML = `
-      <div style="font-weight:800;margin-bottom:8px">💡 Why this hold?</div>
-      <div style="line-height:1.5">
-        This play maximizes <b>expected value</b> given the current hand,
-        the Double Double Bonus paytable, and the active multipliers.
-        Breaking this hold would reduce long-term return.
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:18px">💡</span>
+        <div>
+          <b>Why this hold?</b><br>
+          This play maximizes <b>expected value</b> given the
+          current hand, the paytable, and active multipliers.
+        </div>
       </div>
     `;
     whyBox.classList.add("show");
