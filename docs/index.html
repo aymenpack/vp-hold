@@ -8,10 +8,22 @@
 <link rel="stylesheet" href="./capture/camera.css">
 
 <style>
+:root{
+  --bg:#020617;
+  --panel:#020617;
+  --border:#2a2f3a;
+  --accent:#22c55e;
+  --text:#ffffff;
+  --muted:#9ca3af;
+}
+.theme-green{--bg:#041b12;--panel:#052e1b;--border:#0f5132;--accent:#22c55e}
+.theme-blue{--bg:#020b1f;--panel:#020b1f;--border:#1e3a8a;--accent:#60a5fa}
+.theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
+
 body{
   margin:0;
-  background:#020617;
-  color:#fff;
+  background:var(--bg);
+  color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 .app{
@@ -20,14 +32,38 @@ body{
   padding:18px 14px 140px;
 }
 h2{font-size:22px;font-weight:800}
-.subtitle{font-size:13px;color:#9ca3af;margin-top:4px}
+.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* tabs */
+.tabs{
+  display:flex;
+  gap:10px;
+  margin:18px 0 12px;
+}
+.tab{
+  flex:1;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  text-align:center;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.tab.active{
+  background:var(--accent);
+  color:#000;
+}
+.panel{display:none}
+.panel.active{display:block}
 
 /* spinner */
 .spinner{
   width:34px;height:34px;
   border-radius:50%;
   border:3px solid rgba(255,255,255,.2);
-  border-top-color:#22c55e;
+  border-top-color:var(--accent);
   animation:spin 1s linear infinite;
   margin:14px auto;
   display:none;
@@ -55,33 +91,44 @@ h2{font-size:22px;font-weight:800}
 .card.red{color:#c1121f}
 .card.held{
   transform:translateY(-12px);
-  box-shadow:0 0 0 3px #22c55e,0 10px 24px rgba(0,0,0,.45);
+  box-shadow:0 0 0 3px var(--accent),0 10px 24px rgba(0,0,0,.45);
 }
-.corner{position:absolute;font-weight:900;font-size:14px;line-height:1.1;text-align:center}
+.corner{position:absolute;font-weight:900;font-size:14px;line-height:1.1}
 .corner.top{top:6px;left:6px}
 .corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
 .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}
 
 /* multipliers + ev */
-.multipliers,.ev{
-  display:flex;gap:10px;margin-top:16px
-}
+.multipliers,.ev{display:flex;gap:10px;margin-top:16px}
 .box{
   flex:1;padding:10px;border-radius:14px;
-  background:#020617;border:1px solid #2a2f3a;text-align:center
+  background:var(--panel);border:1px solid var(--border);text-align:center
 }
-.label{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em}
+.label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .value{font-size:20px;font-weight:900;margin-top:4px}
-.ev .ux .value{color:#22c55e}
+.ev .ux .value{color:var(--accent)}
 
 /* why */
 #whyBox{
   margin-top:14px;padding:14px;border-radius:14px;
-  background:#020617;border:1px solid #2a2f3a;
+  background:var(--panel);border:1px solid var(--border);
   font-size:14px;line-height:1.4;
   opacity:0;transform:translateY(6px);transition:.3s ease
 }
 #whyBox.show{opacity:1;transform:none}
+
+/* settings */
+.setting{margin-top:18px}
+.setting label{font-size:12px;color:var(--muted)}
+select{
+  width:100%;
+  margin-top:6px;
+  padding:12px;
+  border-radius:14px;
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--border);
+}
 </style>
 </head>
 
@@ -90,41 +137,114 @@ h2{font-size:22px;font-weight:800}
   <h2>Ultimate X Vision</h2>
   <div class="subtitle">Tap the camera to analyze.</div>
 
-  <div class="scanner" id="scanner">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="band" id="band"></div>
+  <div class="tabs">
+    <div class="tab active" data-tab="play">🎰 Play</div>
+    <div class="tab" data-tab="settings">⚙️ Settings</div>
   </div>
 
-  <div class="spinner" id="spinner"></div>
+  <!-- PLAY -->
+  <div class="panel active" id="play">
+    <div class="scanner" id="scanner">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="band" id="band"></div>
+    </div>
 
-  <!-- debug preview (optional) -->
-  <img id="previewImg" style="display:none;width:100%;margin-top:12px">
+    <div class="spinner" id="spinner"></div>
 
-  <div class="cards" id="cardsBox"></div>
+    <img id="previewImg" style="display:none;width:100%;margin-top:12px">
 
-  <div class="multipliers">
-    <div class="box"><div class="label">Top</div><div class="value" id="multTop">—</div></div>
-    <div class="box"><div class="label">Middle</div><div class="value" id="multMid">—</div></div>
-    <div class="box"><div class="label">Bottom</div><div class="value" id="multBot">—</div></div>
+    <div class="cards" id="cardsBox"></div>
+
+    <div class="multipliers">
+      <div class="box"><div class="label">Top</div><div class="value" id="multTop">—</div></div>
+      <div class="box"><div class="label">Middle</div><div class="value" id="multMid">—</div></div>
+      <div class="box"><div class="label">Bottom</div><div class="value" id="multBot">—</div></div>
+    </div>
+
+    <div class="ev">
+      <div class="box"><div class="label">Base EV</div><div class="value" id="evBase">—</div></div>
+      <div class="box ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
+    </div>
+
+    <div id="whyBox">—</div>
   </div>
 
-  <div class="ev">
-    <div class="box"><div class="label">Base EV</div><div class="value" id="evBase">—</div></div>
-    <div class="box ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
-  </div>
+  <!-- SETTINGS -->
+  <div class="panel" id="settings">
+    <div class="setting">
+      <label>Strategy</label>
+      <select id="modeSelect">
+        <option value="conservative">🛡️ Conservative</option>
+        <option value="aggressive">🔥 Aggressive</option>
+      </select>
+    </div>
 
-  <div id="whyBox">—</div>
+    <div class="setting">
+      <label>Theme</label>
+      <select id="themeSelect">
+        <option value="">Dark</option>
+        <option value="theme-green">Casino Green</option>
+        <option value="theme-blue">Midnight Blue</option>
+        <option value="theme-purple">Royal Purple</option>
+      </select>
+    </div>
+
+    <div class="setting">
+      <label>Debug</label>
+      <select id="debugSelect">
+        <option value="off">Off</option>
+        <option value="on">Show capture preview</option>
+      </select>
+    </div>
+  </div>
 </div>
 
 <script type="module">
 import { initCamera } from "./capture/capture.js";
 import { wireSnapWorker } from "./ui/snapWorker.js";
 
-const video = document.getElementById("video");
-const scanner = document.getElementById("scanner");
-const band = document.getElementById("band");
-const spinner = document.getElementById("spinner");
-const previewImg = document.getElementById("previewImg");
+/* DOM */
+const video=document.getElementById("video");
+const scanner=document.getElementById("scanner");
+const band=document.getElementById("band");
+const spinner=document.getElementById("spinner");
+const previewImg=document.getElementById("previewImg");
+const cardsBox=document.getElementById("cardsBox");
+const whyBox=document.getElementById("whyBox");
+const multTop=document.getElementById("multTop");
+const multMid=document.getElementById("multMid");
+const multBot=document.getElementById("multBot");
+const evBase=document.getElementById("evBase");
+const evUX=document.getElementById("evUX");
+const modeSelect=document.getElementById("modeSelect");
+const themeSelect=document.getElementById("themeSelect");
+const debugSelect=document.getElementById("debugSelect");
+
+/* persistence */
+const THEME_KEY="vp_theme",MODE_KEY="vp_mode",DEBUG_KEY="vp_debug";
+if(localStorage.getItem(THEME_KEY)){
+  document.documentElement.className=localStorage.getItem(THEME_KEY);
+  themeSelect.value=localStorage.getItem(THEME_KEY);
+}
+if(localStorage.getItem(MODE_KEY))modeSelect.value=localStorage.getItem(MODE_KEY);
+if(localStorage.getItem(DEBUG_KEY))debugSelect.value=localStorage.getItem(DEBUG_KEY);
+
+themeSelect.onchange=()=>{document.documentElement.className=themeSelect.value;localStorage.setItem(THEME_KEY,themeSelect.value)};
+modeSelect.onchange=()=>localStorage.setItem(MODE_KEY,modeSelect.value);
+debugSelect.onchange=()=>{
+  localStorage.setItem(DEBUG_KEY,debugSelect.value);
+  previewImg.style.display = debugSelect.value==="on" ? "block" : "none";
+};
+
+/* tabs */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById(t.dataset.tab).classList.add("active");
+  };
+});
 
 await initCamera(video);
 
@@ -134,14 +254,15 @@ wireSnapWorker({
   band,
   spinner,
   previewImg,
-  cardsBox:document.getElementById("cardsBox"),
-  multTop:document.getElementById("multTop"),
-  multMid:document.getElementById("multMid"),
-  multBot:document.getElementById("multBot"),
-  evBase:document.getElementById("evBase"),
-  evUX:document.getElementById("evUX"),
-  whyBox:document.getElementById("whyBox"),
-  modeSelect:null
+  modeSelect,
+  cardsBox,
+  multTop,
+  multMid,
+  multBot,
+  evBase,
+  evUX,
+  whyBox,
+  debugSelect
 });
 </script>
 </body>
