@@ -1,6 +1,6 @@
 /*
   ✏️ SAFE FILE
-  UI interaction + rendering
+  UI interaction + rendering + camera collapse
 */
 
 import { captureGreenFrame } from "../capture/capture.js";
@@ -10,7 +10,6 @@ export function wireSnapWorker({
   scanner,
   band,
   spinner,
-  previewImg,
   cardsBox,
   multTop,
   multMid,
@@ -19,8 +18,7 @@ export function wireSnapWorker({
   evUX,
   whyBox,
   modeSelect,
-  debugSelect,
-  debugBox
+  onCollapseCamera
 }){
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
@@ -28,47 +26,33 @@ export function wireSnapWorker({
   scanner.onclick = async () => {
     if (busy) return;
     busy = true;
+
     spinner.style.display = "block";
 
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-      /* show preview if debug ON */
-      if (debugSelect?.value === "on" && previewImg) {
-        previewImg.src = imageBase64;
-        previewImg.style.display = "block";
-      }
-
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const res = await fetch(API_URL,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
           imageBase64,
           paytable: "DDB_9_6",
           mode: modeSelect?.value || "conservative"
         })
       });
 
-      const data = await res.json();
+      const d = await res.json();
 
-      /* 🔥 FORCE SHOW RAW JSON WHEN DEBUG ON */
-      if (debugSelect?.value === "on" && debugBox) {
-        debugBox.style.display = "block";
-        debugBox.textContent = JSON.stringify(data, null, 2);
+      // collapse camera AFTER successful response
+      if (typeof onCollapseCamera === "function") {
+        onCollapseCamera();
       }
 
-      renderResults(data);
+      renderResults(d);
 
     } catch (err) {
       console.error("Analyze failed:", err);
-      if (debugSelect?.value === "on" && debugBox) {
-        debugBox.style.display = "block";
-        debugBox.textContent = JSON.stringify(
-          { error: String(err) },
-          null,
-          2
-        );
-      }
     } finally {
       spinner.style.display = "none";
       busy = false;
@@ -108,8 +92,8 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    /* why */
-    whyBox.textContent = explainHold(
+    /* extended WHY */
+    whyBox.innerHTML = buildWhyExplanation(
       d.cards,
       d.best_hold,
       d.multipliers.bottom,
@@ -118,17 +102,58 @@ export function wireSnapWorker({
     whyBox.classList.add("show");
   }
 
-  function explainHold(cards, hold, mult, mode){
+  function buildWhyExplanation(cards, hold, mult, mode){
+    const held = cards.filter((_,i)=>hold[i]);
     const counts = {};
-    cards.forEach((c,i)=>{
-      if (hold[i]) counts[c.rank] = (counts[c.rank]||0)+1;
-    });
+    held.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
     const vals = Object.values(counts);
 
-    if (vals.includes(4)) return "Four of a kind locks the highest payout.";
-    if (vals.includes(3)) return "Trips maximize full house and quad potential.";
-    if (vals.includes(2)) return "Holding a pair maximizes expected value.";
-    if (mode === "aggressive") return "Aggressive mode favors multiplier growth.";
-    return "Highest expected value play.";
+    let reason = "";
+
+    if (vals.includes(4)) {
+      reason = `
+        <b>Four of a Kind</b> is already made.
+        In Double Double Bonus, quads dominate the EV table.
+        Any draw would strictly reduce expected value.
+      `;
+    } else if (vals.includes(3)) {
+      reason = `
+        Holding <b>Three of a Kind</b> preserves strong
+        <b>Full House</b> and <b>Four of a Kind</b> outs.
+        Breaking trips sacrifices too much guaranteed value.
+      `;
+    } else if (vals.includes(2)) {
+      reason = `
+        A <b>pair</b> provides the highest baseline EV
+        among all incomplete hands.
+        Drawing to trips, two pair, and full house
+        outperforms any speculative discard.
+      `;
+    } else if (mode === "aggressive") {
+      reason = `
+        In <b>Aggressive mode</b>, the strategy prioritizes
+        future multiplier growth and high-variance outcomes.
+        This increases long-term return at the cost of volatility.
+      `;
+    } else {
+      reason = `
+        This hold maximizes <b>expected value</b>
+        given the current paytable and multiplier state.
+        Alternative holds produce lower average return.
+      `;
+    }
+
+    if (mult > 1) {
+      reason += `
+        <br><br>
+        The active <b>${mult}× multiplier</b> further increases
+        the value of made hands, reinforcing this choice.
+      `;
+    }
+
+    return `
+      <div style="font-weight:700;margin-bottom:6px">Why this hold?</div>
+      <div style="color:#e5e7eb;line-height:1.45">${reason}</div>
+    `;
   }
 }
