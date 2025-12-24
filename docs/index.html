@@ -30,7 +30,7 @@ body{
   padding:12px 14px 160px;
 }
 
-/* Header spacing fix */
+/* header spacing */
 h2{
   text-align:center;
   font-size:24px;
@@ -44,7 +44,7 @@ h2{
   margin:2px 0 10px;
 }
 
-/* Tabs */
+/* tabs */
 .tabs{
   display:flex;
   gap:10px;
@@ -67,7 +67,7 @@ h2{
 .panel{display:none}
 .panel.active{display:block}
 
-/* Camera */
+/* camera */
 .scanner.collapsed{display:none}
 .scanHint{
   position:absolute;
@@ -79,7 +79,7 @@ h2{
   font-weight:600;
 }
 
-/* Divider */
+/* divider */
 .divider{
   height:1px;
   margin:10px 0 14px;
@@ -91,7 +91,7 @@ h2{
   );
 }
 
-/* Spinner */
+/* spinner */
 .spinner{
   width:34px;height:34px;
   border-radius:50%;
@@ -103,7 +103,7 @@ h2{
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Cards (hero) */
+/* cards */
 .cards{
   margin-top:12px;
   padding:22px 16px;
@@ -121,7 +121,6 @@ h2{
 }
 .cards.show{opacity:1;transform:none}
 
-/* Card visuals */
 .card{
   width:76px;height:108px;
   background:#fff;
@@ -134,35 +133,66 @@ h2{
   transform:translateY(-16px) scale(1.07);
   box-shadow:0 0 0 3px var(--accent);
 }
+
 .corner{position:absolute;font-weight:900;font-size:14px}
 .corner.top{top:6px;left:6px}
 .corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
 .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}
 
-/* Multipliers & EV */
-.multipliers,.ev{
+/* EV BARS */
+.ev{
   display:flex;
+  flex-direction:column;
   gap:10px;
-  margin-top:12px;
+  margin-top:14px;
 }
-.box{
-  flex:1;
-  padding:10px;
-  border-radius:14px;
-  background:var(--panel);
-  border:1px solid var(--border);
-  text-align:center;
-}
-.label{font-size:11px;color:var(--muted)}
-.value{font-size:20px;font-weight:900}
-.ev .box:not(.ux){opacity:0.55}
-.ev .ux .value{font-size:24px;color:var(--accent)}
 
-/* Why */
+.evRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.evLabel{
+  width:90px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.evBar{
+  flex:1;
+  height:10px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.1);
+  overflow:hidden;
+}
+
+.evBarFill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  transition:width .4s ease;
+}
+
+.evBarFill.base{
+  background:rgba(255,255,255,0.45);
+}
+
+.evBarFill.ux{
+  background:var(--accent);
+}
+
+.evValue{
+  width:80px;
+  text-align:right;
+  font-weight:800;
+}
+
+/* why */
 #whyBox{
   max-width:540px;
   margin:16px auto 0;
-  padding:18px 20px;
+  padding:18px;
   border-radius:18px;
   background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.06);
@@ -171,7 +201,7 @@ h2{
 }
 #whyBox.show{opacity:1}
 
-/* New hand */
+/* new hand */
 .newHand{
   margin:24px auto 0;
   padding:14px 20px;
@@ -197,7 +227,6 @@ h2{
     <div class="tab" data-tab="settings">Settings</div>
   </div>
 
-  <!-- PLAY PAGE -->
   <div class="panel active" id="play">
     <div class="scanner" id="scanner">
       <video id="video" autoplay playsinline muted></video>
@@ -206,9 +235,23 @@ h2{
     </div>
 
     <div class="divider"></div>
+
     <div class="spinner" id="spinner"></div>
 
     <div class="cards" id="cardsBox"></div>
+
+    <div class="ev">
+      <div class="evRow">
+        <div class="evLabel">Base EV</div>
+        <div class="evBar"><div class="evBarFill base" id="evBaseBar"></div></div>
+        <div class="evValue" id="evBase">—</div>
+      </div>
+      <div class="evRow">
+        <div class="evLabel">Ultimate X EV</div>
+        <div class="evBar"><div class="evBarFill ux" id="evUXBar"></div></div>
+        <div class="evValue" id="evUX">—</div>
+      </div>
+    </div>
 
     <div class="multipliers">
       <div class="box"><div class="label">Top</div><div class="value" id="multTop">—</div></div>
@@ -216,34 +259,8 @@ h2{
       <div class="box"><div class="label">Bottom</div><div class="value" id="multBot">—</div></div>
     </div>
 
-    <div class="ev">
-      <div class="box"><div class="label">Base EV</div><div class="value" id="evBase">—</div></div>
-      <div class="box ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
-    </div>
-
     <div id="whyBox"></div>
     <div class="newHand" id="newHandBtn">New hand</div>
-  </div>
-
-  <!-- SETTINGS PAGE -->
-  <div class="panel" id="settings">
-    <div class="box">
-      <label>Strategy</label>
-      <select id="modeSelect">
-        <option value="conservative">Conservative</option>
-        <option value="aggressive">Aggressive</option>
-      </select>
-
-      <br><br>
-
-      <label>Theme</label>
-      <select id="themeSelect">
-        <option value="">Dark</option>
-        <option value="theme-green">Green</option>
-        <option value="theme-blue">Blue</option>
-        <option value="theme-purple">Purple</option>
-      </select>
-    </div>
   </div>
 </div>
 
@@ -251,50 +268,22 @@ h2{
 import { initCamera } from "./capture/capture.js";
 import { wireSnapWorker } from "./ui/snapWorker.js";
 
-const video = document.getElementById("video");
-const scanner = document.getElementById("scanner");
-const band = document.querySelector(".band");
-const spinner = document.getElementById("spinner");
+const video=document.getElementById("video");
+const scanner=document.getElementById("scanner");
+const band=document.querySelector(".band");
+const spinner=document.getElementById("spinner");
 
-const cardsBox = document.getElementById("cardsBox");
-const multTop = document.getElementById("multTop");
-const multMid = document.getElementById("multMid");
-const multBot = document.getElementById("multBot");
-const evBase = document.getElementById("evBase");
-const evUX = document.getElementById("evUX");
-const whyBox = document.getElementById("whyBox");
-const newHandBtn = document.getElementById("newHandBtn");
-
-const modeSelect = document.getElementById("modeSelect");
-const themeSelect = document.getElementById("themeSelect");
-
-/* persistence */
-const THEME_KEY="vp_theme", MODE_KEY="vp_mode";
-if(localStorage.getItem(THEME_KEY)){
-  document.documentElement.className = localStorage.getItem(THEME_KEY);
-  themeSelect.value = localStorage.getItem(THEME_KEY);
-}
-if(localStorage.getItem(MODE_KEY)){
-  modeSelect.value = localStorage.getItem(MODE_KEY);
-}
-
-themeSelect.onchange = ()=>{
-  document.documentElement.className = themeSelect.value;
-  localStorage.setItem(THEME_KEY, themeSelect.value);
-};
-modeSelect.onchange = ()=>{
-  localStorage.setItem(MODE_KEY, modeSelect.value);
-};
-
-/* tabs */
-document.querySelectorAll(".tab").forEach(t=>{
-  t.onclick = ()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-    t.classList.add("active");
-    document.getElementById(t.dataset.tab).classList.add("active");
-  };
-});
+const cardsBox=document.getElementById("cardsBox");
+const multTop=document.getElementById("multTop");
+const multMid=document.getElementById("multMid");
+const multBot=document.getElementById("multBot");
+const evBase=document.getElementById("evBase");
+const evUX=document.getElementById("evUX");
+const evBaseBar=document.getElementById("evBaseBar");
+const evUXBar=document.getElementById("evUXBar");
+const whyBox=document.getElementById("whyBox");
+const newHandBtn=document.getElementById("newHandBtn");
+const modeSelect=document.getElementById("modeSelect");
 
 await initCamera(video);
 
@@ -309,6 +298,8 @@ wireSnapWorker({
   multBot,
   evBase,
   evUX,
+  evBaseBar,
+  evUXBar,
   whyBox,
   modeSelect,
   onSnapComplete:()=>{
@@ -317,11 +308,9 @@ wireSnapWorker({
   }
 });
 
-newHandBtn.onclick = ()=>{
+newHandBtn.onclick=()=>{
   scanner.classList.remove("collapsed");
   newHandBtn.style.display="none";
-  cardsBox.innerHTML="";
-  whyBox.innerHTML="";
 };
 </script>
 </body>
