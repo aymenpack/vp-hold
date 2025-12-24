@@ -1,60 +1,49 @@
-// ui/snapWorker.js
-// One-shot worker: encode bitmap → POST → respond once
+/*
+  ✏️ SAFE FILE
+  UI interaction wiring.
+*/
 
-function arrayBufferToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(binary);
-}
+import { captureGreenFrame } from "../capture/capture.js";
 
-self.onmessage = async (e) => {
-  const { bitmap, workerUrl, paytable, mode } = e.data;
+export function wireSnapWorker({
+  video,
+  scanner,
+  band,
+  spinner,
+  previewImg,
+  renderResults,
+  modeSelect
+}){
+  const API_URL = "https://vp-hold-production.up.railway.app/analyze";
+  let busy = false;
 
-  try {
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(bitmap, 0, 0);
-    bitmap.close?.();
+  scanner.onclick = async () => {
+    if (busy) return;
+    busy = true;
+    spinner.style.display = "block";
 
-    const blob = await canvas.convertToBlob({
-      type: "image/jpeg",
-      quality: 0.7
-    });
+    try{
+      const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-    const ab = await blob.arrayBuffer();
-    const base64 = arrayBufferToBase64(ab);
+      if (previewImg) {
+        previewImg.src = imageBase64;
+      }
 
-    const res = await fetch(workerUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageBase64: `data:image/jpeg;base64,${base64}`,
-        paytable,
-        mode
-      })
-    });
+      const res = await fetch(API_URL,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          imageBase64,
+          mode: modeSelect?.value || "conservative"
+        })
+      });
 
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Backend returned non-JSON");
+      const data = await res.json();
+      renderResults(data);
+
+    } finally {
+      spinner.style.display = "none";
+      busy = false;
     }
-
-    self.postMessage({
-      ok: res.ok,
-      data
-    });
-
-  } catch (err) {
-    self.postMessage({
-      ok: false,
-      error: err.message || String(err)
-    });
-  }
-};
+  };
+}
