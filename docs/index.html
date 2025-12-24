@@ -56,23 +56,61 @@ button{
 }
 button:disabled{opacity:.6}
 
-.previewBox{
-  margin-top:16px;
-  border:1px solid #333;
+/* Multipliers */
+.multipliers{display:flex;gap:12px;margin-top:16px}
+.mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
+.mult .label{font-size:12px;color:#9ca3af}
+.mult .value{font-size:22px;font-weight:900;margin-top:6px}
+
+/* EV */
+.ev-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.ev-box{padding:14px;border-radius:14px;background:#020617;border:1px solid #333;text-align:center}
+.ev-box .label{font-size:12px;color:#9ca3af}
+.ev-box .value{font-size:24px;font-weight:900}
+.ev-box.ux .value{color:#22c55e}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
+.card{
+  position:relative;
+  background:#fff;
+  color:#000;
   border-radius:14px;
-  padding:12px;
+  padding:14px 6px 10px;
+  text-align:center;
+  box-shadow:0 8px 18px rgba(0,0,0,.35)
+}
+.card .rank{font-size:28px;font-weight:900}
+.card .suit{font-size:22px;margin-top:4px}
+.card.red{color:#c1121f}
+.card.held{
+  transform:translateY(-10px);
+  box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6)
+}
+.card.held::after{
+  content:"HOLD";
+  position:absolute;
+  top:-10px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#22c55e;
+  color:#000;
+  font-size:11px;
+  font-weight:900;
+  padding:4px 10px;
+  border-radius:999px;
+}
+
+/* WHY */
+#whyBox{
+  margin-top:16px;
+  padding:16px;
+  border-radius:14px;
   background:#020617;
+  border:1px solid #333;
 }
-.previewBox .label{
-  font-size:12px;
-  color:#9ca3af;
-  margin-bottom:8px;
-}
-.previewBox img{
-  width:100%;
-  border-radius:10px;
-  background:#000;
-}
+#whyTitle{font-size:14px;font-weight:900;color:#22c55e}
+#whyText{margin-top:8px;font-size:14px;color:#e5e7eb;line-height:1.4}
 
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:#9ca3af}
@@ -92,10 +130,32 @@ button:disabled{opacity:.6}
 
   <button id="snap">SNAP</button>
 
-  <!-- PREVIEW -->
-  <div class="previewBox" id="previewBox" style="display:none">
-    <div class="label">Image sent to backend</div>
-    <img id="previewImg" />
+  <!-- MULTIPLIERS -->
+  <div class="multipliers">
+    <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
+    <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
+    <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
+  </div>
+
+  <!-- EV -->
+  <div class="ev-compare">
+    <div class="ev-box">
+      <div class="label">Base EV</div>
+      <div class="value" id="evBase">—</div>
+    </div>
+    <div class="ev-box ux">
+      <div class="label">Ultimate X EV</div>
+      <div class="value" id="evUX">—</div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="cards" id="cardsBox"></div>
+
+  <!-- WHY -->
+  <div id="whyBox">
+    <div id="whyTitle">Why this hold?</div>
+    <div id="whyText"></div>
   </div>
 
   <div id="status">Starting camera…</div>
@@ -104,7 +164,7 @@ button:disabled{opacity:.6}
 
 <script>
 /* ===============================
-   CAMERA LOGIC (UNTOUCHED)
+   CAMERA LOGIC (UNCHANGED)
    =============================== */
 navigator.mediaDevices.getUserMedia({
   video:{ facingMode:"environment" }
@@ -118,7 +178,7 @@ navigator.mediaDevices.getUserMedia({
 });
 
 /* ===============================
-   ZOOMED CAPTURE (~20%)
+   CAPTURE WITH ~20% ZOOM
    =============================== */
 function captureZoomedFrame() {
   const vw = video.videoWidth;
@@ -135,8 +195,7 @@ function captureZoomedFrame() {
   canvas.width = cropW;
   canvas.height = cropH;
 
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(
+  canvas.getContext("2d").drawImage(
     video,
     cropX, cropY, cropW, cropH,
     0, 0, cropW, cropH
@@ -149,7 +208,6 @@ function captureZoomedFrame() {
    BACKEND
    =============================== */
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
-
 let busy = false;
 
 snap.onclick = async ()=>{
@@ -161,10 +219,6 @@ snap.onclick = async ()=>{
   try{
     const imageBase64 = captureZoomedFrame();
 
-    // show preview
-    previewImg.src = imageBase64;
-    previewBox.style.display = "block";
-
     const res = await fetch(API_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -173,6 +227,16 @@ snap.onclick = async ()=>{
 
     const data = await res.json();
     debug.textContent = JSON.stringify(data,null,2);
+
+    multTop.textContent = "×" + data.multipliers.top;
+    multMid.textContent = "×" + data.multipliers.middle;
+    multBot.textContent = "×" + data.multipliers.bottom;
+
+    evBase.textContent = data.ev_without_multiplier.toFixed(4);
+    evUX.textContent = data.ev_with_multiplier.toFixed(4);
+
+    renderCards(data.cards, data.best_hold);
+    explainHold(data.cards, data.best_hold, data.multipliers.bottom);
 
     status.textContent = "Done ✅";
   }catch(e){
@@ -183,6 +247,32 @@ snap.onclick = async ()=>{
     snap.disabled = false;
   }
 };
+
+/* ===============================
+   UI HELPERS
+   =============================== */
+function renderCards(cards, bestHold){
+  cardsBox.innerHTML = "";
+  const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
+  cards.forEach((c,i)=>{
+    const el=document.createElement("div");
+    el.className="card";
+    if(bestHold?.[i]) el.classList.add("held");
+    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
+    el.innerHTML=`<div class="rank">${c.rank}</div><div class="suit">${SUIT[c.suit]}</div>`;
+    cardsBox.appendChild(el);
+  });
+}
+
+function explainHold(cards, bestHold, multiplier){
+  if(multiplier >= 4){
+    whyText.textContent =
+      "High multiplier detected — maximizing future value.";
+    return;
+  }
+  whyText.textContent =
+    "This hold provides the highest expected value.";
+}
 </script>
 </body>
 </html>
