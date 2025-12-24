@@ -35,182 +35,57 @@ button{
   cursor:pointer;
 }
 button.secondary{
-  margin-top:10px;
-  width:100%;
-  padding:12px;
-  font-size:14px;
-  font-weight:800;
   background:#374151;
   color:#fff;
-  border:none;
-  border-radius:14px;
-  cursor:pointer;
-}
-button:disabled{opacity:.6;cursor:not-allowed}
-
-/* MULTIPLIERS */
-.multipliers{
-  display:flex;
-  gap:12px;
-  margin-top:16px;
-}
-.mult{
-  flex:1;
-  padding:14px;
-  border:1px solid #333;
-  border-radius:14px;
-  background:#020617;
-  text-align:center;
-}
-.mult .label{font-size:12px;color:#9ca3af}
-.mult .value{font-size:22px;font-weight:900;margin-top:6px}
-
-/* EV */
-.ev-compare{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:16px;
-}
-.ev-box{
-  padding:14px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #333;
-  text-align:center;
-}
-.ev-box .label{font-size:12px;color:#9ca3af}
-.ev-box .value{
-  margin-top:6px;
-  font-size:24px;
-  font-weight:900;
-}
-.ev-box.ux .value{ color:#22c55e; }
-
-/* CARDS */
-.cards{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:14px;
-  margin-top:18px;
-}
-.card{
-  position:relative;
-  background:#fff;
-  color:#000;
-  border-radius:14px;
-  padding:14px 6px 10px;
-  text-align:center;
-  box-shadow:0 8px 18px rgba(0,0,0,.35);
-}
-.card .rank{font-size:28px;font-weight:900}
-.card .suit{font-size:22px;margin-top:4px}
-.card.red{color:#c1121f}
-.card.held{
-  transform:translateY(-10px);
-  box-shadow:0 0 0 3px #22c55e,0 18px 35px rgba(34,197,94,.6);
-}
-.card.held::after{
-  content:"HOLD";
-  position:absolute;
-  top:-10px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#22c55e;
-  color:#000;
-  font-size:11px;
-  font-weight:900;
-  padding:4px 10px;
-  border-radius:999px;
-}
-
-/* WHY */
-#whyBox{
-  margin-top:16px;
-  padding:16px;
-  border-radius:14px;
-  background:#020617;
-  border:1px solid #333;
-}
-#whyTitle{font-size:14px;font-weight:900;color:#22c55e}
-#whyText{margin-top:8px;font-size:14px;color:#e5e7eb;line-height:1.4}
-
-#status{margin-top:10px;font-size:14px;color:#9ca3af}
-#debug{
-  margin-top:14px;
+  font-size:14px;
   padding:12px;
-  border-radius:12px;
-  border:1px solid #333;
-  background:#020617;
-  color:#9ca3af;
-  font-size:12px;
-  white-space:pre-wrap;
-  max-height:260px;
-  overflow:auto;
 }
+button:disabled{opacity:.6}
+
+/* CAMERA */
+.scanner{
+  position:relative;
+  width:100%;
+  height:42vh;
+  max-height:420px;
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid #1f2937;
+  background:#000;
+}
+video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+.band{
+  position:absolute;
+  left:8%;
+  right:8%;
+  border:4px dashed #22c55e;
+  border-radius:18px;
+  pointer-events:none;
+}
+#status{margin-top:10px;font-size:14px;color:#9ca3af}
+#debug{margin-top:12px;font-size:12px;white-space:pre-wrap;color:#9ca3af}
 </style>
 </head>
 
 <body>
 <div class="app">
   <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Railway backend · Worker image encode</div>
+  <div class="subtitle">Tap Start Camera first</div>
 
-  <!-- CAMERA -->
-  <div class="scanner" id="scanner">
-    <video id="video" autoplay playsinline muted></video>
+  <button id="startCamera">Start Camera</button>
+
+  <div class="scanner" id="scanner" style="display:none">
+    <video id="video" playsinline muted></video>
     <div class="band" id="band"></div>
   </div>
 
-  <!-- MODE -->
-  <div style="margin-top:14px">
-    <label style="font-size:13px;color:#9ca3af">Play Style</label>
-    <select id="modeSelect" style="
-      width:100%;
-      margin-top:6px;
-      padding:12px;
-      border-radius:12px;
-      background:#020617;
-      color:#fff;
-      border:1px solid #333;
-      font-size:14px
-    ">
-      <option value="conservative">Conservative</option>
-      <option value="aggressive">Aggressive</option>
-    </select>
-  </div>
+  <button id="snap" disabled>SNAP</button>
 
-  <button id="snap">SNAP</button>
-
-  <!-- MULTIPLIERS -->
-  <div class="multipliers">
-    <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
-    <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
-    <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
-  </div>
-
-  <!-- EV -->
-  <div class="ev-compare">
-    <div class="ev-box">
-      <div class="label">Base EV</div>
-      <div class="value" id="evBase">—</div>
-    </div>
-    <div class="ev-box ux">
-      <div class="label">Ultimate X EV</div>
-      <div class="value" id="evUX">—</div>
-    </div>
-  </div>
-
-  <!-- CARDS -->
-  <div class="cards" id="cardsBox"></div>
-
-  <!-- WHY -->
-  <div id="whyBox">
-    <div id="whyTitle">Why this hold?</div>
-    <div id="whyText"></div>
-  </div>
-
-  <div id="status">Starting camera…</div>
+  <div id="status">Waiting for camera…</div>
   <pre id="debug"></pre>
 </div>
 
@@ -220,117 +95,82 @@ import {
   captureBitmapFromGreenFrame
 } from "../capture/capture.js";
 
-/* 🔑 MUST BE YOUR RAILWAY URL */
 const API_URL =
   "https://vp-hold-production.up.railway.app/analyze";
 
-/* DOM */
+const startBtn = document.getElementById("startCamera");
+const snapBtn = document.getElementById("snap");
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
-const snapBtn = document.getElementById("snap");
-const modeSelect = document.getElementById("modeSelect");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
-const multTop = document.getElementById("multTop");
-const multMid = document.getElementById("multMid");
-const multBot = document.getElementById("multBot");
-const evBaseEl = document.getElementById("evBase");
-const evUXEl = document.getElementById("evUX");
-const cardsBox = document.getElementById("cardsBox");
-const whyText = document.getElementById("whyText");
-
+let stream = null;
 let busy = false;
 
-/* Render helpers */
-function renderMultipliers(m){
-  multTop.textContent = "×" + (m?.top ?? "—");
-  multMid.textContent = "×" + (m?.middle ?? "—");
-  multBot.textContent = "×" + (m?.bottom ?? "—");
-}
-function renderEVs(evBase, evUX){
-  evBaseEl.textContent = (typeof evBase === "number") ? evBase.toFixed(4) : "—";
-  evUXEl.textContent = (typeof evUX === "number") ? evUX.toFixed(4) : "—";
-}
-function renderCards(cards, bestHold){
-  cardsBox.innerHTML = "";
-  const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
-  cards.forEach((c,i)=>{
-    const el=document.createElement("div");
-    el.className="card";
-    if(bestHold?.[i]) el.classList.add("held");
-    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
-    el.innerHTML =
-      `<div class="rank">${c.rank}</div>
-       <div class="suit">${SUIT[c.suit]}</div>`;
-    cardsBox.appendChild(el);
-  });
-}
-function explainHold(multiplier, mode){
-  whyText.textContent =
-    mode==="aggressive"
-      ? "Aggressive mode prioritizes multiplier growth."
-      : "Maximizing expected value with lower variance.";
-}
+/* Start camera ONLY on user gesture */
+startBtn.onclick = async () => {
+  try {
+    statusEl.textContent = "Starting camera…";
 
-/* Camera */
-(async ()=>{
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode:"environment" }
-  });
-  video.srcObject = stream;
-  await video.play();
-  statusEl.textContent="Camera ready — align machine";
-  requestAnimationFrame(()=>positionGreenFrame(scanner, band));
-})();
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    scanner.style.display = "block";
+    startBtn.disabled = true;
+    snapBtn.disabled = false;
+
+    statusEl.textContent = "Camera ready";
+    requestAnimationFrame(() => positionGreenFrame(scanner, band));
+  } catch (e) {
+    statusEl.textContent = "Camera error";
+    debugEl.textContent = e.message || String(e);
+  }
+};
 
 /* SNAP */
-snapBtn.onclick = async ()=>{
-  if(busy) return;
+snapBtn.onclick = async () => {
+  if (busy) return;
   busy = true;
   snapBtn.disabled = true;
-  statusEl.textContent="Processing…";
-  debugEl.textContent="";
+  statusEl.textContent = "Processing…";
 
-  try{
+  try {
     const bitmap = await captureBitmapFromGreenFrame({
       video, band, scanner
     });
 
     const worker = new Worker("../ui/snapWorker.js", { type:"module" });
 
-    worker.onmessage = (e)=>{
+    worker.onmessage = (e) => {
       const { ok, data, error } = e.data;
-      try{
-        if(!ok){
-          statusEl.textContent="Worker error";
-          debugEl.textContent = error;
-          return;
-        }
-        renderMultipliers(data.multipliers);
-        renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
-        renderCards(data.cards, data.best_hold);
-        explainHold(data.multipliers.bottom, data.mode);
+      if (!ok) {
+        statusEl.textContent = "Worker error";
+        debugEl.textContent = error;
+      } else {
+        statusEl.textContent = "Done ✅";
         debugEl.textContent = JSON.stringify(data, null, 2);
-        statusEl.textContent="Done ✅";
-      } finally {
-        busy = false;
-        snapBtn.disabled = false;
-        worker.terminate();
       }
+      worker.terminate();
+      busy = false;
+      snapBtn.disabled = false;
     };
 
     worker.postMessage({
       bitmap,
       workerUrl: API_URL,
       paytable: "DDB_9_6",
-      mode: modeSelect.value
+      mode: "conservative"
     }, [bitmap]);
 
-  }catch(e){
-    statusEl.textContent="Client error";
-    debugEl.textContent = e.message;
+  } catch (e) {
+    statusEl.textContent = "Client error";
+    debugEl.textContent = e.message || String(e);
     busy = false;
     snapBtn.disabled = false;
   }
