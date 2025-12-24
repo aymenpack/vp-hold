@@ -20,24 +20,15 @@ body{
   padding:16px 16px 160px;
 }
 
-/* 🔒 DO NOT OVERRIDE .scanner SIZE */
-/* camera.css already defines correct height */
-
-/* ✅ GREEN FRAME — EXACT SAME MATH AS positionGreenFrame */
-.band{
-  position:absolute;
-  left:8%;
-  right:8%;
-  height:58%;
-  top:50%;
-  transform:translateY(-50%);
-  border:4px dashed #22c55e;
-  border-radius:18px;
-  background:rgba(34,197,94,0.12);
-  pointer-events:none;
+/* ✅ SCALE CAMERA + FRAME TO 1/4 SIZE */
+.camera-scale{
+  transform: scale(0.25);
+  transform-origin: top center;
+  width: fit-content;
+  margin: 0 auto;
 }
 
-/* UI (unchanged) */
+/* UI untouched */
 button{
   margin-top:18px;width:100%;padding:18px;
   font-size:20px;font-weight:900;
@@ -54,9 +45,12 @@ button:disabled{opacity:.6}
 <body>
 <div class="app">
 
-  <div class="scanner">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="band"></div>
+  <!-- 🔒 CAMERA + FRAME SCALED VISUALLY -->
+  <div class="camera-scale">
+    <div class="scanner" id="scanner">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="band"></div>
+    </div>
   </div>
 
   <button id="snap">SNAP</button>
