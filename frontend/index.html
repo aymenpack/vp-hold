@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X – Vision UI</title>
 
-<link rel="stylesheet" href="./capture/camera.css">
+<link rel="stylesheet" href="../capture/camera.css">
 
 <style>
 body{
@@ -154,29 +154,12 @@ button:disabled{opacity:.6;cursor:not-allowed}
 <body>
 <div class="app">
   <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Full UI · Railway backend · Worker-per-snap</div>
+  <div class="subtitle">Railway backend · Worker image encode</div>
 
   <!-- CAMERA -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band" id="band"></div>
-  </div>
-
-  <!-- PAYTABLE -->
-  <div style="margin-top:16px">
-    <label style="font-size:13px;color:#9ca3af">Paytable</label>
-    <select id="paytableSelect" style="
-      width:100%;
-      margin-top:6px;
-      padding:12px;
-      border-radius:12px;
-      background:#020617;
-      color:#fff;
-      border:1px solid #333;
-      font-size:14px
-    ">
-      <option value="DDB_9_6">Double Double Bonus 9/6</option>
-    </select>
   </div>
 
   <!-- MODE -->
@@ -198,7 +181,6 @@ button:disabled{opacity:.6;cursor:not-allowed}
   </div>
 
   <button id="snap">SNAP</button>
-  <button id="reset" class="secondary">Reset Camera</button>
 
   <!-- MULTIPLIERS -->
   <div class="multipliers">
@@ -233,22 +215,20 @@ button:disabled{opacity:.6;cursor:not-allowed}
 </div>
 
 <script type="module">
-import { positionGreenFrame, captureBitmapFromGreenFrame } from "./capture/capture.js";
+import {
+  positionGreenFrame,
+  captureBitmapFromGreenFrame
+} from "../capture/capture.js";
 
-/**
- * IMPORTANT:
- * This must be the PUBLIC Railway domain, and must end with /analyze.
- * Example:
- * const API_URL = "https://vp-hold-production.up.railway.app/analyze";
- */
-const API_URL = "https://vp-hold-production.up.railway.app/analyze"; // <-- CHANGE IF NEEDED
+/* 🔑 MUST BE YOUR RAILWAY URL */
+const API_URL =
+  "https://vp-hold-production.up.railway.app/analyze";
 
+/* DOM */
 const video = document.getElementById("video");
 const band = document.getElementById("band");
 const scanner = document.getElementById("scanner");
 const snapBtn = document.getElementById("snap");
-const resetBtn = document.getElementById("reset");
-const paytableSelect = document.getElementById("paytableSelect");
 const modeSelect = document.getElementById("modeSelect");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
@@ -262,8 +242,6 @@ const cardsBox = document.getElementById("cardsBox");
 const whyText = document.getElementById("whyText");
 
 let busy = false;
-let currentStream = null;
-let activeWorker = null;
 
 /* Render helpers */
 function renderMultipliers(m){
@@ -277,156 +255,85 @@ function renderEVs(evBase, evUX){
 }
 function renderCards(cards, bestHold){
   cardsBox.innerHTML = "";
-  if (!Array.isArray(cards)) return;
-
   const SUIT = {S:"♠",H:"♥",D:"♦",C:"♣"};
   cards.forEach((c,i)=>{
     const el=document.createElement("div");
     el.className="card";
     if(bestHold?.[i]) el.classList.add("held");
-    if(c?.suit==="H"||c?.suit==="D") el.classList.add("red");
+    if(c.suit==="H"||c.suit==="D") el.classList.add("red");
     el.innerHTML =
-      `<div class="rank">${c?.rank ?? "?"}</div>
-       <div class="suit">${SUIT[c?.suit] ?? "?"}</div>`;
+      `<div class="rank">${c.rank}</div>
+       <div class="suit">${SUIT[c.suit]}</div>`;
     cardsBox.appendChild(el);
   });
 }
 function explainHold(multiplier, mode){
-  if(mode === "aggressive"){
-    whyText.textContent = "Aggressive mode prioritizes multiplier growth.";
-    return;
-  }
-  if((multiplier ?? 1) >= 4){
-    whyText.textContent = "High multiplier — favoring future value.";
-    return;
-  }
-  whyText.textContent = "Maximizing expected value with lower variance.";
+  whyText.textContent =
+    mode==="aggressive"
+      ? "Aggressive mode prioritizes multiplier growth."
+      : "Maximizing expected value with lower variance.";
 }
 
-/* Camera control */
-async function startCamera(){
-  statusEl.textContent = "Starting camera…";
-  const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
+/* Camera */
+(async ()=>{
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:"environment" }
+  });
   video.srcObject = stream;
   await video.play();
-  currentStream = stream;
-  statusEl.textContent = "Camera ready — align machine";
+  statusEl.textContent="Camera ready — align machine";
   requestAnimationFrame(()=>positionGreenFrame(scanner, band));
-}
+})();
 
-async function stopCamera(){
-  if(currentStream){
-    currentStream.getTracks().forEach(t=>t.stop());
-    currentStream = null;
-  }
-}
-
-/* Initial camera start */
-startCamera().catch(e=>{
-  statusEl.textContent="Camera error";
-  debugEl.textContent = e?.message || String(e);
-});
-
-/* SNAP: one worker per snap */
+/* SNAP */
 snapBtn.onclick = async ()=>{
   if(busy) return;
   busy = true;
   snapBtn.disabled = true;
+  statusEl.textContent="Processing…";
+  debugEl.textContent="";
 
   try{
-    statusEl.textContent="Capturing…";
-    const bitmap = await captureBitmapFromGreenFrame({ video, band, scanner });
+    const bitmap = await captureBitmapFromGreenFrame({
+      video, band, scanner
+    });
 
-    statusEl.textContent="Processing…";
-    debugEl.textContent = "";
-
-    const worker = new Worker("./ui/snapWorker.js", { type:"module" });
-    activeWorker = worker;
-
-    // Always unlock UI no matter what happens
-    const finish = () => {
-      try { worker.terminate(); } catch {}
-      activeWorker = null;
-      busy = false;
-      snapBtn.disabled = false;
-    };
+    const worker = new Worker("../ui/snapWorker.js", { type:"module" });
 
     worker.onmessage = (e)=>{
+      const { ok, data, error } = e.data;
       try{
-        const { ok, data, error } = e.data || {};
         if(!ok){
           statusEl.textContent="Worker error";
-          debugEl.textContent = error || "Unknown worker error";
+          debugEl.textContent = error;
           return;
         }
-
-        // data should be the backend JSON response
         renderMultipliers(data.multipliers);
         renderEVs(data.ev_without_multiplier, data.ev_with_multiplier);
         renderCards(data.cards, data.best_hold);
-        explainHold(data.multipliers?.bottom, data.mode);
-
+        explainHold(data.multipliers.bottom, data.mode);
         debugEl.textContent = JSON.stringify(data, null, 2);
         statusEl.textContent="Done ✅";
       } finally {
-        finish();
+        busy = false;
+        snapBtn.disabled = false;
+        worker.terminate();
       }
-    };
-
-    worker.onerror = (err) => {
-      statusEl.textContent = "Worker error";
-      debugEl.textContent = err?.message || String(err);
-      finish();
     };
 
     worker.postMessage({
       bitmap,
-      workerUrl: API_URL,                 // MUST be absolute https://.../analyze
-      paytable: paytableSelect.value,
+      workerUrl: API_URL,
+      paytable: "DDB_9_6",
       mode: modeSelect.value
     }, [bitmap]);
 
-  } catch(e){
+  }catch(e){
     statusEl.textContent="Client error";
-    debugEl.textContent = e?.message || String(e);
+    debugEl.textContent = e.message;
     busy = false;
     snapBtn.disabled = false;
   }
-};
-
-/* RESET button */
-resetBtn.onclick = async ()=>{
-  statusEl.textContent="Resetting…";
-  snapBtn.disabled = true;
-  resetBtn.disabled = true;
-
-  if(activeWorker){
-    try { activeWorker.terminate(); } catch {}
-    activeWorker = null;
-  }
-
-  await stopCamera();
-
-  // Clear UI
-  renderMultipliers({top:null,middle:null,bottom:null});
-  evBaseEl.textContent = "—";
-  evUXEl.textContent = "—";
-  cardsBox.innerHTML = "";
-  whyText.textContent = "";
-  debugEl.textContent = "";
-
-  await new Promise(r=>setTimeout(r,300));
-
-  try{
-    await startCamera();
-    statusEl.textContent = "Reset complete ✅";
-  } catch(e){
-    statusEl.textContent = "Reset failed";
-    debugEl.textContent = e?.message || String(e);
-  }
-
-  snapBtn.disabled = false;
-  resetBtn.disabled = false;
 };
 </script>
 </body>
