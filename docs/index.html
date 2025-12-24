@@ -23,14 +23,13 @@ body{
   color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
-
 .app{
   max-width:860px;
   margin:auto;
   padding:12px 14px 160px;
 }
 
-/* Header */
+/* HEADER */
 h2{
   text-align:center;
   font-size:24px;
@@ -44,7 +43,7 @@ h2{
   margin:2px 0 10px;
 }
 
-/* Camera */
+/* CAMERA */
 .scanner.collapsed{display:none}
 .scanHint{
   position:absolute;
@@ -56,7 +55,17 @@ h2{
   font-weight:600;
 }
 
-/* Divider */
+/* WELCOME */
+#welcomeBox{
+  text-align:center;
+  padding:16px 18px;
+  border-radius:18px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.06);
+  margin-bottom:12px;
+}
+
+/* DIVIDER */
 .divider{
   height:1px;
   margin:10px 0 14px;
@@ -68,19 +77,38 @@ h2{
   );
 }
 
-/* Spinner */
-.spinner{
-  width:34px;height:34px;
-  border-radius:50%;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  animation:spin 1s linear infinite;
-  margin:14px auto;
+/* EV (CONTINUOUS) */
+.evSection{
   display:none;
+  margin-bottom:14px;
 }
-@keyframes spin{to{transform:rotate(360deg)}}
+.evRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.evLabel{width:80px;font-size:12px;color:var(--muted)}
+.evTrack{
+  flex:1;height:14px;
+  background:rgba(255,255,255,0.12);
+  border-radius:999px;
+  overflow:hidden;
+}
+.evFill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  transition:width .4s ease;
+}
+.evFill.base{background:rgba(255,255,255,0.45)}
+.evFill.ux{background:var(--accent)}
+.evValue{
+  width:80px;
+  text-align:right;
+  font-weight:800;
+}
 
-/* Cards */
+/* CARDS */
 .cards{
   margin-top:12px;
   padding:22px 16px;
@@ -93,78 +121,50 @@ h2{
   justify-content:center;
   gap:12px;
 }
-.card{
-  width:76px;height:108px;
-  background:#fff;color:#111;
-  border-radius:12px;
-  position:relative;
-}
-.card.red{color:#c1121f}
-.card.held{
-  transform:translateY(-16px) scale(1.07);
-  box-shadow:0 0 0 3px var(--accent);
-}
 
-.corner{position:absolute;font-weight:900;font-size:14px}
-.corner.top{top:6px;left:6px}
-.corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
-.pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}
-
-/* EV + MULTIPLIER BARS */
-.barSection{
-  margin-top:16px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
+/* MULTIPLIERS (DISCRETE) */
+.multSection{
+  display:none;
+  margin-top:14px;
 }
-
-.barRow{
+.multRow{
   display:flex;
   align-items:center;
   gap:10px;
 }
-
-.barLabel{
-  width:80px;
-  font-size:12px;
-  color:var(--muted);
-}
-
-.barTrack{
+.multLabel{width:80px;font-size:12px;color:var(--muted)}
+.multCells{
   flex:1;
-  height:14px;                /* BIGGER BAR */
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:4px;
+}
+.multCell{
+  height:12px;
+  border-radius:4px;
   background:rgba(255,255,255,0.12);
-  border-radius:999px;
-  overflow:hidden;
 }
-
-.barFill{
-  height:100%;
-  width:0%;
-  border-radius:999px;
-  transition:width .4s ease;
-}
-
-.barFill.base{background:rgba(255,255,255,0.45)}
-.barFill.ux{background:var(--accent)}
-
-.barValue{
-  width:80px;
+.multCell.g{background:#22c55e}
+.multCell.y{background:#eab308}
+.multCell.o{background:#f97316}
+.multCell.r{background:#ef4444}
+.multValue{
+  width:60px;
   text-align:right;
   font-weight:800;
 }
 
-/* Why */
+/* WHY */
 #whyBox{
   max-width:540px;
   margin:18px auto 0;
-  padding:18px 20px;
+  padding:18px;
   border-radius:18px;
   background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.06);
 }
 
-/* New hand */
+/* NEW HAND */
 .newHand{
   margin:24px auto 0;
   padding:14px 20px;
@@ -191,41 +191,44 @@ h2{
     <div class="scanHint">Tap anywhere inside the frame to analyze</div>
   </div>
 
+  <div id="welcomeBox">
+    🎰 <b>Ultimate X Video Poker</b><br>
+    Strategy: <span id="modeText">Conservative</span><br>
+    Good luck 🍀
+  </div>
+
   <div class="divider"></div>
 
-  <div class="spinner" id="spinner"></div>
+  <div class="evSection" id="evSection">
+    <div class="evRow">
+      <div class="evLabel">Base EV</div>
+      <div class="evTrack"><div class="evFill base" id="evBaseBar"></div></div>
+      <div class="evValue" id="evBase">—</div>
+    </div>
+    <div class="evRow">
+      <div class="evLabel">Ultimate X EV</div>
+      <div class="evTrack"><div class="evFill ux" id="evUXBar"></div></div>
+      <div class="evValue" id="evUX">—</div>
+    </div>
+  </div>
 
   <div class="cards" id="cardsBox"></div>
 
-  <div class="barSection">
-    <div class="barRow">
-      <div class="barLabel">Base EV</div>
-      <div class="barTrack"><div class="barFill base" id="evBaseBar"></div></div>
-      <div class="barValue" id="evBase">—</div>
+  <div class="multSection" id="multSection">
+    <div class="multRow">
+      <div class="multLabel">Top</div>
+      <div class="multCells" id="multTopCells"></div>
+      <div class="multValue" id="multTop">—</div>
     </div>
-
-    <div class="barRow">
-      <div class="barLabel">Ultimate X EV</div>
-      <div class="barTrack"><div class="barFill ux" id="evUXBar"></div></div>
-      <div class="barValue" id="evUX">—</div>
+    <div class="multRow">
+      <div class="multLabel">Middle</div>
+      <div class="multCells" id="multMidCells"></div>
+      <div class="multValue" id="multMid">—</div>
     </div>
-
-    <div class="barRow">
-      <div class="barLabel">Top</div>
-      <div class="barTrack"><div class="barFill ux" id="multTopBar"></div></div>
-      <div class="barValue" id="multTop">—</div>
-    </div>
-
-    <div class="barRow">
-      <div class="barLabel">Middle</div>
-      <div class="barTrack"><div class="barFill ux" id="multMidBar"></div></div>
-      <div class="barValue" id="multMid">—</div>
-    </div>
-
-    <div class="barRow">
-      <div class="barLabel">Bottom</div>
-      <div class="barTrack"><div class="barFill ux" id="multBotBar"></div></div>
-      <div class="barValue" id="multBot">—</div>
+    <div class="multRow">
+      <div class="multLabel">Bottom</div>
+      <div class="multCells" id="multBotCells"></div>
+      <div class="multValue" id="multBot">—</div>
     </div>
   </div>
 
@@ -243,19 +246,22 @@ const band=document.querySelector(".band");
 const spinner=document.getElementById("spinner");
 
 const cardsBox=document.getElementById("cardsBox");
-const multTop=document.getElementById("multTop");
-const multMid=document.getElementById("multMid");
-const multBot=document.getElementById("multBot");
-const multTopBar=document.getElementById("multTopBar");
-const multMidBar=document.getElementById("multMidBar");
-const multBotBar=document.getElementById("multBotBar");
-
+const evSection=document.getElementById("evSection");
+const multSection=document.getElementById("multSection");
 const evBase=document.getElementById("evBase");
 const evUX=document.getElementById("evUX");
 const evBaseBar=document.getElementById("evBaseBar");
 const evUXBar=document.getElementById("evUXBar");
 
+const multTop=document.getElementById("multTop");
+const multMid=document.getElementById("multMid");
+const multBot=document.getElementById("multBot");
+const multTopCells=[...Array(12)].map(()=>{const d=document.createElement("div");d.className="multCell";document.getElementById("multTopCells").appendChild(d);return d});
+const multMidCells=[...Array(12)].map(()=>{const d=document.createElement("div");d.className="multCell";document.getElementById("multMidCells").appendChild(d);return d});
+const multBotCells=[...Array(12)].map(()=>{const d=document.createElement("div");d.className="multCell";document.getElementById("multBotCells").appendChild(d);return d});
+
 const whyBox=document.getElementById("whyBox");
+const welcomeBox=document.getElementById("welcomeBox");
 const newHandBtn=document.getElementById("newHandBtn");
 
 await initCamera(video);
@@ -266,17 +272,20 @@ wireSnapWorker({
   band,
   spinner,
   cardsBox,
-  multTop,
-  multMid,
-  multBot,
-  multTopBar,
-  multMidBar,
-  multBotBar,
-  evBase,
-  evUX,
+  evSection,
+  evBaseValue:evBase,
+  evUXValue:evUX,
   evBaseBar,
   evUXBar,
+  multSection,
+  multTopValue:multTop,
+  multMidValue:multMid,
+  multBotValue:multBot,
+  multTopCells,
+  multMidCells,
+  multBotCells,
   whyBox,
+  welcomeBox,
   onSnapComplete:()=>{
     scanner.classList.add("collapsed");
     newHandBtn.style.display="block";
@@ -285,6 +294,9 @@ wireSnapWorker({
 
 newHandBtn.onclick=()=>{
   scanner.classList.remove("collapsed");
+  welcomeBox.style.display="block";
+  evSection.style.display="none";
+  multSection.style.display="none";
   newHandBtn.style.display="none";
 };
 </script>
