@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X – Vision UI</title>
 
-<!-- 🔒 USE YOUR ORIGINAL CAMERA CSS -->
+<!-- 🔒 USE YOUR ORIGINAL CAMERA STYLES -->
 <link rel="stylesheet" href="../capture/camera.css">
 
 <style>
@@ -22,7 +22,7 @@ button{
 }
 button:disabled{opacity:.6}
 
-/* UI ONLY — NO CAMERA STYLES HERE */
+/* UI ONLY — DO NOT TOUCH CAMERA */
 .multipliers{display:flex;gap:12px;margin-top:16px}
 .mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
 .mult .label{font-size:12px;color:#9ca3af}
@@ -51,10 +51,10 @@ button:disabled{opacity:.6}
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA (unchanged markup, unchanged CSS) -->
+  <!-- 🔒 CAMERA STRUCTURE EXACTLY AS BEFORE -->
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
-    <div class="band"></div>
+    <div class="band" id="band"></div>
   </div>
 
   <button id="snap">SNAP</button>
@@ -78,31 +78,47 @@ button:disabled{opacity:.6}
   <pre id="debug"></pre>
 </div>
 
-<script>
+<script type="module">
+/* 🔒 INLINE COPY OF YOUR ORIGINAL CAPTURE LOGIC */
+const CAPTURE_CONFIG = {
+  FRAME_SCALE: 0.58
+};
+
+function positionGreenFrame(scanner, band) {
+  const h = scanner.getBoundingClientRect().height * CAPTURE_CONFIG.FRAME_SCALE;
+  band.style.top = (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
+  band.style.height = h + "px";
+}
+
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
 const video = document.getElementById("video");
+const band = document.getElementById("band");
+const scanner = document.getElementById("scanner");
 const snapBtn = document.getElementById("snap");
 const statusEl = document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
 let stream = null;
+let cameraReady = false;
 let busy = false;
 
-/* 🔒 ORIGINAL CAMERA BEHAVIOR (UNCHANGED) */
+/* 🔒 CAMERA START — SAME BEHAVIOR AS BEFORE */
 navigator.mediaDevices.getUserMedia({
   video: { facingMode: "environment" }
 }).then(s => {
   stream = s;
   video.srcObject = stream;
   video.play();
+  cameraReady = true;
+  requestAnimationFrame(()=>positionGreenFrame(scanner, band));
   statusEl.textContent = "Camera ready";
 }).catch(err => {
   statusEl.textContent = "Camera error";
   debugEl.textContent = err.message;
 });
 
-/* CAPTURE FRAME (same framing as before) */
+/* CAPTURE FRAME — UNCHANGED FRAMING */
 function captureFrame() {
   const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
@@ -113,7 +129,7 @@ function captureFrame() {
 
 /* SNAP */
 snapBtn.onclick = async () => {
-  if (busy) return;
+  if (busy || !cameraReady) return;
   busy = true;
   snapBtn.disabled = true;
   statusEl.textContent = "Processing…";
