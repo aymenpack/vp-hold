@@ -157,6 +157,7 @@ select{
         <option value="aggressive">🔥 Aggressive</option>
       </select>
     </div>
+
     <div class="setting">
       <label>Theme</label>
       <select id="themeSelect">
@@ -171,7 +172,7 @@ select{
 
 <script>
 /* ===============================
-   DOM REFERENCES (FIX)
+   DOM REFERENCES
    =============================== */
 const video = document.getElementById("video");
 const snap = document.getElementById("snap");
@@ -183,9 +184,26 @@ const multMid = document.getElementById("multMid");
 const multBot = document.getElementById("multBot");
 const evBase = document.getElementById("evBase");
 const evUX = document.getElementById("evUX");
+const themeSelect = document.getElementById("themeSelect");
+const modeSelect = document.getElementById("modeSelect");
 
 /* ===============================
-   CAMERA START (STATUS FIXED)
+   THEME PERSISTENCE
+   =============================== */
+const THEME_KEY = "vp_theme";
+const savedTheme = localStorage.getItem(THEME_KEY);
+if (savedTheme) {
+  document.documentElement.className = savedTheme;
+  themeSelect.value = savedTheme;
+}
+themeSelect.onchange = () => {
+  const theme = themeSelect.value;
+  document.documentElement.className = theme;
+  localStorage.setItem(THEME_KEY, theme);
+};
+
+/* ===============================
+   CAMERA START
    =============================== */
 navigator.mediaDevices.getUserMedia({
   video:{ facingMode:"environment" }
@@ -250,7 +268,9 @@ snap.onclick=async()=>{
   }
 };
 
-/* Tabs + Theme */
+/* ===============================
+   TABS
+   =============================== */
 document.querySelectorAll(".tab").forEach(t=>{
   t.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -259,7 +279,6 @@ document.querySelectorAll(".tab").forEach(t=>{
     document.getElementById(t.dataset.tab).classList.add("active");
   };
 });
-themeSelect.onchange=()=>{document.documentElement.className=themeSelect.value};
 </script>
 </body>
 </html>
