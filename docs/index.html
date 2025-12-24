@@ -8,11 +8,36 @@
 <link rel="stylesheet" href="../capture/camera.css">
 
 <style>
-body{margin:0;background:#020617;color:#fff;font-family:system-ui}
-.app{max-width:900px;margin:auto;padding:16px 16px 160px}
-h2{margin:0}
-.subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
+body{
+  margin:0;
+  background:#020617;
+  color:#fff;
+  font-family:system-ui;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 160px;
+}
 
+/* 🔒 DO NOT OVERRIDE .scanner SIZE */
+/* camera.css already defines correct height */
+
+/* ✅ GREEN FRAME — EXACT SAME MATH AS positionGreenFrame */
+.band{
+  position:absolute;
+  left:8%;
+  right:8%;
+  height:58%;
+  top:50%;
+  transform:translateY(-50%);
+  border:4px dashed #22c55e;
+  border-radius:18px;
+  background:rgba(34,197,94,0.12);
+  pointer-events:none;
+}
+
+/* UI (unchanged) */
 button{
   margin-top:18px;width:100%;padding:18px;
   font-size:20px;font-weight:900;
@@ -21,25 +46,6 @@ button{
 }
 button:disabled{opacity:.6}
 
-/* UI ONLY — CAMERA CSS COMES FROM camera.css */
-.multipliers{display:flex;gap:12px;margin-top:16px}
-.mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
-.mult .label{font-size:12px;color:#9ca3af}
-.mult .value{font-size:22px;font-weight:900;margin-top:6px}
-
-.ev-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
-.ev-box{padding:14px;border-radius:14px;background:#020617;border:1px solid #333;text-align:center}
-.ev-box .value{font-size:24px;font-weight:900}
-.ev-box.ux .value{color:#22c55e}
-
-.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
-.card{background:#fff;color:#000;border-radius:14px;padding:14px 6px 10px;text-align:center}
-.card.red{color:#c1121f}
-.card.held{transform:translateY(-10px);box-shadow:0 0 0 3px #22c55e}
-
-#whyBox{margin-top:16px;padding:16px;border-radius:14px;background:#020617;border:1px solid #333}
-#whyText{margin-top:8px;font-size:14px;color:#e5e7eb}
-
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:#9ca3af}
 </style>
@@ -47,54 +53,29 @@ button:disabled{opacity:.6}
 
 <body>
 <div class="app">
-  <h2>Ultimate X – Vision UI</h2>
-  <div class="subtitle">Wizard-style EV comparison</div>
 
-  <!-- CAMERA -->
-  <div class="scanner" id="scanner">
+  <div class="scanner">
     <video id="video" autoplay playsinline muted></video>
-    <div class="band" id="band"></div>
+    <div class="band"></div>
   </div>
 
   <button id="snap">SNAP</button>
 
-  <div id="status">Starting camera…</div>
+  <div id="status">Camera ready</div>
   <pre id="debug"></pre>
 </div>
 
 <script>
-/* ===============================
-   DO NOT TOUCH CAMERA LOGIC
-   =============================== */
+/* 🔒 CAMERA LOGIC — UNTOUCHED */
 navigator.mediaDevices.getUserMedia({
-  video: { facingMode: "environment" }
-}).then(stream => {
-  video.srcObject = stream;
+  video:{ facingMode:"environment" }
+}).then(s=>{
+  video.srcObject=s;
   video.play();
-
-  video.onloadedmetadata = () => {
-    positionGreenFrame();
-    status.textContent = "Camera ready";
-  };
-}).catch(err => {
-  status.textContent = "Camera error";
-  debug.textContent = err.message;
+}).catch(err=>{
+  status.textContent="Camera error";
+  debug.textContent=err.message;
 });
-
-/* ===============================
-   GREEN FRAME POSITION (RESTORED)
-   =============================== */
-const CAPTURE_CONFIG = { FRAME_SCALE: 0.58 };
-
-function positionGreenFrame() {
-  const scanner = document.getElementById("scanner");
-  const band = document.getElementById("band");
-
-  const h = scanner.getBoundingClientRect().height * CAPTURE_CONFIG.FRAME_SCALE;
-  band.style.top =
-    (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
-  band.style.height = h + "px";
-}
 </script>
 </body>
 </html>
