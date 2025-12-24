@@ -1,6 +1,6 @@
 /*
   ✏️ SAFE FILE
-  UI interaction + rendering + camera collapse
+  Handles snap interaction, rendering, and camera collapse
 */
 
 import { captureGreenFrame } from "../capture/capture.js";
@@ -17,9 +17,8 @@ export function wireSnapWorker({
   evBase,
   evUX,
   whyBox,
-  modeSelect,
-  onCollapseCamera
-}){
+  onSnapComplete
+}) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
 
@@ -32,36 +31,39 @@ export function wireSnapWorker({
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-      const res = await fetch(API_URL,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           imageBase64,
           paytable: "DDB_9_6",
-          mode: modeSelect?.value || "conservative"
+          mode: "conservative"
         })
       });
 
-      const d = await res.json();
+      const data = await res.json();
 
-      // collapse camera AFTER successful response
-      if (typeof onCollapseCamera === "function") {
-        onCollapseCamera();
+      if (!data || !data.cards || !data.best_hold) {
+        console.warn("Invalid response from backend", data);
+        return;
       }
 
-      renderResults(d);
+      renderResults(data);
+
+      // 🔥 collapse camera after successful snap
+      if (typeof onSnapComplete === "function") {
+        onSnapComplete();
+      }
 
     } catch (err) {
-      console.error("Analyze failed:", err);
+      console.error("Snap failed:", err);
     } finally {
       spinner.style.display = "none";
       busy = false;
     }
   };
 
-  function renderResults(d){
-    if (!d || !d.cards || !d.best_hold) return;
-
+  function renderResults(d) {
     /* multipliers */
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
@@ -73,14 +75,14 @@ export function wireSnapWorker({
 
     /* cards */
     cardsBox.innerHTML = "";
-    const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
+    const SUIT = { S: "♠", H: "♥", D: "♦", C: "♣" };
 
-    d.cards.forEach((c,i)=>{
+    d.cards.forEach((c, i) => {
       const el = document.createElement("div");
       el.className =
         "card" +
         (d.best_hold[i] ? " held" : "") +
-        ((c.suit==="H"||c.suit==="D") ? " red" : "");
+        ((c.suit === "H" || c.suit === "D") ? " red" : "");
 
       el.innerHTML = `
         <div class="corner top">${c.rank}<br>${SUIT[c.suit]}</div>
@@ -92,68 +94,66 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    /* extended WHY */
+    /* extended WHY explanation */
     whyBox.innerHTML = buildWhyExplanation(
       d.cards,
       d.best_hold,
-      d.multipliers.bottom,
-      modeSelect?.value || "conservative"
+      d.multipliers.bottom
     );
     whyBox.classList.add("show");
   }
 
-  function buildWhyExplanation(cards, hold, mult, mode){
-    const held = cards.filter((_,i)=>hold[i]);
+  function buildWhyExplanation(cards, hold, multiplier) {
+    const held = cards.filter((_, i) => hold[i]);
     const counts = {};
-    held.forEach(c=>counts[c.rank]=(counts[c.rank]||0)+1);
-    const vals = Object.values(counts);
+    held.forEach(c => counts[c.rank] = (counts[c.rank] || 0) + 1);
+    const values = Object.values(counts);
 
-    let reason = "";
+    let explanation = "";
 
-    if (vals.includes(4)) {
-      reason = `
-        <b>Four of a Kind</b> is already made.
+    if (values.includes(4)) {
+      explanation = `
+        <b>Four of a Kind</b> is already complete.
         In Double Double Bonus, quads dominate the EV table.
         Any draw would strictly reduce expected value.
       `;
-    } else if (vals.includes(3)) {
-      reason = `
+    } else if (values.includes(3)) {
+      explanation = `
         Holding <b>Three of a Kind</b> preserves strong
         <b>Full House</b> and <b>Four of a Kind</b> outs.
         Breaking trips sacrifices too much guaranteed value.
       `;
-    } else if (vals.includes(2)) {
-      reason = `
+    } else if (values.includes(2)) {
+      explanation = `
         A <b>pair</b> provides the highest baseline EV
         among all incomplete hands.
         Drawing to trips, two pair, and full house
         outperforms any speculative discard.
       `;
-    } else if (mode === "aggressive") {
-      reason = `
-        In <b>Aggressive mode</b>, the strategy prioritizes
-        future multiplier growth and high-variance outcomes.
-        This increases long-term return at the cost of volatility.
-      `;
     } else {
-      reason = `
+      explanation = `
         This hold maximizes <b>expected value</b>
-        given the current paytable and multiplier state.
+        based on the current paytable and visible multipliers.
         Alternative holds produce lower average return.
       `;
     }
 
-    if (mult > 1) {
-      reason += `
+    if (multiplier > 1) {
+      explanation += `
         <br><br>
-        The active <b>${mult}× multiplier</b> further increases
-        the value of made hands, reinforcing this choice.
+        The active <b>${multiplier}× multiplier</b>
+        further increases the value of made hands,
+        reinforcing this choice.
       `;
     }
 
     return `
-      <div style="font-weight:700;margin-bottom:6px">Why this hold?</div>
-      <div style="color:#e5e7eb;line-height:1.45">${reason}</div>
+      <div style="font-weight:800;margin-bottom:8px">
+        Why this hold?
+      </div>
+      <div style="color:#e5e7eb;line-height:1.5">
+        ${explanation}
+      </div>
     `;
   }
 }
