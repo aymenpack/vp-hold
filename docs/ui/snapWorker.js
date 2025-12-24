@@ -14,6 +14,9 @@ export function wireSnapWorker({
   multTop,
   multMid,
   multBot,
+  multTopBar,
+  multMidBar,
+  multBotBar,
   evBase,
   evUX,
   evBaseBar,
@@ -44,13 +47,11 @@ export function wireSnapWorker({
       });
 
       const d = await res.json();
-      if (!d || !d.cards || !d.best_hold) return;
+      if (!d || !d.cards) return;
 
       renderResults(d);
 
-      if (typeof onSnapComplete === "function") {
-        onSnapComplete();
-      }
+      if (onSnapComplete) onSnapComplete();
 
     } catch (err) {
       console.error("Snap failed:", err);
@@ -61,27 +62,34 @@ export function wireSnapWorker({
   };
 
   function renderResults(d) {
-    /* multipliers */
-    multTop.textContent = "×" + d.multipliers.top;
-    multMid.textContent = "×" + d.multipliers.middle;
-    multBot.textContent = "×" + d.multipliers.bottom;
-
-    /* EV numbers */
+    /* ===== EV NUMBERS ===== */
     const baseEV = d.ev_without_multiplier;
     const uxEV   = d.ev_with_multiplier;
 
     evBase.textContent = baseEV.toFixed(4);
     evUX.textContent   = uxEV.toFixed(4);
 
-    /* EV bars (relative) */
     const maxEV = Math.max(baseEV, uxEV, 0.0001);
-    const basePct = Math.min(100, (baseEV / maxEV) * 100);
-    const uxPct   = Math.min(100, (uxEV   / maxEV) * 100);
+    evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
+    evUXBar.style.width   = (uxEV   / maxEV * 100) + "%";
 
-    evBaseBar.style.width = basePct + "%";
-    evUXBar.style.width   = uxPct + "%";
+    /* ===== MULTIPLIERS ===== */
+    const maxMult = Math.max(
+      d.multipliers.top,
+      d.multipliers.middle,
+      d.multipliers.bottom,
+      1
+    );
 
-    /* cards */
+    multTop.textContent = "×" + d.multipliers.top;
+    multMid.textContent = "×" + d.multipliers.middle;
+    multBot.textContent = "×" + d.multipliers.bottom;
+
+    multTopBar.style.width = (d.multipliers.top    / maxMult * 100) + "%";
+    multMidBar.style.width = (d.multipliers.middle / maxMult * 100) + "%";
+    multBotBar.style.width = (d.multipliers.bottom / maxMult * 100) + "%";
+
+    /* ===== CARDS ===== */
     cardsBox.innerHTML = "";
     const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -102,14 +110,14 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    /* WHY */
+    /* ===== WHY ===== */
     whyBox.innerHTML = `
       <div style="display:flex;gap:10px;align-items:flex-start">
         <span style="font-size:18px">💡</span>
         <div>
           <b>Why this hold?</b><br>
-          This play maximizes <b>expected value</b> given the
-          current hand, the paytable, and active multipliers.
+          This play maximizes <b>expected value</b> given the current hand,
+          the paytable, and the active multipliers.
         </div>
       </div>
     `;
