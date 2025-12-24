@@ -6,15 +6,24 @@
 <title>Ultimate X Vision</title>
 
 <style>
+/* ===============================
+   THEME VARIABLES
+   =============================== */
 :root{
   --bg:#020617;
   --panel:#020617;
   --border:#2a2f3a;
   --accent:#22c55e;
+  --text:#ffffff;
   --muted:#9ca3af;
 }
+.theme-green{--bg:#041b12;--panel:#052e1b;--border:#0f5132;--accent:#22c55e}
+.theme-blue{--bg:#020b1f;--panel:#020b1f;--border:#1e3a8a;--accent:#60a5fa}
+.theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
 
-/* CAMERA */
+/* ===============================
+   CAMERA (LOCKED)
+   =============================== */
 .scanner{
   position:relative;
   width:100%;
@@ -44,11 +53,13 @@ video{
   pointer-events:none;
 }
 
-/* UI */
+/* ===============================
+   BASE UI
+   =============================== */
 body{
   margin:0;
   background:var(--bg);
-  color:#fff;
+  color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 .app{
@@ -57,8 +68,164 @@ body{
   padding:18px 14px 140px;
 }
 h2{font-size:22px;font-weight:800}
+.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
 
-/* PREVIEW */
+/* ===============================
+   TABS
+   =============================== */
+.tabs{
+  display:flex;
+  gap:10px;
+  margin:18px 0 12px;
+}
+.tab{
+  flex:1;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--panel);
+  text-align:center;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.tab.active{
+  background:var(--accent);
+  color:#000;
+}
+.panel{display:none}
+.panel.active{display:block}
+
+/* ===============================
+   SPINNER
+   =============================== */
+.spinner{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:3px solid rgba(255,255,255,.2);
+  border-top-color:var(--accent);
+  animation:spin 1s linear infinite;
+  margin:14px auto 0;
+  display:none;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===============================
+   MULTIPLIERS + EV
+   =============================== */
+.multipliers,.ev{
+  display:flex;
+  gap:10px;
+  margin-top:16px;
+}
+.mult,.evBox{
+  flex:1;
+  padding:10px;
+  border-radius:14px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  text-align:center;
+}
+.label{
+  font-size:11px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.value{
+  font-size:20px;
+  font-weight:900;
+  margin-top:4px;
+}
+.evBox.ux .value{color:var(--accent)}
+
+/* ===============================
+   REAL CARD COMPONENT
+   =============================== */
+.cards{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:16px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:.35s ease;
+}
+.cards.show{
+  opacity:1;
+  transform:none;
+}
+.card{
+  width:76px;
+  height:108px;
+  background:#fff;
+  color:#111;
+  border-radius:12px;
+  position:relative;
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+}
+.card.red{color:#c1121f}
+.card.held{
+  transform:translateY(-12px);
+  box-shadow:0 0 0 3px var(--accent), 0 10px 24px rgba(0,0,0,.45);
+}
+.corner{
+  position:absolute;
+  font-weight:900;
+  font-size:14px;
+  line-height:1.1;
+  text-align:center;
+}
+.corner.top{top:6px;left:6px}
+.corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
+.pip{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:34px;
+}
+
+/* ===============================
+   WHY
+   =============================== */
+#whyBox{
+  margin-top:14px;
+  padding:14px;
+  border-radius:14px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  font-size:14px;
+  line-height:1.4;
+  opacity:0;
+  transform:translateY(6px);
+  transition:.35s ease;
+}
+#whyBox.show{
+  opacity:1;
+  transform:none;
+}
+
+/* ===============================
+   SETTINGS
+   =============================== */
+.setting{margin-top:18px}
+.setting label{font-size:12px;color:var(--muted)}
+select{
+  width:100%;
+  margin-top:6px;
+  padding:12px;
+  border-radius:14px;
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--border);
+}
+
+/* ===============================
+   DEBUG PREVIEW
+   =============================== */
 .preview{
   margin-top:14px;
   padding:10px;
@@ -75,47 +242,131 @@ h2{font-size:22px;font-weight:800}
   margin-top:6px;
   border-radius:10px;
 }
-
-/* SPINNER */
-.spinner{
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  animation:spin 1s linear infinite;
-  margin:14px auto 0;
-  display:none;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 
 <body>
 <div class="app">
   <h2>Ultimate X Vision</h2>
+  <div class="subtitle">Tap the camera to analyze.</div>
 
-  <div class="scanner" id="scanner">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="band" id="band"></div>
+  <div class="tabs">
+    <div class="tab active" data-tab="main">🎰 Play</div>
+    <div class="tab" data-tab="settings">⚙️ Settings</div>
   </div>
 
-  <div class="spinner" id="spinner"></div>
+  <!-- MAIN -->
+  <div class="panel active" id="main">
+    <div class="scanner" id="scanner">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="band" id="band"></div>
+    </div>
 
-  <div class="preview">
-    <label>Image sent to AI (EXACT green frame)</label>
-    <img id="previewImg">
+    <div class="spinner" id="spinner"></div>
+
+    <div class="cards" id="cardsBox"></div>
+
+    <div class="multipliers">
+      <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
+      <div class="mult"><div class="label">Middle</div><div class="value" id="multMid">×—</div></div>
+      <div class="mult"><div class="label">Bottom</div><div class="value" id="multBot">×—</div></div>
+    </div>
+
+    <div class="ev">
+      <div class="evBox"><div class="label">Base EV</div><div class="value" id="evBase">—</div></div>
+      <div class="evBox ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
+    </div>
+
+    <div id="whyBox">—</div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="settings">
+    <div class="setting">
+      <label>Strategy</label>
+      <select id="modeSelect">
+        <option value="conservative">🛡️ Conservative</option>
+        <option value="aggressive">🔥 Aggressive</option>
+      </select>
+    </div>
+
+    <div class="setting">
+      <label>Theme</label>
+      <select id="themeSelect">
+        <option value="">Dark</option>
+        <option value="theme-green">Casino Green</option>
+        <option value="theme-blue">Midnight Blue</option>
+        <option value="theme-purple">Royal Purple</option>
+      </select>
+    </div>
+
+    <div class="setting">
+      <label>Debug</label>
+      <select id="debugSelect">
+        <option value="off">Off</option>
+        <option value="on">Show capture preview</option>
+      </select>
+    </div>
+
+    <div class="preview" id="previewBox" style="display:none">
+      <label>Image sent to AI (exact green frame)</label>
+      <img id="previewImg">
+    </div>
   </div>
 </div>
 
 <script>
-const video = document.getElementById("video");
-const scanner = document.getElementById("scanner");
-const band = document.getElementById("band");
-const spinner = document.getElementById("spinner");
-const previewImg = document.getElementById("previewImg");
+/* ===============================
+   DOM
+   =============================== */
+const video=document.getElementById("video");
+const scanner=document.getElementById("scanner");
+const band=document.getElementById("band");
+const spinner=document.getElementById("spinner");
+const previewBox=document.getElementById("previewBox");
+const previewImg=document.getElementById("previewImg");
+const cardsBox=document.getElementById("cardsBox");
+const whyBox=document.getElementById("whyBox");
+const multTop=document.getElementById("multTop");
+const multMid=document.getElementById("multMid");
+const multBot=document.getElementById("multBot");
+const evBase=document.getElementById("evBase");
+const evUX=document.getElementById("evUX");
+const modeSelect=document.getElementById("modeSelect");
+const themeSelect=document.getElementById("themeSelect");
+const debugSelect=document.getElementById("debugSelect");
 
-/* HIGH-RES CAMERA */
+/* ===============================
+   PERSISTENCE
+   =============================== */
+const THEME_KEY="vp_theme",MODE_KEY="vp_mode",DEBUG_KEY="vp_debug";
+if(localStorage.getItem(THEME_KEY)){
+  document.documentElement.className=localStorage.getItem(THEME_KEY);
+  themeSelect.value=localStorage.getItem(THEME_KEY);
+}
+if(localStorage.getItem(MODE_KEY))modeSelect.value=localStorage.getItem(MODE_KEY);
+if(localStorage.getItem(DEBUG_KEY))debugSelect.value=localStorage.getItem(DEBUG_KEY);
+
+themeSelect.onchange=()=>{document.documentElement.className=themeSelect.value;localStorage.setItem(THEME_KEY,themeSelect.value)};
+modeSelect.onchange=()=>localStorage.setItem(MODE_KEY,modeSelect.value);
+debugSelect.onchange=()=>{
+  localStorage.setItem(DEBUG_KEY,debugSelect.value);
+  previewBox.style.display = debugSelect.value==="on" ? "block" : "none";
+};
+
+/* Tabs */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById(t.dataset.tab).classList.add("active");
+  };
+});
+
+/* ===============================
+   CAMERA
+   =============================== */
 navigator.mediaDevices.getUserMedia({
   video:{
     facingMode:"environment",
@@ -123,65 +374,114 @@ navigator.mediaDevices.getUserMedia({
     height:{ ideal:1080 }
   }
 }).then(stream=>{
-  video.srcObject = stream;
-  video.onloadedmetadata = () => video.play();
+  video.srcObject=stream;
+  video.onloadedmetadata=()=>video.play();
 });
 
-/* 🔥 EXACT GREEN-FRAME CROP UNDER object-fit: cover */
+/* ===============================
+   EXACT GREEN FRAME CROP (cover-safe)
+   =============================== */
 function captureGreenFrame(){
-  const scannerRect = scanner.getBoundingClientRect();
-  const bandRect = band.getBoundingClientRect();
+  const scannerRect=scanner.getBoundingClientRect();
+  const bandRect=band.getBoundingClientRect();
 
-  const videoW = video.videoWidth;
-  const videoH = video.videoHeight;
+  const videoW=video.videoWidth;
+  const videoH=video.videoHeight;
 
-  const scannerAspect = scannerRect.width / scannerRect.height;
-  const videoAspect = videoW / videoH;
+  const scannerAspect=scannerRect.width/scannerRect.height;
+  const videoAspect=videoW/videoH;
 
-  let visibleX, visibleY, visibleW, visibleH;
+  let visibleX,visibleY,visibleW,visibleH;
 
-  if (videoAspect > scannerAspect) {
-    // video wider than container → crop left/right
-    visibleH = videoH;
-    visibleW = videoH * scannerAspect;
-    visibleX = (videoW - visibleW) / 2;
-    visibleY = 0;
-  } else {
-    // video taller than container → crop top/bottom
-    visibleW = videoW;
-    visibleH = videoW / scannerAspect;
-    visibleX = 0;
-    visibleY = (videoH - visibleH) / 2;
+  if(videoAspect>scannerAspect){
+    visibleH=videoH;
+    visibleW=videoH*scannerAspect;
+    visibleX=(videoW-visibleW)/2;
+    visibleY=0;
+  }else{
+    visibleW=videoW;
+    visibleH=videoW/scannerAspect;
+    visibleX=0;
+    visibleY=(videoH-visibleH)/2;
   }
 
-  const scaleX = visibleW / scannerRect.width;
-  const scaleY = visibleH / scannerRect.height;
+  const scaleX=visibleW/scannerRect.width;
+  const scaleY=visibleH/scannerRect.height;
 
-  const sx = visibleX + (bandRect.left - scannerRect.left) * scaleX;
-  const sy = visibleY + (bandRect.top  - scannerRect.top ) * scaleY;
-  const sw = bandRect.width  * scaleX;
-  const sh = bandRect.height * scaleY;
+  const sx=visibleX+(bandRect.left-scannerRect.left)*scaleX;
+  const sy=visibleY+(bandRect.top-scannerRect.top)*scaleY;
+  const sw=bandRect.width*scaleX;
+  const sh=bandRect.height*scaleY;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = sw;
-  canvas.height = sh;
+  const canvas=document.createElement("canvas");
+  canvas.width=sw;
+  canvas.height=sh;
+  canvas.getContext("2d").drawImage(video,sx,sy,sw,sh,0,0,sw,sh);
 
-  canvas.getContext("2d").drawImage(
-    video,
-    sx, sy, sw, sh,
-    0,  0, sw, sh
-  );
-
-  return canvas.toDataURL("image/jpeg", 0.9);
+  return canvas.toDataURL("image/jpeg",0.9);
 }
 
-/* TAP CAMERA */
-scanner.onclick = async () => {
-  spinner.style.display = "block";
-  const img = captureGreenFrame();
-  previewImg.src = img;
-  spinner.style.display = "none";
+/* ===============================
+   TAP CAMERA TO ANALYZE
+   =============================== */
+const API_URL="https://vp-hold-production.up.railway.app/analyze";
+let busy=false;
+
+scanner.onclick=async()=>{
+  if(busy)return;
+  busy=true;
+  spinner.style.display="block";
+
+  try{
+    const imageBase64=captureGreenFrame();
+    previewImg.src=imageBase64;
+
+    const res=await fetch(API_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({imageBase64,mode:modeSelect.value})
+    });
+    const d=await res.json();
+
+    multTop.textContent="×"+d.multipliers.top;
+    multMid.textContent="×"+d.multipliers.middle;
+    multBot.textContent="×"+d.multipliers.bottom;
+    evBase.textContent=d.ev_without_multiplier.toFixed(4);
+    evUX.textContent=d.ev_with_multiplier.toFixed(4);
+
+    cardsBox.innerHTML="";
+    const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
+    d.cards.forEach((c,i)=>{
+      const el=document.createElement("div");
+      el.className="card"+(d.best_hold[i]?" held":"")+(c.suit==="H"||c.suit==="D"?" red":"");
+      el.innerHTML=`
+        <div class="corner top">${c.rank}<br>${SUIT[c.suit]}</div>
+        <div class="pip">${SUIT[c.suit]}</div>
+        <div class="corner bottom">${c.rank}<br>${SUIT[c.suit]}</div>
+      `;
+      cardsBox.appendChild(el);
+    });
+    cardsBox.classList.add("show");
+
+    whyBox.textContent=explainHold(d.cards,d.best_hold,d.multipliers.bottom,modeSelect.value);
+    whyBox.classList.add("show");
+  }finally{
+    spinner.style.display="none";
+    busy=false;
+  }
 };
+
+/* WHY */
+function explainHold(cards,hold,m,mode){
+  const r={};
+  cards.forEach((c,i)=>{if(hold[i])r[c.rank]=(r[c.rank]||0)+1});
+  const v=Object.values(r);
+  if(v.includes(4))return"Four of a kind locks the highest payout.";
+  if(v.includes(3))return"Holding trips maximizes full house and quad potential.";
+  if(v.includes(2))return"Holding a pair maximizes expected value.";
+  if(mode==="aggressive")return"Aggressive mode favors multiplier growth.";
+  return"Highest expected value play.";
+}
 </script>
 </body>
 </html>
