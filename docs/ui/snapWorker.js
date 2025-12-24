@@ -1,6 +1,6 @@
 /*
   ✏️ SAFE FILE
-  UI rendering + interaction logic
+  UI interaction + rendering
 */
 
 import { captureGreenFrame } from "../capture/capture.js";
@@ -20,7 +20,7 @@ export function wireSnapWorker({
   whyBox,
   modeSelect,
   debugSelect,
-  onDebugJson   // 👈 NEW callback
+  onDebugJson
 }){
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
@@ -30,19 +30,19 @@ export function wireSnapWorker({
     busy = true;
     spinner.style.display = "block";
 
-    try{
+    try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-      /* show image preview if debug ON */
+      // show image preview when debug ON
       if (debugSelect?.value === "on" && previewImg) {
         previewImg.src = imageBase64;
         previewImg.style.display = "block";
       }
 
-      const res = await fetch(API_URL,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           imageBase64,
           paytable: "DDB_9_6",
           mode: modeSelect?.value || "conservative"
@@ -51,13 +51,18 @@ export function wireSnapWorker({
 
       const data = await res.json();
 
-      /* 🔥 send raw JSON to debug panel */
-      if (debugSelect?.value === "on" && onDebugJson) {
+      // 🔥 show raw JSON when debug ON
+      if (debugSelect?.value === "on" && typeof onDebugJson === "function") {
         onDebugJson(data);
       }
 
       renderResults(data);
 
+    } catch (err) {
+      console.error("Analyze failed:", err);
+      if (debugSelect?.value === "on" && typeof onDebugJson === "function") {
+        onDebugJson({ error: String(err) });
+      }
     } finally {
       spinner.style.display = "none";
       busy = false;
@@ -67,16 +72,16 @@ export function wireSnapWorker({
   function renderResults(d){
     if (!d || !d.cards || !d.best_hold) return;
 
-    /* multipliers */
+    // multipliers
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
     multBot.textContent = "×" + d.multipliers.bottom;
 
-    /* EV */
+    // EVs
     evBase.textContent = d.ev_without_multiplier.toFixed(4);
     evUX.textContent   = d.ev_with_multiplier.toFixed(4);
 
-    /* cards */
+    // cards
     cardsBox.innerHTML = "";
     const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -97,7 +102,7 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
-    /* why */
+    // why
     whyBox.textContent = explainHold(
       d.cards,
       d.best_hold,
@@ -117,7 +122,7 @@ export function wireSnapWorker({
     if (vals.includes(4)) return "Four of a kind locks the highest payout.";
     if (vals.includes(3)) return "Trips maximize full house and quad potential.";
     if (vals.includes(2)) return "Holding a pair maximizes expected value.";
-    if (mode==="aggressive") return "Aggressive mode favors multiplier growth.";
+    if (mode === "aggressive") return "Aggressive mode favors multiplier growth.";
     return "Highest expected value play.";
   }
 }
