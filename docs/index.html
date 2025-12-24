@@ -5,11 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Ultimate X – Vision UI</title>
 
+<!-- 🔒 YOUR ORIGINAL CAMERA CSS -->
 <link rel="stylesheet" href="../capture/camera.css">
 
 <style>
-body{margin:0;background:#020617;color:#fff;font-family:system-ui}
-.app{max-width:900px;margin:auto;padding:16px 16px 160px}
+body{
+  margin:0;
+  background:#020617;
+  color:#fff;
+  font-family:system-ui;
+}
+.app{
+  max-width:900px;
+  margin:auto;
+  padding:16px 16px 160px;
+}
 h2{margin:0}
 .subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
 
@@ -23,10 +33,11 @@ button{
   color:#000;
   border:none;
   border-radius:18px;
-  cursor:pointer
+  cursor:pointer;
 }
-button:disabled{opacity:.6;cursor:not-allowed}
+button:disabled{opacity:.6}
 
+/* UI ONLY */
 .multipliers{display:flex;gap:12px;margin-top:16px}
 .mult{flex:1;padding:14px;border:1px solid #333;border-radius:14px;background:#020617;text-align:center}
 .mult .label{font-size:12px;color:#9ca3af}
@@ -55,8 +66,10 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
+  <!-- CAMERA (EXACT MARKUP REQUIRED) -->
   <div class="scanner" id="scanner">
-    <video id="video" playsinline muted></video>
+    <video id="video" autoplay playsinline muted></video>
+    <!-- ✅ GREEN FRAME -->
     <div class="band" id="band"></div>
   </div>
 
@@ -76,67 +89,139 @@ button:disabled{opacity:.6;cursor:not-allowed}
   <div class="cards" id="cardsBox"></div>
   <div id="whyBox"><div id="whyText"></div></div>
 
-  <div id="status">Tap SNAP to start camera</div>
+  <div id="status">Starting camera…</div>
   <pre id="debug"></pre>
 </div>
 
-<script type="module">
-import { positionGreenFrame, captureFromGreenFrame } from "../capture/capture.js";
-
+<script>
+/* ===============================
+   BACKEND
+   =============================== */
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
-const video = document.getElementById("video");
-const band = document.getElementById("band");
+/* ===============================
+   CAMERA + CAPTURE (INLINE, NO IMPORTS)
+   =============================== */
+
+const CAPTURE_CONFIG = {
+  FRAME_SCALE: 0.58,
+  CAPTURE_Y_ADJUST: 0.03,
+  CAPTURE_H_ADJUST: 0.94,
+  CAPTURE_X_PAD: 0.17,
+  OUTPUT_WIDTH: 1100,
+  JPEG_QUALITY: 0.85
+};
+
+const video   = document.getElementById("video");
 const scanner = document.getElementById("scanner");
+const band    = document.getElementById("band");
 const snapBtn = document.getElementById("snap");
-const statusEl = document.getElementById("status");
+const statusEl= document.getElementById("status");
 const debugEl = document.getElementById("debug");
 
-let stream = null;
-let cameraReady = false;
 let busy = false;
 
-async function startCamera() {
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment" }
-  });
-  video.srcObject = stream;
-  await video.play();
-  requestAnimationFrame(() => positionGreenFrame(scanner, band));
-  cameraReady = true;
-  statusEl.textContent = "Camera ready — align machine";
+/* POSITION GREEN FRAME (EXACT LOGIC YOU HAD) */
+function positionGreenFrame() {
+  const h = scanner.getBoundingClientRect().height * CAPTURE_CONFIG.FRAME_SCALE;
+  band.style.top =
+    (scanner.getBoundingClientRect().height / 2 - h / 2) + "px";
+  band.style.height = h + "px";
 }
 
+/* CAPTURE FROM GREEN FRAME (EXACT LOGIC YOU HAD) */
+async function captureFromGreenFrame() {
+  await new Promise(r => requestAnimationFrame(r));
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) throw new Error("Camera not ready");
+
+  const videoRect = video.getBoundingClientRect();
+  const bandRect  = band.getBoundingClientRect();
+
+  const scaleX = vw / videoRect.width;
+  const scaleY = vh / videoRect.height;
+
+  const baseX = (bandRect.left - videoRect.left) * scaleX;
+  const baseY =
+    ((bandRect.top - videoRect.top) * scaleY) +
+    (bandRect.height * CAPTURE_CONFIG.CAPTURE_Y_ADJUST * scaleY);
+
+  const baseW = bandRect.width * scaleX;
+  const baseH = bandRect.height * CAPTURE_CONFIG.CAPTURE_H_ADJUST * scaleY;
+
+  const padX = baseW * CAPTURE_CONFIG.CAPTURE_X_PAD;
+
+  const cropX = Math.max(0, baseX - padX);
+  const cropW = Math.min(vw - cropX, baseW + padX * 2);
+  const cropY = baseY;
+  const cropH = baseH;
+
+  const raw = document.createElement("canvas");
+  raw.width = cropW;
+  raw.height = cropH;
+  raw.getContext("2d").drawImage(
+    video,
+    cropX, cropY, cropW, cropH,
+    0, 0, cropW, cropH
+  );
+
+  const out = document.createElement("canvas");
+  out.width = CAPTURE_CONFIG.OUTPUT_WIDTH;
+  out.height = Math.floor(cropH * (CAPTURE_CONFIG.OUTPUT_WIDTH / cropW));
+  out.getContext("2d").drawImage(raw, 0, 0, out.width, out.height);
+
+  return out.toDataURL("image/jpeg", CAPTURE_CONFIG.JPEG_QUALITY);
+}
+
+/* ===============================
+   CAMERA START — EXACT WORKING BEHAVIOR
+   =============================== */
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: "environment" }
+}).then(stream => {
+  video.srcObject = stream;
+  video.play();
+  requestAnimationFrame(positionGreenFrame);
+  statusEl.textContent = "Camera ready";
+}).catch(err => {
+  statusEl.textContent = "Camera error";
+  debugEl.textContent = err.message;
+});
+
+/* ===============================
+   SNAP
+   =============================== */
 snapBtn.onclick = async () => {
   if (busy) return;
   busy = true;
   snapBtn.disabled = true;
+  statusEl.textContent = "Capturing…";
 
   try {
-    if (!cameraReady) {
-      await startCamera();
-      busy = false;
-      snapBtn.disabled = false;
-      return; // first tap only starts camera
-    }
-
-    statusEl.textContent = "Capturing…";
-    const img = await captureFromGreenFrame({ video, band, scanner });
+    const imageBase64 = await captureFromGreenFrame();
 
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageBase64: img })
+      body: JSON.stringify({
+        imageBase64,
+        paytable: "DDB_9_6",
+        mode: "conservative"
+      })
     });
 
     const data = await res.json();
     debugEl.textContent = JSON.stringify(data, null, 2);
 
-    multTop.textContent = "×" + data.multipliers.top;
-    multMid.textContent = "×" + data.multipliers.middle;
-    multBot.textContent = "×" + data.multipliers.bottom;
-    evBase.textContent = data.ev_without_multiplier.toFixed(4);
-    evUX.textContent = data.ev_with_multiplier.toFixed(4);
+    document.getElementById("multTop").textContent = "×" + data.multipliers.top;
+    document.getElementById("multMid").textContent = "×" + data.multipliers.middle;
+    document.getElementById("multBot").textContent = "×" + data.multipliers.bottom;
+    document.getElementById("evBase").textContent =
+      data.ev_without_multiplier.toFixed(4);
+    document.getElementById("evUX").textContent =
+      data.ev_with_multiplier.toFixed(4);
 
     statusEl.textContent = "Done ✅";
   } catch (e) {
