@@ -19,7 +19,8 @@ export function wireSnapWorker({
   evUX,
   whyBox,
   modeSelect,
-  debugSelect
+  debugSelect,
+  onDebugJson   // 👈 NEW callback
 }){
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
@@ -32,6 +33,7 @@ export function wireSnapWorker({
     try{
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
+      /* show image preview if debug ON */
       if (debugSelect?.value === "on" && previewImg) {
         previewImg.src = imageBase64;
         previewImg.style.display = "block";
@@ -42,12 +44,19 @@ export function wireSnapWorker({
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({
           imageBase64,
+          paytable: "DDB_9_6",
           mode: modeSelect?.value || "conservative"
         })
       });
 
-      const d = await res.json();
-      renderResults(d);
+      const data = await res.json();
+
+      /* 🔥 send raw JSON to debug panel */
+      if (debugSelect?.value === "on" && onDebugJson) {
+        onDebugJson(data);
+      }
+
+      renderResults(data);
 
     } finally {
       spinner.style.display = "none";
@@ -56,6 +65,8 @@ export function wireSnapWorker({
   };
 
   function renderResults(d){
+    if (!d || !d.cards || !d.best_hold) return;
+
     /* multipliers */
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
