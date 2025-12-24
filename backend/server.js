@@ -2,10 +2,11 @@ import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 
-import { bestHoldEV } from "../strategy/ev.js";
-import { PAYTABLES } from "../strategy/paytables.js";
-import { parseVisionResponse } from "../vision/parser.js";
-import { VISION_PROMPT } from "../vision/prompt.js";
+// ✅ FIXED IMPORT PATHS (relative to backend/)
+import { bestHoldEV } from "./strategy/ev.js";
+import { PAYTABLES } from "./strategy/paytables.js";
+import { parseVisionResponse } from "./vision/parser.js";
+import { VISION_PROMPT } from "./vision/prompt.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,17 +18,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
-// 🔍 LOG EVERY REQUEST (helps debug routing issues)
+// Log every request so we never guess again
 app.use((req, res, next) => {
   console.log(`➡️ ${req.method} ${req.url}`);
   next();
 });
 
 /* ===============================
-   CORS PREFLIGHT (CRITICAL)
+   CORS PREFLIGHT
    =============================== */
 
-// Explicitly handle OPTIONS so we NEVER return HTML
 app.options("/analyze", (req, res) => {
   res.status(200).json({ ok: true });
 });
@@ -58,7 +58,7 @@ app.post("/analyze", async (req, res) => {
     }
 
     /* ===============================
-       OPENAI VISION (SAFE PARSING)
+       OPENAI VISION (SAFE)
        =============================== */
 
     const openaiRes = await fetch(
@@ -87,7 +87,6 @@ app.post("/analyze", async (req, res) => {
     );
 
     const rawText = await openaiRes.text();
-
     if (!rawText || !rawText.trim()) {
       throw new Error("OpenAI returned empty response");
     }
@@ -163,7 +162,7 @@ app.post("/analyze", async (req, res) => {
 });
 
 /* ===============================
-   JSON 404 HANDLER (NEVER HTML)
+   JSON 404 HANDLER
    =============================== */
 
 app.use((req, res) => {
