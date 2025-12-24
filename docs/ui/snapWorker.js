@@ -6,23 +6,30 @@ export function wireSnapWorker({
   band,
   spinner,
   cardsBox,
-  evBase,
-  evUX,
+
+  evSection,
+  evBaseValue,
+  evUXValue,
   evBaseBar,
   evUXBar,
-  multTop,
-  multMid,
-  multBot,
+
+  multSection,
+  multTopValue,
+  multMidValue,
+  multBotValue,
   multTopCells,
   multMidCells,
   multBotCells,
+
   whyBox,
+  welcomeBox,
+  modeSelect,
   onSnapComplete
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
 
-  scanner.addEventListener("click", async () => {
+  scanner.onclick = async () => {
     if (busy) return;
     busy = true;
     spinner.style.display = "block";
@@ -32,59 +39,20 @@ export function wireSnapWorker({
 
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64 })
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({
+          imageBase64,
+          paytable: "DDB_9_6",
+          mode: modeSelect?.value || "conservative"
+        })
       });
 
       const d = await res.json();
-      if (!d || !d.cards) throw new Error("Invalid response");
+      if (!d || !d.cards || !d.best_hold) return;
 
-      // EV
-      const base = d.ev_without_multiplier;
-      const ux   = d.ev_with_multiplier;
-      const max  = Math.max(base, ux, 0.0001);
+      renderResults(d);
 
-      evBase.textContent = base.toFixed(4);
-      evUX.textContent   = ux.toFixed(4);
-      evBaseBar.style.width = (base / max * 100) + "%";
-      evUXBar.style.width   = (ux   / max * 100) + "%";
-
-      // Multipliers
-      multTop.textContent = "×" + d.multipliers.top;
-      multMid.textContent = "×" + d.multipliers.middle;
-      multBot.textContent = "×" + d.multipliers.bottom;
-
-      fill(multTopCells, d.multipliers.top);
-      fill(multMidCells, d.multipliers.middle);
-      fill(multBotCells, d.multipliers.bottom);
-
-      // Cards
-      cardsBox.innerHTML = "";
-      const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
-
-      d.cards.forEach((c,i)=>{
-        const el = document.createElement("div");
-        el.className =
-          "card" +
-          (d.best_hold[i] ? " held" : "") +
-          ((c.suit==="H"||c.suit==="D") ? " red" : "");
-
-        el.innerHTML = `
-          <div class="corner top">${c.rank}<br>${SUIT[c.suit]}</div>
-          <div class="pip">${SUIT[c.suit]}</div>
-          <div class="corner bottom">${c.rank}<br>${SUIT[c.suit]}</div>
-        `;
-        cardsBox.appendChild(el);
-      });
-
-      // WHY
-      whyBox.innerHTML = `
-        <b>Why this hold?</b><br>
-        This choice maximizes expected value for the current hand
-        given the active multipliers.
-      `;
-
-      onSnapComplete();
+      if (onSnapComplete) onSnapComplete();
 
     } catch (err) {
       console.error("Snap failed:", err);
@@ -92,12 +60,75 @@ export function wireSnapWorker({
       spinner.style.display = "none";
       busy = false;
     }
-  });
+  };
 
-  function fill(cells, n){
+  function renderResults(d){
+    welcomeBox.style.display = "none";
+    evSection.style.display = "block";
+    multSection.style.display = "block";
+
+    // EV continuous
+    const baseEV = d.ev_without_multiplier;
+    const uxEV = d.ev_with_multiplier;
+    const maxEV = Math.max(baseEV, uxEV, 0.0001);
+
+    evBaseValue.textContent = baseEV.toFixed(4);
+    evUXValue.textContent = uxEV.toFixed(4);
+    evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
+    evUXBar.style.width = (uxEV / maxEV * 100) + "%";
+
+    // Multipliers 1..12 segmented
+    multTopValue.textContent = "×" + d.multipliers.top;
+    multMidValue.textContent = "×" + d.multipliers.middle;
+    multBotValue.textContent = "×" + d.multipliers.bottom;
+
+    fillMult(multTopCells, d.multipliers.top);
+    fillMult(multMidCells, d.multipliers.middle);
+    fillMult(multBotCells, d.multipliers.bottom);
+
+    // Cards
+    cardsBox.innerHTML = "";
+    const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
+
+    d.cards.forEach((c,i)=>{
+      const el = document.createElement("div");
+      el.className =
+        "card" +
+        (d.best_hold[i] ? " held" : "") +
+        ((c.suit==="H"||c.suit==="D") ? " red" : "");
+
+      el.innerHTML = `
+        <div class="corner top">${c.rank}<br>${SUIT[c.suit]}</div>
+        <div class="pip">${SUIT[c.suit]}</div>
+        <div class="corner bottom">${c.rank}<br>${SUIT[c.suit]}</div>
+      `;
+      cardsBox.appendChild(el);
+    });
+
+    // Why
+    whyBox.innerHTML = `
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:18px">💡</span>
+        <div>
+          <b>Why this hold?</b><br>
+          This play maximizes <b>expected value</b> given the current hand,
+          paytable, and active multipliers.
+        </div>
+      </div>
+    `;
+  }
+
+  function fillMult(cells, n){
     cells.forEach((c,i)=>{
       c.className = "multCell";
-      if (i < n) c.classList.add("g");
+      if (i < n) c.classList.add(colorFor(i+1));
     });
+  }
+
+  function colorFor(v){
+    if (v <= 3) return "g";
+    if (v <= 6) return "y";
+    if (v <= 9) return "o";
+    return "r";
   }
 }
