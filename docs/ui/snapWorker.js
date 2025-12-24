@@ -1,6 +1,6 @@
 /*
   ✏️ SAFE FILE
-  Handles user interaction, backend call, and UI rendering.
+  UI rendering + interaction logic
 */
 
 import { captureGreenFrame } from "../capture/capture.js";
@@ -11,14 +11,15 @@ export function wireSnapWorker({
   band,
   spinner,
   previewImg,
-  modeSelect,
   cardsBox,
   multTop,
   multMid,
   multBot,
   evBase,
   evUX,
-  whyBox
+  whyBox,
+  modeSelect,
+  debugSelect
 }){
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
@@ -31,7 +32,10 @@ export function wireSnapWorker({
     try{
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-      if (previewImg) previewImg.src = imageBase64;
+      if (debugSelect?.value === "on" && previewImg) {
+        previewImg.src = imageBase64;
+        previewImg.style.display = "block";
+      }
 
       const res = await fetch(API_URL,{
         method:"POST",
@@ -42,8 +46,8 @@ export function wireSnapWorker({
         })
       });
 
-      const data = await res.json();
-      renderResults(data);
+      const d = await res.json();
+      renderResults(d);
 
     } finally {
       spinner.style.display = "none";
