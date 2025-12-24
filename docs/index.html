@@ -9,7 +9,6 @@
 /* ===============================
    INLINE camera.css (LOCKED)
    =============================== */
-
 .scanner{
   position:relative;
   width:100%;
@@ -20,7 +19,6 @@
   border:1px solid #1f2937;
   background:#000;
 }
-
 video{
   width:100%;
   height:100%;
@@ -29,7 +27,6 @@ video{
   transform:scale(1.4);
   transform-origin:center;
 }
-
 .band{
   position:absolute;
   left:8%;
@@ -38,8 +35,6 @@ video{
   border-radius:18px;
   background:rgba(34,197,94,0.12);
   pointer-events:none;
-
-  /* same math as positionGreenFrame */
   height:58%;
   top:50%;
   transform:translateY(-50%);
@@ -48,36 +43,19 @@ video{
 /* ===============================
    UI
    =============================== */
-
-body{
-  margin:0;
-  background:#020617;
-  color:#fff;
-  font-family:system-ui;
-}
-.app{
-  max-width:900px;
-  margin:auto;
-  padding:16px 16px 160px;
-}
+body{margin:0;background:#020617;color:#fff;font-family:system-ui}
+.app{max-width:900px;margin:auto;padding:16px 16px 160px}
 h2{margin:0}
 .subtitle{font-size:14px;color:#9ca3af;margin-bottom:12px}
 
 button{
-  margin-top:18px;
-  width:100%;
-  padding:18px;
-  font-size:20px;
-  font-weight:900;
-  background:#22c55e;
-  color:#000;
-  border:none;
-  border-radius:18px;
-  cursor:pointer;
+  margin-top:18px;width:100%;padding:18px;
+  font-size:20px;font-weight:900;
+  background:#22c55e;color:#000;
+  border:none;border-radius:18px;cursor:pointer
 }
 button:disabled{opacity:.6}
 
-/* Preview */
 .previewBox{
   margin-top:16px;
   border:1px solid #333;
@@ -96,7 +74,6 @@ button:disabled{opacity:.6}
   background:#000;
 }
 
-/* Status */
 #status{margin-top:10px;font-size:14px;color:#9ca3af}
 #debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:#9ca3af}
 </style>
@@ -104,7 +81,6 @@ button:disabled{opacity:.6}
 
 <body>
 <div class="app">
-
   <h2>Ultimate X – Vision UI</h2>
   <div class="subtitle">Wizard-style EV comparison</div>
 
@@ -130,7 +106,6 @@ button:disabled{opacity:.6}
 /* ===============================
    CAMERA LOGIC (UNTOUCHED)
    =============================== */
-
 navigator.mediaDevices.getUserMedia({
   video:{ facingMode:"environment" }
 }).then(stream=>{
@@ -143,9 +118,36 @@ navigator.mediaDevices.getUserMedia({
 });
 
 /* ===============================
+   ZOOMED CAPTURE (~20%)
+   =============================== */
+function captureZoomedFrame() {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  const ZOOM = 0.8; // 20% zoom
+  const cropW = vw * ZOOM;
+  const cropH = vh * ZOOM;
+
+  const cropX = (vw - cropW) / 2;
+  const cropY = (vh - cropH) / 2;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = cropW;
+  canvas.height = cropH;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(
+    video,
+    cropX, cropY, cropW, cropH,
+    0, 0, cropW, cropH
+  );
+
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+/* ===============================
    BACKEND
    =============================== */
-
 const API_URL = "https://vp-hold-production.up.railway.app/analyze";
 
 let busy = false;
@@ -157,19 +159,12 @@ snap.onclick = async ()=>{
   status.textContent = "Processing…";
 
   try{
-    /* CAPTURE EXACT FRAME */
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video,0,0);
+    const imageBase64 = captureZoomedFrame();
 
-    const imageBase64 = canvas.toDataURL("image/jpeg",0.85);
-
-    /* SHOW PREVIEW */
+    // show preview
     previewImg.src = imageBase64;
     previewBox.style.display = "block";
 
-    /* SEND TO BACKEND */
     const res = await fetch(API_URL,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
