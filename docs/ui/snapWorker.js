@@ -1,5 +1,5 @@
 /*
-  ✏️ SAFE FILE
+  SAFE FILE
   Snap handling + result rendering
 */
 
@@ -18,8 +18,7 @@ export function wireSnapWorker({
   evUX,
   whyBox,
   modeSelect,
-  onSnapComplete,
-  onHaptic
+  onSnapComplete
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
@@ -27,8 +26,6 @@ export function wireSnapWorker({
   scanner.onclick = async () => {
     if (busy) return;
     busy = true;
-
-    if (onHaptic) onHaptic("light");
     spinner.style.display = "block";
 
     try {
@@ -45,12 +42,13 @@ export function wireSnapWorker({
       });
 
       const d = await res.json();
-      if (!d || !d.cards) return;
+      if (!d || !d.cards || !d.best_hold) return;
 
       renderResults(d);
 
-      if (onSnapComplete) onSnapComplete();
-      if (onHaptic) onHaptic("success");
+      if (typeof onSnapComplete === "function") {
+        onSnapComplete();
+      }
 
     } catch (err) {
       console.error("Snap failed:", err);
@@ -61,13 +59,16 @@ export function wireSnapWorker({
   };
 
   function renderResults(d) {
+    // Multipliers
     multTop.textContent = "×" + d.multipliers.top;
     multMid.textContent = "×" + d.multipliers.middle;
     multBot.textContent = "×" + d.multipliers.bottom;
 
+    // EVs
     evBase.textContent = d.ev_without_multiplier.toFixed(4);
     evUX.textContent   = d.ev_with_multiplier.toFixed(4);
 
+    // Cards
     cardsBox.innerHTML = "";
     const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -88,14 +89,13 @@ export function wireSnapWorker({
 
     cardsBox.classList.add("show");
 
+    // WHY
     whyBox.innerHTML = `
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <span style="font-size:18px">💡</span>
-        <div>
-          <b>Why this hold?</b><br>
-          This play maximizes <b>expected value</b> given the
-          current hand, paytable, and multipliers.
-        </div>
+      <div style="font-weight:800;margin-bottom:8px">💡 Why this hold?</div>
+      <div style="line-height:1.5">
+        This play maximizes <b>expected value</b> given the current hand,
+        the Double Double Bonus paytable, and the active multipliers.
+        Breaking this hold would reduce long-term return.
       </div>
     `;
     whyBox.classList.add("show");
