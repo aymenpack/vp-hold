@@ -33,6 +33,7 @@
   overflow:hidden;
   border:1px solid var(--border);
   background:#000;
+  cursor:pointer;
 }
 video{
   width:100%;
@@ -50,6 +51,7 @@ video{
   border:3px dashed var(--accent);
   border-radius:16px;
   background:rgba(34,197,94,0.12);
+  pointer-events:none;
 }
 
 /* ===============================
@@ -69,7 +71,6 @@ body{
 h2{
   font-size:22px;
   font-weight:800;
-  letter-spacing:.3px;
 }
 .subtitle{
   font-size:13px;
@@ -100,34 +101,12 @@ h2{
   background:var(--accent);
   color:#000;
 }
-
-/* ===============================
-   PANELS
-   =============================== */
 .panel{display:none}
 .panel.active{display:block}
 
 /* ===============================
-   SNAP + SPINNER
+   SPINNER
    =============================== */
-.snapWrap{
-  position:relative;
-  margin-top:16px;
-}
-button{
-  width:100%;
-  padding:16px;
-  font-size:18px;
-  font-weight:900;
-  background:var(--accent);
-  color:#000;
-  border:none;
-  border-radius:16px;
-  cursor:pointer;
-}
-button:active{transform:scale(.97)}
-button:disabled{opacity:.7}
-
 .spinner{
   width:34px;
   height:34px;
@@ -138,20 +117,17 @@ button:disabled{opacity:.7}
   margin:14px auto 0;
   display:none;
 }
-
-@keyframes spin{
-  to{transform:rotate(360deg)}
-}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ===============================
-   MULTIPLIERS
+   MULTIPLIERS + EV
    =============================== */
-.multipliers{
+.multipliers,.ev{
   display:flex;
   gap:10px;
-  margin-top:18px;
+  margin-top:16px;
 }
-.mult{
+.mult,.evBox{
   flex:1;
   padding:10px;
   border-radius:14px;
@@ -159,50 +135,27 @@ button:disabled{opacity:.7}
   border:1px solid var(--border);
   text-align:center;
 }
-.mult .label{
+.label{
   font-size:11px;
   color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.08em;
 }
-.mult .value{
+.value{
   font-size:20px;
   font-weight:900;
   margin-top:4px;
 }
-
-/* ===============================
-   EV
-   =============================== */
-.ev{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:14px;
-}
-.evBox{
-  padding:12px;
-  border-radius:14px;
-  background:var(--panel);
-  border:1px solid var(--border);
-  text-align:center;
-}
-.evBox .label{
-  font-size:11px;
-  color:var(--muted);
-}
-.evBox .value{
-  font-size:20px;
-  font-weight:900;
-}
 .evBox.ux .value{color:var(--accent)}
 
 /* ===============================
-   CARDS
+   REAL CARD COMPONENT
    =============================== */
 .cards{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
+  display:flex;
+  justify-content:center;
   gap:10px;
-  margin-top:18px;
+  margin-top:16px;
   opacity:0;
   transform:translateY(8px);
   transition:.35s ease;
@@ -211,17 +164,38 @@ button:disabled{opacity:.7}
   opacity:1;
   transform:none;
 }
+
 .card{
+  width:72px;
+  height:104px;
   background:#fff;
-  color:#000;
-  border-radius:14px;
-  padding:10px 4px 8px;
-  text-align:center;
+  color:#111;
+  border-radius:12px;
+  position:relative;
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
 }
 .card.red{color:#c1121f}
 .card.held{
-  transform:translateY(-8px);
-  box-shadow:0 0 0 3px var(--accent);
+  transform:translateY(-12px);
+  box-shadow:0 0 0 3px var(--accent), 0 10px 24px rgba(0,0,0,.45);
+}
+
+.corner{
+  position:absolute;
+  font-weight:900;
+  font-size:12px;
+  line-height:1.05;
+  text-align:center;
+}
+.corner.top{top:6px;left:6px}
+.corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
+.pip{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
 }
 
 /* ===============================
@@ -247,13 +221,8 @@ button:disabled{opacity:.7}
 /* ===============================
    SETTINGS
    =============================== */
-.setting{
-  margin-top:18px;
-}
-.setting label{
-  font-size:12px;
-  color:var(--muted);
-}
+.setting{margin-top:18px}
+.setting label{font-size:12px;color:var(--muted)}
 select{
   width:100%;
   margin-top:6px;
@@ -262,7 +231,6 @@ select{
   background:var(--panel);
   color:var(--text);
   border:1px solid var(--border);
-  font-size:14px;
 }
 </style>
 </head>
@@ -270,7 +238,7 @@ select{
 <body>
 <div class="app">
   <h2>Ultimate X Vision</h2>
-  <div class="subtitle">Perfect play, every hand.</div>
+  <div class="subtitle">Tap the cards to analyze.</div>
 
   <div class="tabs">
     <div class="tab active" data-tab="main">🎰 Play</div>
@@ -279,15 +247,14 @@ select{
 
   <!-- MAIN -->
   <div class="panel active" id="main">
-    <div class="scanner">
+    <div class="scanner" id="scanner">
       <video id="video" autoplay playsinline muted></video>
       <div class="band"></div>
     </div>
 
-    <div class="snapWrap">
-      <button id="snap">SNAP</button>
-      <div class="spinner" id="spinner"></div>
-    </div>
+    <div class="spinner" id="spinner"></div>
+
+    <div class="cards" id="cardsBox"></div>
 
     <div class="multipliers">
       <div class="mult"><div class="label">Top</div><div class="value" id="multTop">×—</div></div>
@@ -300,7 +267,6 @@ select{
       <div class="evBox ux"><div class="label">Ultimate X EV</div><div class="value" id="evUX">—</div></div>
     </div>
 
-    <div class="cards" id="cardsBox"></div>
     <div id="whyBox">—</div>
   </div>
 
@@ -327,27 +293,31 @@ select{
 </div>
 
 <script>
-/* DOM */
-const video = document.getElementById("video");
-const snap = document.getElementById("snap");
-const spinner = document.getElementById("spinner");
-const cardsBox = document.getElementById("cardsBox");
-const whyBox = document.getElementById("whyBox");
-const multTop = document.getElementById("multTop");
-const multMid = document.getElementById("multMid");
-const multBot = document.getElementById("multBot");
-const evBase = document.getElementById("evBase");
-const evUX = document.getElementById("evUX");
-const modeSelect = document.getElementById("modeSelect");
-const themeSelect = document.getElementById("themeSelect");
+/* ===============================
+   DOM
+   =============================== */
+const video=document.getElementById("video");
+const scanner=document.getElementById("scanner");
+const spinner=document.getElementById("spinner");
+const cardsBox=document.getElementById("cardsBox");
+const whyBox=document.getElementById("whyBox");
+const multTop=document.getElementById("multTop");
+const multMid=document.getElementById("multMid");
+const multBot=document.getElementById("multBot");
+const evBase=document.getElementById("evBase");
+const evUX=document.getElementById("evUX");
+const modeSelect=document.getElementById("modeSelect");
+const themeSelect=document.getElementById("themeSelect");
 
-/* Persistence */
-const THEME_KEY="vp_theme", MODE_KEY="vp_mode";
+/* ===============================
+   PERSISTENCE
+   =============================== */
+const THEME_KEY="vp_theme",MODE_KEY="vp_mode";
 if(localStorage.getItem(THEME_KEY)){
   document.documentElement.className=localStorage.getItem(THEME_KEY);
   themeSelect.value=localStorage.getItem(THEME_KEY);
 }
-if(localStorage.getItem(MODE_KEY)) modeSelect.value=localStorage.getItem(MODE_KEY);
+if(localStorage.getItem(MODE_KEY))modeSelect.value=localStorage.getItem(MODE_KEY);
 themeSelect.onchange=()=>{document.documentElement.className=themeSelect.value;localStorage.setItem(THEME_KEY,themeSelect.value)};
 modeSelect.onchange=()=>localStorage.setItem(MODE_KEY,modeSelect.value);
 
@@ -361,11 +331,15 @@ document.querySelectorAll(".tab").forEach(t=>{
   };
 });
 
-/* Camera */
+/* ===============================
+   CAMERA
+   =============================== */
 navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
 .then(s=>{video.srcObject=s;video.onloadedmetadata=()=>video.play()});
 
-/* Capture */
+/* ===============================
+   CAPTURE
+   =============================== */
 function captureZoomedFrame(){
   const vw=video.videoWidth,vh=video.videoHeight,Z=.8;
   const cw=vw*Z,ch=vh*Z,cx=(vw-cw)/2,cy=(vh-ch)/2;
@@ -375,11 +349,13 @@ function captureZoomedFrame(){
   return c.toDataURL("image/jpeg",.85);
 }
 
-/* Explain */
+/* ===============================
+   WHY
+   =============================== */
 function explainHold(cards,hold,m,mode){
-  const ranks={};
-  cards.forEach((c,i)=>{if(hold[i])ranks[c.rank]=(ranks[c.rank]||0)+1});
-  const v=Object.values(ranks);
+  const r={};
+  cards.forEach((c,i)=>{if(hold[i])r[c.rank]=(r[c.rank]||0)+1});
+  const v=Object.values(r);
   if(v.includes(4))return"Four of a kind locks the highest payout.";
   if(v.includes(3))return"Holding trips maximizes full house and quad potential.";
   if(v.includes(2))return"Holding a pair maximizes expected value.";
@@ -387,13 +363,15 @@ function explainHold(cards,hold,m,mode){
   return"Highest expected value play.";
 }
 
-/* SNAP */
+/* ===============================
+   TAP CAMERA TO ANALYZE
+   =============================== */
 const API_URL="https://vp-hold-production.up.railway.app/analyze";
 let busy=false;
-snap.onclick=async()=>{
+
+scanner.onclick=async()=>{
   if(busy)return;
   busy=true;
-  snap.disabled=true;
   spinner.style.display="block";
 
   try{
@@ -415,7 +393,11 @@ snap.onclick=async()=>{
     d.cards.forEach((c,i)=>{
       const el=document.createElement("div");
       el.className="card"+(d.best_hold[i]?" held":"")+(c.suit==="H"||c.suit==="D"?" red":"");
-      el.innerHTML=`<div>${c.rank}</div><div>${SUIT[c.suit]}</div>`;
+      el.innerHTML=`
+        <div class="corner top">${c.rank}<br>${SUIT[c.suit]}</div>
+        <div class="pip">${SUIT[c.suit]}</div>
+        <div class="corner bottom">${c.rank}<br>${SUIT[c.suit]}</div>
+      `;
       cardsBox.appendChild(el);
     });
     cardsBox.classList.add("show");
@@ -424,7 +406,6 @@ snap.onclick=async()=>{
     whyBox.classList.add("show");
   }finally{
     spinner.style.display="none";
-    snap.disabled=false;
     busy=false;
   }
 };
