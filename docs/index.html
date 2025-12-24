@@ -22,7 +22,7 @@
 .theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7}
 
 /* ===============================
-   CAMERA CSS (LOCKED)
+   CAMERA CSS (INLINE, LOCKED)
    =============================== */
 .scanner{
   position:relative;
@@ -107,17 +107,8 @@ button:disabled{opacity:.6}
   background:var(--panel);
   border:1px solid var(--border);
 }
-#whyTitle{
-  font-size:14px;
-  font-weight:900;
-  color:var(--accent);
-}
-#whyText{
-  margin-top:8px;
-  font-size:14px;
-  line-height:1.4;
-  color:var(--text);
-}
+#whyTitle{font-size:14px;font-weight:900;color:var(--accent)}
+#whyText{margin-top:8px;font-size:14px;line-height:1.4}
 
 .setting{margin-top:16px}
 .setting label{font-size:13px;color:var(--muted)}
@@ -128,7 +119,6 @@ select{
 }
 
 #status{margin-top:10px;font-size:14px;color:var(--muted)}
-#debug{margin-top:14px;font-size:12px;white-space:pre-wrap;color:var(--muted)}
 </style>
 </head>
 
@@ -164,14 +154,12 @@ select{
 
     <div class="cards" id="cardsBox"></div>
 
-    <!-- WHY THIS HOLD -->
     <div id="whyBox">
       <div id="whyTitle">Why this hold?</div>
       <div id="whyText">—</div>
     </div>
 
     <div id="status">Starting camera…</div>
-    <pre id="debug"></pre>
   </div>
 
   <!-- SETTINGS -->
@@ -203,7 +191,6 @@ select{
 const video = document.getElementById("video");
 const snap = document.getElementById("snap");
 const statusEl = document.getElementById("status");
-const debug = document.getElementById("debug");
 const cardsBox = document.getElementById("cardsBox");
 const multTop = document.getElementById("multTop");
 const multMid = document.getElementById("multMid");
@@ -211,7 +198,57 @@ const multBot = document.getElementById("multBot");
 const evBase = document.getElementById("evBase");
 const evUX = document.getElementById("evUX");
 const whyText = document.getElementById("whyText");
+const themeSelect = document.getElementById("themeSelect");
 const modeSelect = document.getElementById("modeSelect");
+const tabs = document.querySelectorAll(".tab");
+const panels = document.querySelectorAll(".panel");
+
+/* ===============================
+   PERSISTENCE
+   =============================== */
+const THEME_KEY = "vp_theme";
+const MODE_KEY  = "vp_mode";
+const TAB_KEY   = "vp_tab";
+
+// restore
+const savedTheme = localStorage.getItem(THEME_KEY);
+if (savedTheme) {
+  document.documentElement.className = savedTheme;
+  themeSelect.value = savedTheme;
+}
+
+const savedMode = localStorage.getItem(MODE_KEY);
+if (savedMode) {
+  modeSelect.value = savedMode;
+}
+
+const savedTab = localStorage.getItem(TAB_KEY);
+if (savedTab) {
+  tabs.forEach(t => t.classList.remove("active"));
+  panels.forEach(p => p.classList.remove("active"));
+  document.querySelector(`.tab[data-tab="${savedTab}"]`).classList.add("active");
+  document.getElementById(savedTab).classList.add("active");
+}
+
+// save on change
+themeSelect.onchange = () => {
+  document.documentElement.className = themeSelect.value;
+  localStorage.setItem(THEME_KEY, themeSelect.value);
+};
+
+modeSelect.onchange = () => {
+  localStorage.setItem(MODE_KEY, modeSelect.value);
+};
+
+tabs.forEach(t => {
+  t.onclick = () => {
+    tabs.forEach(x => x.classList.remove("active"));
+    panels.forEach(p => p.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById(t.dataset.tab).classList.add("active");
+    localStorage.setItem(TAB_KEY, t.dataset.tab);
+  };
+});
 
 /* ===============================
    CAMERA START
@@ -226,7 +263,6 @@ navigator.mediaDevices.getUserMedia({
   };
 }).catch(err=>{
   statusEl.textContent = "Camera error";
-  debug.textContent = err.message;
 });
 
 /* ===============================
@@ -244,7 +280,7 @@ function captureZoomedFrame(){
 }
 
 /* ===============================
-   WHY THIS HOLD (EXPLAINER)
+   WHY THIS HOLD
    =============================== */
 function explainHold(cards, bestHold, multiplier, mode){
   const held = cards.filter((_,i)=>bestHold[i]);
@@ -256,7 +292,7 @@ function explainHold(cards, bestHold, multiplier, mode){
     return "Four of a kind locks in the highest immediate payout.";
 
   if (values.includes(3) && values.includes(2))
-    return "A full house suggests strong value and future multiplier growth.";
+    return "A full house provides strong value and future multiplier growth.";
 
   if (values.includes(3))
     return "Holding three of a kind maximizes full house and quad potential.";
@@ -270,7 +306,7 @@ function explainHold(cards, bestHold, multiplier, mode){
   if (mode === "aggressive" && multiplier >= 2)
     return "Aggressive mode favors chasing multiplier growth over immediate payout.";
 
-  return "This draw provides the highest expected value given the current paytable and multipliers.";
+  return "This draw provides the highest expected value given the current conditions.";
 }
 
 /* ===============================
@@ -292,7 +328,6 @@ snap.onclick=async()=>{
       body:JSON.stringify({ imageBase64, mode:modeSelect.value })
     });
     const data=await res.json();
-    debug.textContent=JSON.stringify(data,null,2);
 
     multTop.textContent="×"+data.multipliers.top;
     multMid.textContent="×"+data.multipliers.middle;
@@ -311,14 +346,13 @@ snap.onclick=async()=>{
     statusEl.textContent="Done ✅";
   }catch(e){
     statusEl.textContent="Error";
-    debug.textContent=e.message;
   }finally{
     busy=false; snap.disabled=false;
   }
 };
 
 /* ===============================
-   UI HELPERS
+   RENDER CARDS
    =============================== */
 function renderCards(cards, bestHold){
   cardsBox.innerHTML="";
@@ -332,16 +366,6 @@ function renderCards(cards, bestHold){
     cardsBox.appendChild(el);
   });
 }
-
-/* Tabs */
-document.querySelectorAll(".tab").forEach(t=>{
-  t.onclick=()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-    t.classList.add("active");
-    document.getElementById(t.dataset.tab).classList.add("active");
-  };
-});
 </script>
 </body>
 </html>
