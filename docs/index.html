@@ -38,12 +38,13 @@ body{
 
 /* HEADER */
 .header{
+  position:relative;
   display:flex;
   align-items:center;
   justify-content:center;
-  position:relative;
 }
 h2{
+  text-align:center;
   font-size:24px;
   font-weight:800;
   margin:2px 0 0;
@@ -112,7 +113,7 @@ h2{
 #welcomeTitle{font-weight:800;margin-bottom:6px}
 #welcomeText{font-size:13px;line-height:1.45;color:rgba(255,255,255,0.85)}
 
-/* MODE */
+/* SETTINGS */
 .modeToggle{display:flex;gap:6px;margin-top:10px}
 .modeToggle button{
   flex:1;padding:8px 0;border-radius:999px;
@@ -147,6 +148,7 @@ h2{
   padding:26px 18px;
   border-radius:24px;
   background:rgba(255,255,255,0.05);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 12px 32px rgba(0,0,0,.4);
   display:flex;justify-content:center;gap:14px
 }
 .cards:empty{display:none}
@@ -159,7 +161,17 @@ h2{
 .card.red{color:#c1121f}
 .card.held{
   transform:translateY(-14px) scale(1.08);
-  box-shadow:0 0 0 4px var(--accent);
+  box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
+}
+
+/* WHY */
+#whyBox{
+  max-width:540px;
+  margin:18px auto 0;
+  padding:18px 20px;
+  border-radius:18px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.06)
 }
 
 /* NEW HAND */
@@ -183,7 +195,6 @@ h2{
 
   <div class="header">
     <h2>Ultimate X Vision</h2>
-
     <div class="themePicker">
       <div class="themeMain" id="themeMain"></div>
       <div class="themeOptions" id="themeOptions">
@@ -255,10 +266,9 @@ document.querySelectorAll(".themeDot").forEach(d=>{
   };
 });
 
-/* MODE (persistent) */
+/* MODE */
 const MODE_KEY="vp_mode";
 const modeBtns=document.querySelectorAll(".modeToggle button");
-
 function applyMode(m){
   localStorage.setItem(MODE_KEY,m);
   modeBtns.forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
@@ -270,7 +280,6 @@ window.getCurrentMode=()=>localStorage.getItem(MODE_KEY)||"conservative";
 /* CAMERA */
 await initCamera($("video"));
 
-/* SNAP */
 wireSnapWorker({
   video:$("video"),
   scanner:$("scanner"),
