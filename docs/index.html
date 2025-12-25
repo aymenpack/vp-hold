@@ -52,9 +52,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   pointer-events:none;
 }
 
-/* 🔥 CRITICAL FIX: ensure taps go to scanner, not video */
-#video{ pointer-events:none; }
-
 /* WELCOME */
 #welcomeBox{
   margin:12px 0 10px;
@@ -68,7 +65,10 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* SETTINGS */
 .themeRow{display:flex;gap:10px;margin-top:10px}
-.themeChip{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.themeChip{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid transparent;cursor:pointer
+}
 .themeChip.theme-green{background:#22c55e}
 .themeChip.theme-purple{background:#a855f7}
 .themeChip.theme-blue{background:#3b82f6}
@@ -120,7 +120,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   display:flex;justify-content:center;gap:14px
 }
 .card{
-  width:78px;height:118px;background:#fff;color:#111;border-radius:14px;position:relative;
+  width:78px;height:118px;
+  background:#fff;color:#111;
+  border-radius:14px;position:relative;
   box-shadow:0 6px 18px rgba(0,0,0,.45);
 }
 .card.red{color:#c1121f}
@@ -134,10 +136,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   position:absolute;top:-14px;left:50%;
   transform:translateX(-50%);
   background:var(--accent);color:#000;
-  font-size:11px;font-weight:900;letter-spacing:.08em;
-  padding:4px 12px;border-radius:999px
+  font-size:11px;font-weight:900;
+  letter-spacing:.08em;padding:4px 12px;border-radius:999px
 }
-.card:not(.held){opacity:0.65;filter:saturate(0.85)}
 .corner{position:absolute;font-weight:900;font-size:14px;line-height:1.05}
 .corner.top{top:8px;left:8px}
 .corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
@@ -170,19 +171,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   color:#000;font-weight:900;text-align:center;
   cursor:pointer;max-width:220px;display:none
 }
-
-/* SWIPE HINT */
-.swipeHint{
-  position:fixed;top:8px;left:50%;
-  transform:translateX(-50%);
-  padding:6px 14px;border-radius:999px;
-  background:rgba(0,0,0,0.6);color:#fff;
-  font-size:12px;font-weight:700;letter-spacing:0.04em;
-  opacity:0;pointer-events:none;
-  transition:opacity .15s ease, transform .15s ease;
-  z-index:999;
-}
-.swipeHint.show{opacity:1;transform:translateX(-50%) translateY(8px)}
 </style>
 </head>
 
@@ -201,7 +189,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
     <div id="welcomeTitle">🎰 Ultimate X Video Poker</div>
     <div id="welcomeText">
       <b>Expected Value (EV)</b> measures long-term profitability.
-      Higher EV means better decisions over time. Good luck 🍀
+      Higher EV means better results over time. Good luck 🍀
     </div>
 
     <div class="themeRow" id="themeRow">
@@ -220,15 +208,30 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   <div class="divider"></div>
   <div class="spinner" id="spinner"></div>
 
-  <div class="evSection" id="evSection"></div>
+  <div class="evSection" id="evSection">
+    <div class="evRow">
+      <div class="evLabel">Base EV</div>
+      <div class="evTrack"><div class="evFill base" id="evBaseBar"></div></div>
+      <div class="evValue" id="evBase">—</div>
+    </div>
+    <div class="evRow">
+      <div class="evLabel">Ultimate X EV</div>
+      <div class="evTrack"><div class="evFill ux" id="evUXBar"></div></div>
+      <div class="evValue" id="evUX">—</div>
+    </div>
+  </div>
+
   <div class="cards" id="cardsBox"></div>
-  <div class="multSection" id="multSection"></div>
+
+  <div class="multSection" id="multSection">
+    <div class="multRow"><div class="multLabel">Top</div><div class="multCells" id="multTopCells"></div><div class="multValue" id="multTop">—</div></div>
+    <div class="multRow"><div class="multLabel">Middle</div><div class="multCells" id="multMidCells"></div><div class="multValue" id="multMid">—</div></div>
+    <div class="multRow"><div class="multLabel">Bottom</div><div class="multCells" id="multBotCells"></div><div class="multValue" id="multBot">—</div></div>
+  </div>
 
   <div id="whyBox"></div>
   <div class="newHand" id="newHandBtn">New hand</div>
 </div>
-
-<div class="swipeHint" id="swipeHint">↓ New hand</div>
 
 <script type="module">
 import { initCamera } from "./capture/capture.js";
@@ -267,7 +270,6 @@ const makeCells=id=>{
   return Array.from({length:12},()=>{const d=document.createElement("div");d.className="multCell";c.appendChild(d);return d});
 };
 
-/* SNAP WORKER */
 wireSnapWorker({
   video:$("video"),
   scanner:$("scanner"),
@@ -299,7 +301,7 @@ wireSnapWorker({
   }
 });
 
-/* RESET */
+/* NEW HAND */
 $("newHandBtn").onclick=()=>{
   $("scanner").classList.remove("collapsed");
   $("newHandBtn").style.display="none";
@@ -310,31 +312,36 @@ $("newHandBtn").onclick=()=>{
   $("whyBox").innerHTML="";
 };
 
-/* SAFE SWIPE DOWN (ONLY ON CARDS AREA) */
-let startY=null;
-const swipeHint=$("swipeHint");
-const resultsArea=$("cardsBox");
+/* ✅ SWIPE DOWN TO RESET using POINTER EVENTS (does not break tap) */
+const newHandBtn = $("newHandBtn");
+const cardsBox = $("cardsBox");
+let startY = null;
+let swiping = false;
 
-resultsArea.addEventListener("touchstart",e=>{
-  if($("newHandBtn").style.display!=="block") return;
-  startY=e.touches[0].clientY;
-},{passive:true});
+cardsBox.addEventListener("pointerdown", (e)=>{
+  if (newHandBtn.style.display !== "block") return;
+  startY = e.clientY;
+  swiping = true;
+}, {passive:true});
 
-resultsArea.addEventListener("touchmove",e=>{
-  if(startY===null) return;
-  const dy=e.touches[0].clientY-startY;
-  if(dy>30) swipeHint.classList.add("show");
-  if(dy>140){
-    startY=null;
-    swipeHint.classList.remove("show");
-    if(navigator.vibrate) navigator.vibrate(20);
-    $("newHandBtn").onclick();
+cardsBox.addEventListener("pointermove", (e)=>{
+  if (!swiping || startY === null) return;
+  const dy = e.clientY - startY;
+  if (dy > 120) {
+    swiping = false;
+    startY = null;
+    if (navigator.vibrate) navigator.vibrate(20);
+    newHandBtn.onclick();
   }
-},{passive:true});
+}, {passive:true});
 
-resultsArea.addEventListener("touchend",()=>{
-  startY=null;
-  swipeHint.classList.remove("show");
+cardsBox.addEventListener("pointerup", ()=>{
+  swiping = false;
+  startY = null;
+});
+cardsBox.addEventListener("pointercancel", ()=>{
+  swiping = false;
+  startY = null;
 });
 </script>
 </body>
