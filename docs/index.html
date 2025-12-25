@@ -49,8 +49,11 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   text-align:center;padding:0 16px;
   color:rgba(255,255,255,.75);
   font-weight:700;
-  pointer-events:none; /* 🔒 critical */
+  pointer-events:none;
 }
+
+/* 🔥 CRITICAL FIX: ensure taps go to scanner, not video */
+#video{ pointer-events:none; }
 
 /* WELCOME */
 #welcomeBox{
@@ -65,10 +68,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* SETTINGS */
 .themeRow{display:flex;gap:10px;margin-top:10px}
-.themeChip{
-  width:32px;height:32px;border-radius:50%;
-  border:2px solid transparent;cursor:pointer
-}
+.themeChip{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer}
 .themeChip.theme-green{background:#22c55e}
 .themeChip.theme-purple{background:#a855f7}
 .themeChip.theme-blue{background:#3b82f6}
@@ -120,9 +120,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   display:flex;justify-content:center;gap:14px
 }
 .card{
-  width:78px;height:118px;
-  background:#fff;color:#111;
-  border-radius:14px;position:relative;
+  width:78px;height:118px;background:#fff;color:#111;border-radius:14px;position:relative;
   box-shadow:0 6px 18px rgba(0,0,0,.45);
 }
 .card.red{color:#c1121f}
@@ -136,16 +134,10 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   position:absolute;top:-14px;left:50%;
   transform:translateX(-50%);
   background:var(--accent);color:#000;
-  font-size:11px;font-weight:900;
-  letter-spacing:.08em;padding:4px 12px;border-radius:999px
+  font-size:11px;font-weight:900;letter-spacing:.08em;
+  padding:4px 12px;border-radius:999px
 }
-
-/* FADE NON-HELD */
-.card:not(.held){
-  opacity:0.65;
-  filter:saturate(0.85);
-}
-
+.card:not(.held){opacity:0.65;filter:saturate(0.85)}
 .corner{position:absolute;font-weight:900;font-size:14px;line-height:1.05}
 .corner.top{top:8px;left:8px}
 .corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
@@ -181,26 +173,16 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* SWIPE HINT */
 .swipeHint{
-  position:fixed;
-  top:8px;
-  left:50%;
+  position:fixed;top:8px;left:50%;
   transform:translateX(-50%);
-  padding:6px 14px;
-  border-radius:999px;
-  background:rgba(0,0,0,0.6);
-  color:#fff;
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:0.04em;
-  opacity:0;
-  pointer-events:none;
+  padding:6px 14px;border-radius:999px;
+  background:rgba(0,0,0,0.6);color:#fff;
+  font-size:12px;font-weight:700;letter-spacing:0.04em;
+  opacity:0;pointer-events:none;
   transition:opacity .15s ease, transform .15s ease;
   z-index:999;
 }
-.swipeHint.show{
-  opacity:1;
-  transform:translateX(-50%) translateY(8px);
-}
+.swipeHint.show{opacity:1;transform:translateX(-50%) translateY(8px)}
 </style>
 </head>
 
@@ -317,7 +299,7 @@ wireSnapWorker({
   }
 });
 
-/* NEW HAND */
+/* RESET */
 $("newHandBtn").onclick=()=>{
   $("scanner").classList.remove("collapsed");
   $("newHandBtn").style.display="none";
@@ -328,7 +310,7 @@ $("newHandBtn").onclick=()=>{
   $("whyBox").innerHTML="";
 };
 
-/* SAFE SWIPE DOWN (RESULTS ONLY) */
+/* SAFE SWIPE DOWN (ONLY ON CARDS AREA) */
 let startY=null;
 const swipeHint=$("swipeHint");
 const resultsArea=$("cardsBox");
@@ -336,7 +318,7 @@ const resultsArea=$("cardsBox");
 resultsArea.addEventListener("touchstart",e=>{
   if($("newHandBtn").style.display!=="block") return;
   startY=e.touches[0].clientY;
-});
+},{passive:true});
 
 resultsArea.addEventListener("touchmove",e=>{
   if(startY===null) return;
@@ -348,7 +330,7 @@ resultsArea.addEventListener("touchmove",e=>{
     if(navigator.vibrate) navigator.vibrate(20);
     $("newHandBtn").onclick();
   }
-});
+},{passive:true});
 
 resultsArea.addEventListener("touchend",()=>{
   startY=null;
