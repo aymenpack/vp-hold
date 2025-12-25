@@ -39,7 +39,7 @@ export function wireSnapWorker({
 
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type":"application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageBase64,
           paytable: "DDB_9_6",
@@ -48,12 +48,14 @@ export function wireSnapWorker({
       });
 
       const d = await res.json();
-      if (!d || !d.cards) return;
+      if (!d || !d.cards || !d.best_hold) return;
 
-      welcomeBox.style.display="none";
-      evSection.style.display="block";
-      multSection.style.display="block";
+      /* ===== SHOW RESULT SECTIONS ===== */
+      welcomeBox.style.display = "none";
+      evSection.style.display = "block";
+      multSection.style.display = "block";
 
+      /* ===== EV ===== */
       const baseEV = d.ev_without_multiplier;
       const uxEV   = d.ev_with_multiplier;
       const maxEV  = Math.max(baseEV, uxEV, 0.0001);
@@ -63,6 +65,7 @@ export function wireSnapWorker({
       evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
       evUXBar.style.width   = (uxEV   / maxEV * 100) + "%";
 
+      /* ===== MULTIPLIERS (1–12 boxes) ===== */
       multTopValue.textContent = "×" + d.multipliers.top;
       multMidValue.textContent = "×" + d.multipliers.middle;
       multBotValue.textContent = "×" + d.multipliers.bottom;
@@ -71,22 +74,28 @@ export function wireSnapWorker({
       fill(multMidCells, d.multipliers.middle);
       fill(multBotCells, d.multipliers.bottom);
 
-      cardsBox.innerHTML="";
-      const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
+      /* ===== CARDS ===== */
+      cardsBox.innerHTML = "";
+      const SUIT = { S: "♠", H: "♥", D: "♦", C: "♣" };
 
-      d.cards.forEach((c,i)=>{
-        const el=document.createElement("div");
-        el.className="card"+(d.best_hold[i]?" held":"")+
-          ((c.suit==="H"||c.suit==="D")?" red":"");
-        el.innerHTML=`
-          <div class="corner top">${c.rank}<br>${SUIT[c.suit]}</div>
+      d.cards.forEach((c, i) => {
+        const rank = c.rank === "T" ? "10" : c.rank;
+
+        const el = document.createElement("div");
+        el.className =
+          "card" +
+          (d.best_hold[i] ? " held" : "") +
+          ((c.suit === "H" || c.suit === "D") ? " red" : "");
+
+        el.innerHTML = `
+          <div class="corner top">${rank}<br>${SUIT[c.suit]}</div>
           <div class="pip">${SUIT[c.suit]}</div>
-          <div class="corner bottom">${c.rank}<
-                  <div class="corner bottom">${c.rank}<br>${SUIT[c.suit]}</div>
+          <div class="corner bottom">${rank}<br>${SUIT[c.suit]}</div>
         `;
         cardsBox.appendChild(el);
       });
 
+      /* ===== WHY ===== */
       whyBox.innerHTML = `
         <div style="display:flex;gap:10px;align-items:flex-start">
           <span style="font-size:18px">💡</span>
@@ -98,8 +107,7 @@ export function wireSnapWorker({
         </div>
       `;
 
-      // Collapse camera + show reset
-      onSnapComplete();
+      if (onSnapComplete) onSnapComplete();
 
     } catch (err) {
       console.error("Snap failed:", err);
@@ -109,7 +117,8 @@ export function wireSnapWorker({
     }
   };
 
-  function fill(cells, n){
+  /* ===== MULTIPLIER FILL HELPERS ===== */
+  function fill(cells, n) {
     cells.forEach((c, i) => {
       c.className = "multCell";
       if (i < n) {
