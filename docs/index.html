@@ -262,13 +262,24 @@ document.querySelectorAll(".themeChip").forEach(c=>{
 document.documentElement.className=localStorage.getItem("vp_theme")||"theme-green";
 
 /* MODE */
-document.querySelectorAll(".modeToggle button").forEach(b=>{
-  b.onclick=()=>{
-    localStorage.setItem("vp_mode",b.dataset.mode);
-    document.querySelectorAll(".modeToggle button").forEach(x=>x.classList.toggle("active",x===b));
-  };
+const modeButtons = document.querySelectorAll(".modeToggle button");
+
+function applyMode(mode){
+  localStorage.setItem("vp_mode", mode);
+  modeButtons.forEach(b =>
+    b.classList.toggle("active", b.dataset.mode === mode)
+  );
+}
+
+modeButtons.forEach(b=>{
+  b.onclick = () => applyMode(b.dataset.mode);
 });
-window.getCurrentMode=()=>localStorage.getItem("vp_mode")||"conservative";
+
+// restore on load
+applyMode(localStorage.getItem("vp_mode") || "conservative");
+
+window.getCurrentMode = () =>
+  localStorage.getItem("vp_mode") || "conservative";
 
 /* CAMERA */
 await initCamera($("video"));
