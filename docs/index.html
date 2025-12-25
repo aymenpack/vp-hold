@@ -18,10 +18,10 @@
 }
 
 /* THEMES */
-.theme-green{--bg:#041b12;--panel:#052e1b;--border:#0f5132;--accent:#22c55e;--muted:#9fe3c3}
-.theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7;--muted:#d8b4fe}
-.theme-blue{--bg:#020b1f;--panel:#020b1f;--border:#1e3a8a;--accent:#3b82f6;--muted:#93c5fd}
-.theme-red{--bg:#1f0b0b;--panel:#2a0f0f;--border:#7f1d1d;--accent:#ef4444;--muted:#fca5a5}
+.theme-green{--bg:#041b12;--accent:#22c55e}
+.theme-purple{--bg:#160b2e;--accent:#a855f7}
+.theme-blue{--bg:#020b1f;--accent:#3b82f6}
+.theme-red{--bg:#1f0b0b;--accent:#ef4444}
 
 body{
   margin:0;
@@ -33,7 +33,7 @@ body{
 .app{
   max-width:860px;
   margin:auto;
-  padding:12px 14px 160px;
+  padding:12px 14px 140px;
 }
 
 /* HEADER */
@@ -58,19 +58,17 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   padding:16px;
   border-radius:18px;
   background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.07);
 }
 #welcomeTitle{font-weight:800;margin-bottom:6px}
 #welcomeText{font-size:13px;line-height:1.45;color:rgba(255,255,255,0.85)}
 
 /* SETTINGS */
 .themeRow{display:flex;gap:10px;margin-top:10px}
-.themeChip{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer}
-.themeChip.theme-green{background:#22c55e}
-.themeChip.theme-purple{background:#a855f7}
-.themeChip.theme-blue{background:#3b82f6}
-.themeChip.theme-red{background:#ef4444}
-.themeChip.active{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+.themeChip{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid transparent;cursor:pointer
+}
+.themeChip.active{border-color:#fff}
 
 .modeToggle{display:flex;gap:6px;margin-top:10px}
 .modeToggle button{
@@ -80,12 +78,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   color:#fff;font-size:13px;font-weight:700;cursor:pointer
 }
 .modeToggle button.active{background:var(--accent);color:#000}
-
-/* DIVIDER */
-.divider{
-  height:1px;margin:10px 0 14px;
-  background:linear-gradient(to right,transparent,rgba(255,255,255,.25),transparent)
-}
 
 /* SPINNER */
 .spinner{
@@ -97,55 +89,59 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* RESULTS AREA */
-#results{margin-top:8px}
+/* RESULTS */
+#results{margin-top:12px}
+
+/* EV */
+.evRow{display:flex;align-items:center;gap:10px;margin:8px 0}
+.evLabel{width:90px;font-size:12px;color:var(--muted)}
+.evTrack{flex:1;height:16px;border-radius:999px;background:rgba(255,255,255,.12)}
+.evFill{height:100%;border-radius:999px;background:var(--accent)}
+.evValue{width:80px;text-align:right;font-weight:800}
 
 /* CARDS */
 .cards{
-  margin-top:6px;
-  padding:26px 18px;
-  border-radius:24px;
+  margin-top:12px;
+  padding:22px 16px;
+  border-radius:22px;
   background:rgba(255,255,255,0.05);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),
-             0 12px 32px rgba(0,0,0,.4);
-  display:flex;justify-content:center;gap:14px
+  display:flex;justify-content:center;gap:12px
 }
 .card{
-  width:78px;height:118px;
+  width:76px;height:108px;
   background:#fff;color:#111;
-  border-radius:14px;position:relative;
-  box-shadow:0 6px 18px rgba(0,0,0,.45);
+  border-radius:12px;position:relative
 }
 .card.red{color:#c1121f}
 .card.held{
-  transform:translateY(-22px) scale(1.1);
-  box-shadow:0 0 0 4px var(--accent),
-             0 20px 40px rgba(0,0,0,.6);
+  transform:translateY(-18px) scale(1.07);
+  box-shadow:0 0 0 3px var(--accent);
 }
-.card:not(.held){
-  opacity:0.65;
-  filter:saturate(0.85);
-}
-.corner{position:absolute;font-weight:900;font-size:14px;line-height:1.05}
-.corner.top{top:8px;left:8px}
-.corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
+.card:not(.held){opacity:0.65}
+
+.corner{position:absolute;font-weight:900;font-size:14px}
+.corner.top{top:6px;left:6px}
+.corner.bottom{bottom:6px;right:6px;transform:rotate(180deg)}
 .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px}
 
-/* EV + MULT */
-.evSection,.multSection{margin-top:14px}
+/* MULTIPLIERS */
+.multRow{display:flex;align-items:center;gap:10px;margin:8px 0}
+.multLabel{width:90px;font-size:12px;color:var(--muted)}
+.multCells{flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.multCell{height:14px;border-radius:4px;background:rgba(255,255,255,.12)}
+.multCell.filled{background:var(--accent)}
+.multValue{width:70px;text-align:right;font-weight:800}
 
 /* WHY */
 #whyBox{
-  max-width:540px;
   margin:18px auto 0;
   padding:18px 20px;
   border-radius:18px;
   background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.06);
 }
 
 /* NEW HAND */
-.newHand{
+#newHandBtn{
   margin:24px auto 0;
   padding:14px 20px;
   border-radius:16px;
@@ -174,15 +170,15 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   <div id="welcomeBox">
     <div id="welcomeTitle">🎰 Ultimate X Video Poker</div>
     <div id="welcomeText">
-      <b>Expected Value (EV)</b> measures long-term profitability.
-      Higher EV means better decisions over time. Good luck 🍀
+      Expected Value (EV) measures long-term profitability.
+      Higher EV means better results over time.
     </div>
 
     <div class="themeRow">
-      <button class="themeChip theme-green" data-theme="theme-green"></button>
-      <button class="themeChip theme-purple" data-theme="theme-purple"></button>
-      <button class="themeChip theme-blue" data-theme="theme-blue"></button>
-      <button class="themeChip theme-red" data-theme="theme-red"></button>
+      <button class="themeChip" data-theme="theme-green" style="background:#22c55e"></button>
+      <button class="themeChip" data-theme="theme-purple" style="background:#a855f7"></button>
+      <button class="themeChip" data-theme="theme-blue" style="background:#3b82f6"></button>
+      <button class="themeChip" data-theme="theme-red" style="background:#ef4444"></button>
     </div>
 
     <div class="modeToggle">
@@ -191,46 +187,42 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
     </div>
   </div>
 
-  <div class="divider"></div>
   <div class="spinner" id="spinner"></div>
 
-  <!-- RESULTS (EMPTY UNTIL SNAP) -->
   <div id="results"></div>
 
-  <div class="newHand" id="newHandBtn">New hand</div>
+  <div id="newHandBtn">New hand</div>
 </div>
 
 <script type="module">
 import { initCamera } from "./capture/capture.js";
 import { wireSnapWorker } from "./ui/snapWorker.js";
 
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 /* THEME */
-const THEME_KEY="vp_theme";
 document.querySelectorAll(".themeChip").forEach(c=>{
   c.onclick=()=>{
     document.documentElement.className=c.dataset.theme;
-    localStorage.setItem(THEME_KEY,c.dataset.theme);
+    localStorage.setItem("vp_theme",c.dataset.theme);
     document.querySelectorAll(".themeChip").forEach(x=>x.classList.toggle("active",x===c));
   };
 });
-document.documentElement.className=localStorage.getItem(THEME_KEY)||"theme-green";
+document.documentElement.className=localStorage.getItem("vp_theme")||"theme-green";
 
 /* MODE */
-const MODE_KEY="vp_mode";
 document.querySelectorAll(".modeToggle button").forEach(b=>{
   b.onclick=()=>{
-    localStorage.setItem(MODE_KEY,b.dataset.mode);
+    localStorage.setItem("vp_mode",b.dataset.mode);
     document.querySelectorAll(".modeToggle button").forEach(x=>x.classList.toggle("active",x===b));
   };
 });
-window.getCurrentMode=()=>localStorage.getItem(MODE_KEY)||"conservative";
+window.getCurrentMode=()=>localStorage.getItem("vp_mode")||"conservative";
 
 /* CAMERA */
 await initCamera($("video"));
 
-/* SNAP WORKER */
+/* SNAP */
 wireSnapWorker({
   video:$("video"),
   scanner:$("scanner"),
