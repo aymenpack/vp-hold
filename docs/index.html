@@ -49,7 +49,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   text-align:center;padding:0 16px;
   color:rgba(255,255,255,.75);
   font-weight:700;
-  pointer-events:none;
+  pointer-events:none; /* 🔒 critical */
 }
 
 /* WELCOME */
@@ -124,7 +124,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   background:#fff;color:#111;
   border-radius:14px;position:relative;
   box-shadow:0 6px 18px rgba(0,0,0,.45);
-  transition:.25s;
 }
 .card.red{color:#c1121f}
 .card.held{
@@ -220,7 +219,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
     <div id="welcomeTitle">🎰 Ultimate X Video Poker</div>
     <div id="welcomeText">
       <b>Expected Value (EV)</b> measures long-term profitability.
-      Higher EV means better results over time. Good luck 🍀
+      Higher EV means better decisions over time. Good luck 🍀
     </div>
 
     <div class="themeRow" id="themeRow">
@@ -280,33 +279,13 @@ window.getCurrentMode=()=>localStorage.getItem(MODE_KEY)||"conservative";
 /* CAMERA */
 await initCamera($("video"));
 
-/* SWIPE RESET */
-let startY=null;
-const swipeHint=$("swipeHint");
-document.addEventListener("touchstart",e=>{
-  if($("newHandBtn").style.display!=="block") return;
-  if(e.touches[0].clientY>120) return;
-  startY=e.touches[0].clientY;
-});
-document.addEventListener("touchmove",e=>{
-  if(startY===null) return;
-  const dy=e.touches[0].clientY-startY;
-  if(dy>20) swipeHint.classList.add("show");
-  if(dy>140){
-    startY=null;
-    swipeHint.classList.remove("show");
-    if(navigator.vibrate) navigator.vibrate(20);
-    $("newHandBtn").onclick();
-  }
-});
-document.addEventListener("touchend",()=>{startY=null;swipeHint.classList.remove("show")});
-
 /* MULT CELLS */
 const makeCells=id=>{
   const c=$(id);c.innerHTML="";
   return Array.from({length:12},()=>{const d=document.createElement("div");d.className="multCell";c.appendChild(d);return d});
 };
 
+/* SNAP WORKER */
 wireSnapWorker({
   video:$("video"),
   scanner:$("scanner"),
@@ -338,7 +317,7 @@ wireSnapWorker({
   }
 });
 
-/* RESET */
+/* NEW HAND */
 $("newHandBtn").onclick=()=>{
   $("scanner").classList.remove("collapsed");
   $("newHandBtn").style.display="none";
@@ -348,6 +327,33 @@ $("newHandBtn").onclick=()=>{
   $("cardsBox").innerHTML="";
   $("whyBox").innerHTML="";
 };
+
+/* SAFE SWIPE DOWN (RESULTS ONLY) */
+let startY=null;
+const swipeHint=$("swipeHint");
+const resultsArea=$("cardsBox");
+
+resultsArea.addEventListener("touchstart",e=>{
+  if($("newHandBtn").style.display!=="block") return;
+  startY=e.touches[0].clientY;
+});
+
+resultsArea.addEventListener("touchmove",e=>{
+  if(startY===null) return;
+  const dy=e.touches[0].clientY-startY;
+  if(dy>30) swipeHint.classList.add("show");
+  if(dy>140){
+    startY=null;
+    swipeHint.classList.remove("show");
+    if(navigator.vibrate) navigator.vibrate(20);
+    $("newHandBtn").onclick();
+  }
+});
+
+resultsArea.addEventListener("touchend",()=>{
+  startY=null;
+  swipeHint.classList.remove("show");
+});
 </script>
 </body>
 </html>
