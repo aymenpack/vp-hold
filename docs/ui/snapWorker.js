@@ -55,13 +55,13 @@ export function wireSnapWorker({
       multSection.style.display="block";
 
       const baseEV = d.ev_without_multiplier;
-      const uxEV = d.ev_with_multiplier;
-      const maxEV = Math.max(baseEV, uxEV, 0.0001);
+      const uxEV   = d.ev_with_multiplier;
+      const maxEV  = Math.max(baseEV, uxEV, 0.0001);
 
       evBaseValue.textContent = baseEV.toFixed(4);
-      evUXValue.textContent = uxEV.toFixed(4);
+      evUXValue.textContent   = uxEV.toFixed(4);
       evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
-      evUXBar.style.width = (uxEV / maxEV * 100) + "%";
+      evUXBar.style.width   = (uxEV   / maxEV * 100) + "%";
 
       multTopValue.textContent = "×" + d.multipliers.top;
       multMidValue.textContent = "×" + d.multipliers.middle;
@@ -71,20 +71,18 @@ export function wireSnapWorker({
       fill(multMidCells, d.multipliers.middle);
       fill(multBotCells, d.multipliers.bottom);
 
-      cardsBox.innerHTML = "";
-      const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
+      cardsBox.innerHTML="";
+      const SUIT={S:"♠",H:"♥",D:"♦",C:"♣"};
 
       d.cards.forEach((c,i)=>{
-        const el = document.createElement("div");
-        el.className =
-          "card" +
-          (d.best_hold[i] ? " held" : "") +
-          ((c.suit==="H"||c.suit==="D") ? " red" : "");
-
-        el.innerHTML = `
+        const el=document.createElement("div");
+        el.className="card"+(d.best_hold[i]?" held":"")+
+          ((c.suit==="H"||c.suit==="D")?" red":"");
+        el.innerHTML=`
           <div class="corner top">${c.rank}<br>${SUIT[c.suit]}</div>
           <div class="pip">${SUIT[c.suit]}</div>
-          <div class="corner bottom">${c.rank}<br>${SUIT[c.suit]}</div>
+          <div class="corner bottom">${c.rank}<
+                  <div class="corner bottom">${c.rank}<br>${SUIT[c.suit]}</div>
         `;
         cardsBox.appendChild(el);
       });
@@ -94,26 +92,33 @@ export function wireSnapWorker({
           <span style="font-size:18px">💡</span>
           <div>
             <b>Why this hold?</b><br>
-            This play maximizes <b>expected value</b> given the current hand,
-            the paytable, and the active multipliers.
+            This play maximizes <b>expected value</b> for the current hand,
+            given the paytable and the active Ultimate X multipliers.
           </div>
         </div>
       `;
 
+      // Collapse camera + show reset
       onSnapComplete();
 
     } catch (err) {
       console.error("Snap failed:", err);
     } finally {
-      spinner.style.display="none";
-      busy=false;
+      spinner.style.display = "none";
+      busy = false;
     }
   };
 
-  function fill(cells,n){
-    cells.forEach((c,i)=>{
-      c.className="multCell";
-      if(i<n) c.classList.add(i<3?"g":i<6?"y":i<9?"o":"r");
+  function fill(cells, n){
+    cells.forEach((c, i) => {
+      c.className = "multCell";
+      if (i < n) {
+        c.classList.add(
+          i < 3 ? "g" :
+          i < 6 ? "y" :
+          i < 9 ? "o" : "r"
+        );
+      }
     });
   }
 }
