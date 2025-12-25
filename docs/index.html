@@ -119,6 +119,13 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 12px 32px rgba(0,0,0,.4);
   display:flex;justify-content:center;gap:14px
 }
+
+/* ✅ THE ONLY FIX YOU WANTED:
+   Hide the cards container when it's empty (pre-snap) */
+.cards:empty{
+  display:none;
+}
+
 .card{
   width:78px;height:118px;
   background:#fff;color:#111;
@@ -170,16 +177,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   border-radius:16px;background:var(--accent);
   color:#000;font-weight:900;text-align:center;
   cursor:pointer;max-width:220px;display:none
-}
-
-/* ✅ SAFE FIX: hide empty blocks (this removes ghost panels) */
-.cards:empty,
-.evSection:empty,
-.multSection:empty,
-#whyBox:empty{
-  display:none !important;
-  margin:0 !important;
-  padding:0 !important;
 }
 </style>
 </head>
