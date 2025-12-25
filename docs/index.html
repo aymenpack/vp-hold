@@ -65,10 +65,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* SETTINGS */
 .themeRow{display:flex;gap:10px;margin-top:10px}
-.themeChip{
-  width:32px;height:32px;border-radius:50%;
-  border:2px solid transparent;cursor:pointer
-}
+.themeChip{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer}
 .themeChip.theme-green{background:#22c55e}
 .themeChip.theme-purple{background:#a855f7}
 .themeChip.theme-blue{background:#3b82f6}
@@ -100,18 +97,8 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* EV + MULTIPLIERS */
-.evSection,
-.multSection{
-  margin-top:14px;
-}
-
-/* 🔒 HARD GUARD AGAINST EMPTY BLOCKS */
-.evSection:empty,
-.multSection:empty,
-#whyBox:empty{
-  display:none !important;
-}
+/* RESULTS AREA */
+#results{margin-top:8px}
 
 /* CARDS */
 .cards{
@@ -121,15 +108,12 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   background:rgba(255,255,255,0.05);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),
              0 12px 32px rgba(0,0,0,.4);
-  display:flex;
-  justify-content:center;
-  gap:14px;
+  display:flex;justify-content:center;gap:14px
 }
 .card{
   width:78px;height:118px;
   background:#fff;color:#111;
-  border-radius:14px;
-  position:relative;
+  border-radius:14px;position:relative;
   box-shadow:0 6px 18px rgba(0,0,0,.45);
 }
 .card.red{color:#c1121f}
@@ -146,6 +130,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 .corner.top{top:8px;left:8px}
 .corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
 .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px}
+
+/* EV + MULT */
+.evSection,.multSection{margin-top:14px}
 
 /* WHY */
 #whyBox{
@@ -207,11 +194,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   <div class="divider"></div>
   <div class="spinner" id="spinner"></div>
 
-  <div class="evSection" id="evSection"></div>
-  <div class="cards" id="cardsBox"></div>
-  <div class="multSection" id="multSection"></div>
+  <!-- RESULTS (EMPTY UNTIL SNAP) -->
+  <div id="results"></div>
 
-  <div id="whyBox"></div>
   <div class="newHand" id="newHandBtn">New hand</div>
 </div>
 
@@ -219,22 +204,41 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 import { initCamera } from "./capture/capture.js";
 import { wireSnapWorker } from "./ui/snapWorker.js";
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
+
+/* THEME */
+const THEME_KEY="vp_theme";
+document.querySelectorAll(".themeChip").forEach(c=>{
+  c.onclick=()=>{
+    document.documentElement.className=c.dataset.theme;
+    localStorage.setItem(THEME_KEY,c.dataset.theme);
+    document.querySelectorAll(".themeChip").forEach(x=>x.classList.toggle("active",x===c));
+  };
+});
+document.documentElement.className=localStorage.getItem(THEME_KEY)||"theme-green";
+
+/* MODE */
+const MODE_KEY="vp_mode";
+document.querySelectorAll(".modeToggle button").forEach(b=>{
+  b.onclick=()=>{
+    localStorage.setItem(MODE_KEY,b.dataset.mode);
+    document.querySelectorAll(".modeToggle button").forEach(x=>x.classList.toggle("active",x===b));
+  };
+});
+window.getCurrentMode=()=>localStorage.getItem(MODE_KEY)||"conservative";
 
 /* CAMERA */
 await initCamera($("video"));
 
-/* SNAP */
+/* SNAP WORKER */
 wireSnapWorker({
   video:$("video"),
   scanner:$("scanner"),
   band:document.querySelector(".band"),
   spinner:$("spinner"),
-  cardsBox:$("cardsBox"),
-  evSection:$("evSection"),
-  multSection:$("multSection"),
-  whyBox:$("whyBox"),
+  resultsContainer:$("results"),
   welcomeBox:$("welcomeBox"),
+  modeSelect:{get value(){return window.getCurrentMode()}},
   onSnapComplete:()=>{
     $("scanner").classList.add("collapsed");
     $("newHandBtn").style.display="block";
@@ -246,11 +250,7 @@ $("newHandBtn").onclick=()=>{
   $("scanner").classList.remove("collapsed");
   $("newHandBtn").style.display="none";
   $("welcomeBox").style.display="block";
-
-  $("evSection").innerHTML="";
-  $("multSection").innerHTML="";
-  $("cardsBox").innerHTML="";
-  $("whyBox").innerHTML="";
+  $("results").innerHTML="";
 };
 </script>
 </body>
