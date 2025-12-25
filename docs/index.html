@@ -59,7 +59,7 @@ h2{
   margin:2px 0 10px;
 }
 
-/* THEME CHIPS (TOP RIGHT) */
+/* THEME (TOP RIGHT) */
 .themeRow{
   display:flex;
   gap:10px;
@@ -172,6 +172,15 @@ h2{
 
 /* MULTIPLIERS */
 .multSection{display:none;margin-top:14px}
+.multRow{display:flex;align-items:center;gap:10px;margin:8px 0}
+.multLabel{width:90px;font-size:12px;color:var(--muted)}
+.multCells{flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.multCell{height:14px;border-radius:4px;background:rgba(255,255,255,.12)}
+.multCell.g{background:#22c55e}
+.multCell.y{background:#eab308}
+.multCell.o{background:#f97316}
+.multCell.r{background:#ef4444}
+.multValue{width:70px;text-align:right;font-weight:800}
 
 /* WHY */
 #whyBox{
@@ -326,3 +335,5 @@ $("newHandBtn").onclick=()=>{
 </script>
 </body>
 </html>
+
+this is the last working file, depart from it to make that modification
