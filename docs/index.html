@@ -261,19 +261,33 @@ window.getCurrentMode=()=>localStorage.getItem("vp_mode")||"conservative";
 await initCamera($("video"));
 
 wireSnapWorker({
-  video:$("video"),
-  scanner:$("scanner"),
-  band:document.querySelector(".band"),
-  spinner:$("spinner"),
-  cardsBox:$("cardsBox"),
-  evSection:$("evSection"),
-  multSection:$("multSection"),
-  whyBox:$("whyBox"),
-  welcomeBox:$("welcomeBox"),
-  modeSelect:{get value(){return window.getCurrentMode()}},
-  onSnapComplete:()=>{
+  video: $("video"),
+  scanner: $("scanner"),
+  band: document.querySelector(".band"),
+  spinner: $("spinner"),
+  cardsBox: $("cardsBox"),
+
+  evSection: $("evSection"),
+  evBaseValue: $("evBase"),
+  evUXValue: $("evUX"),
+  evBaseBar: $("evBaseBar"),
+  evUXBar: $("evUXBar"),
+
+  multSection: $("multSection"),
+  multTopValue: $("multTop"),
+  multMidValue: $("multMid"),
+  multBotValue: $("multBot"),
+  multTopCells: makeCells("multTopCells"),
+  multMidCells: makeCells("multMidCells"),
+  multBotCells: makeCells("multBotCells"),
+
+  whyBox: $("whyBox"),
+  welcomeBox: $("welcomeBox"),
+  modeSelect: { get value(){ return window.getCurrentMode(); } },
+
+  onSnapComplete: () => {
     $("scanner").classList.add("collapsed");
-    $("newHandBtn").style.display="block";
+    $("newHandBtn").style.display = "block";
   }
 });
 
