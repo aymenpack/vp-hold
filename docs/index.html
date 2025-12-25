@@ -112,19 +112,16 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* CARDS */
 .cards{
-  margin-top:12px;
+  margin-top:18px; /* ✅ increased spacing from EV */
   padding:26px 18px;
   border-radius:24px;
   background:rgba(255,255,255,0.05);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 12px 32px rgba(0,0,0,.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.06),
+    0 12px 32px rgba(0,0,0,.4);
   display:flex;justify-content:center;gap:14px
 }
-
-/* ✅ THE ONLY FIX YOU WANTED:
-   Hide the cards container when it's empty (pre-snap) */
-.cards:empty{
-  display:none;
-}
+.cards:empty{display:none}
 
 .card{
   width:78px;height:118px;
@@ -165,18 +162,26 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* WHY */
 #whyBox{
-  max-width:540px;margin:18px auto 0;
-  padding:18px 20px;border-radius:18px;
+  max-width:540px;
+  margin:18px auto 0;
+  padding:18px 20px;
+  border-radius:18px;
   background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.06)
 }
 
 /* NEW HAND */
 .newHand{
-  margin:24px auto 0;padding:14px 20px;
-  border-radius:16px;background:var(--accent);
-  color:#000;font-weight:900;text-align:center;
-  cursor:pointer;max-width:220px;display:none
+  margin:24px auto 0;
+  padding:14px 20px;
+  border-radius:16px;
+  background:var(--accent);
+  color:#000;
+  font-weight:900;
+  text-align:center;
+  cursor:pointer;
+  max-width:220px;
+  display:none
 }
 </style>
 </head>
@@ -199,14 +204,14 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
       Higher EV means better results over time. Good luck 🍀
     </div>
 
-    <div class="themeRow" id="themeRow">
+    <div class="themeRow">
       <button class="themeChip theme-green" data-theme="theme-green"></button>
       <button class="themeChip theme-purple" data-theme="theme-purple"></button>
       <button class="themeChip theme-blue" data-theme="theme-blue"></button>
       <button class="themeChip theme-red" data-theme="theme-red"></button>
     </div>
 
-    <div class="modeToggle" id="modeToggle">
+    <div class="modeToggle">
       <button data-mode="conservative">Conservative</button>
       <button data-mode="aggressive">Aggressive</button>
     </div>
@@ -247,26 +252,23 @@ import { wireSnapWorker } from "./ui/snapWorker.js";
 const $=id=>document.getElementById(id);
 
 /* THEME */
-const THEME_KEY="vp_theme";
-const chips=document.querySelectorAll(".themeChip");
-function applyTheme(t){
-  document.documentElement.className=t;
-  localStorage.setItem(THEME_KEY,t);
-  chips.forEach(c=>c.classList.toggle("active",c.dataset.theme===t));
-}
-applyTheme(localStorage.getItem(THEME_KEY)||"theme-green");
-chips.forEach(c=>c.onclick=()=>applyTheme(c.dataset.theme));
+document.querySelectorAll(".themeChip").forEach(c=>{
+  c.onclick=()=>{
+    document.documentElement.className=c.dataset.theme;
+    localStorage.setItem("vp_theme",c.dataset.theme);
+    document.querySelectorAll(".themeChip").forEach(x=>x.classList.toggle("active",x===c));
+  };
+});
+document.documentElement.className=localStorage.getItem("vp_theme")||"theme-green";
 
 /* MODE */
-const MODE_KEY="vp_mode";
-const modeBtns=document.querySelectorAll(".modeToggle button");
-function applyMode(m){
-  localStorage.setItem(MODE_KEY,m);
-  modeBtns.forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
-}
-applyMode(localStorage.getItem(MODE_KEY)||"conservative");
-modeBtns.forEach(b=>b.onclick=()=>applyMode(b.dataset.mode));
-window.getCurrentMode=()=>localStorage.getItem(MODE_KEY)||"conservative";
+document.querySelectorAll(".modeToggle button").forEach(b=>{
+  b.onclick=()=>{
+    localStorage.setItem("vp_mode",b.dataset.mode);
+    document.querySelectorAll(".modeToggle button").forEach(x=>x.classList.toggle("active",x===b));
+  };
+});
+window.getCurrentMode=()=>localStorage.getItem("vp_mode")||"conservative";
 
 /* CAMERA */
 await initCamera($("video"));
