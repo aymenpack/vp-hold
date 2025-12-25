@@ -1,5 +1,9 @@
 import { captureGreenFrame } from "../capture/capture.js";
 
+function haptic(pattern){
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
 export function wireSnapWorker({
   video,
   scanner,
@@ -32,10 +36,14 @@ export function wireSnapWorker({
   scanner.onclick = async () => {
     if (busy) return;
     busy = true;
+
+    haptic(10); // tap registered
     spinner.style.display = "block";
 
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
+
+      haptic(20); // analysis started
 
       const res = await fetch(API_URL, {
         method: "POST",
@@ -50,12 +58,11 @@ export function wireSnapWorker({
       const d = await res.json();
       if (!d || !d.cards || !d.best_hold) return;
 
-      /* ===== SHOW RESULT SECTIONS ===== */
       welcomeBox.style.display = "none";
       evSection.style.display = "block";
       multSection.style.display = "block";
 
-      /* ===== EV ===== */
+      /* EV */
       const baseEV = d.ev_without_multiplier;
       const uxEV   = d.ev_with_multiplier;
       const maxEV  = Math.max(baseEV, uxEV, 0.0001);
@@ -65,7 +72,7 @@ export function wireSnapWorker({
       evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
       evUXBar.style.width   = (uxEV   / maxEV * 100) + "%";
 
-      /* ===== MULTIPLIERS (1–12 boxes) ===== */
+      /* Multipliers */
       multTopValue.textContent = "×" + d.multipliers.top;
       multMidValue.textContent = "×" + d.multipliers.middle;
       multBotValue.textContent = "×" + d.multipliers.bottom;
@@ -74,18 +81,17 @@ export function wireSnapWorker({
       fill(multMidCells, d.multipliers.middle);
       fill(multBotCells, d.multipliers.bottom);
 
-      /* ===== CARDS ===== */
+      /* Cards */
       cardsBox.innerHTML = "";
-      const SUIT = { S: "♠", H: "♥", D: "♦", C: "♣" };
+      const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
-      d.cards.forEach((c, i) => {
+      d.cards.forEach((c,i)=>{
         const rank = c.rank === "T" ? "10" : c.rank;
-
         const el = document.createElement("div");
         el.className =
           "card" +
           (d.best_hold[i] ? " held" : "") +
-          ((c.suit === "H" || c.suit === "D") ? " red" : "");
+          ((c.suit==="H"||c.suit==="D") ? " red" : "");
 
         el.innerHTML = `
           <div class="corner top">${rank}<br>${SUIT[c.suit]}</div>
@@ -95,19 +101,24 @@ export function wireSnapWorker({
         cardsBox.appendChild(el);
       });
 
-      /* ===== WHY ===== */
+      /* HOLD emphasis */
+      const holdCount = d.best_hold.filter(Boolean).length;
+      if (holdCount > 0) haptic([15, 15, 15]);
+
+      /* Why */
       whyBox.innerHTML = `
         <div style="display:flex;gap:10px;align-items:flex-start">
           <span style="font-size:18px">💡</span>
           <div>
             <b>Why this hold?</b><br>
-            This play maximizes <b>expected value</b> for the current hand,
-            given the paytable and the active Ultimate X multipliers.
+            This play maximizes <b>expected value</b> given the current hand,
+            the paytable, and the active Ultimate X multipliers.
           </div>
         </div>
       `;
 
-      if (onSnapComplete) onSnapComplete();
+      haptic(30); // result ready
+      onSnapComplete();
 
     } catch (err) {
       console.error("Snap failed:", err);
@@ -117,16 +128,11 @@ export function wireSnapWorker({
     }
   };
 
-  /* ===== MULTIPLIER FILL HELPERS ===== */
-  function fill(cells, n) {
-    cells.forEach((c, i) => {
-      c.className = "multCell";
-      if (i < n) {
-        c.classList.add(
-          i < 3 ? "g" :
-          i < 6 ? "y" :
-          i < 9 ? "o" : "r"
-        );
+  function fill(cells,n){
+    cells.forEach((c,i)=>{
+      c.className="multCell";
+      if(i<n){
+        c.classList.add(i<3?"g":i<6?"y":i<9?"o":"r");
       }
     });
   }
