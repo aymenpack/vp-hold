@@ -4,6 +4,20 @@ function haptic(pattern){
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
+function animateBar(el, targetPercent, duration = 450){
+  el.style.width = "0%";
+  const start = performance.now();
+
+  function step(now){
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out
+    el.style.width = (eased * targetPercent) + "%";
+    if (progress < 1) requestAnimationFrame(step);
+  }
+
+  requestAnimationFrame(step);
+}
+
 export function wireSnapWorker({
   video,
   scanner,
@@ -37,17 +51,17 @@ export function wireSnapWorker({
     if (busy) return;
     busy = true;
 
-    haptic(10); // tap registered
+    haptic(10);
     spinner.style.display = "block";
 
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
 
-      haptic(20); // analysis started
+      haptic(20);
 
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type":"application/json" },
         body: JSON.stringify({
           imageBase64,
           paytable: "DDB_9_6",
@@ -62,26 +76,27 @@ export function wireSnapWorker({
       evSection.style.display = "block";
       multSection.style.display = "block";
 
-      /* EV */
+      /* ===== EV (animated) ===== */
       const baseEV = d.ev_without_multiplier;
       const uxEV   = d.ev_with_multiplier;
       const maxEV  = Math.max(baseEV, uxEV, 0.0001);
 
       evBaseValue.textContent = baseEV.toFixed(4);
       evUXValue.textContent   = uxEV.toFixed(4);
-      evBaseBar.style.width = (baseEV / maxEV * 100) + "%";
-      evUXBar.style.width   = (uxEV   / maxEV * 100) + "%";
 
-      /* Multipliers */
+      animateBar(evBaseBar, (baseEV / maxEV) * 100);
+      animateBar(evUXBar,   (uxEV   / maxEV) * 100);
+
+      /* ===== MULTIPLIERS (animated fill) ===== */
       multTopValue.textContent = "×" + d.multipliers.top;
       multMidValue.textContent = "×" + d.multipliers.middle;
       multBotValue.textContent = "×" + d.multipliers.bottom;
 
-      fill(multTopCells, d.multipliers.top);
-      fill(multMidCells, d.multipliers.middle);
-      fill(multBotCells, d.multipliers.bottom);
+      animateMult(multTopCells, d.multipliers.top);
+      animateMult(multMidCells, d.multipliers.middle);
+      animateMult(multBotCells, d.multipliers.bottom);
 
-      /* Cards */
+      /* ===== CARDS ===== */
       cardsBox.innerHTML = "";
       const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -101,11 +116,10 @@ export function wireSnapWorker({
         cardsBox.appendChild(el);
       });
 
-      /* HOLD emphasis */
       const holdCount = d.best_hold.filter(Boolean).length;
-      if (holdCount > 0) haptic([15, 15, 15]);
+      if (holdCount > 0) haptic([15,15,15]);
 
-      /* Why */
+      /* ===== WHY ===== */
       whyBox.innerHTML = `
         <div style="display:flex;gap:10px;align-items:flex-start">
           <span style="font-size:18px">💡</span>
@@ -117,7 +131,7 @@ export function wireSnapWorker({
         </div>
       `;
 
-      haptic(30); // result ready
+      haptic(30);
       onSnapComplete();
 
     } catch (err) {
@@ -128,12 +142,15 @@ export function wireSnapWorker({
     }
   };
 
-  function fill(cells,n){
+  function animateMult(cells, n){
     cells.forEach((c,i)=>{
-      c.className="multCell";
-      if(i<n){
+      c.className = "multCell";
+    });
+
+    cells.slice(0, n).forEach((c, i)=>{
+      setTimeout(()=>{
         c.classList.add(i<3?"g":i<6?"y":i<9?"o":"r");
-      }
+      }, i * 40); // staggered fill
     });
   }
 }
