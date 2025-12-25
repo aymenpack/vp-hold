@@ -74,7 +74,6 @@ export function wireSnapWorker({
 
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
-
       haptic(20);
 
       const res = await fetch(API_URL, {
