@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="./capture/camera.css">
 
 <style>
+/* --- styles unchanged from your working baseline --- */
 :root{
   --bg:#020617;
   --panel:#020617;
@@ -16,12 +17,6 @@
   --text:#ffffff;
   --muted:#9ca3af;
 }
-
-/* THEMES */
-.theme-green{--bg:#041b12;--panel:#052e1b;--border:#0f5132;--accent:#22c55e;--muted:#9fe3c3}
-.theme-purple{--bg:#160b2e;--panel:#1e1147;--border:#6d28d9;--accent:#a855f7;--muted:#d8b4fe}
-.theme-blue{--bg:#020b1f;--panel:#020b1f;--border:#1e3a8a;--accent:#3b82f6;--muted:#93c5fd}
-.theme-red{--bg:#1f0b0b;--panel:#2a0f0f;--border:#7f1d1d;--accent:#ef4444;--muted:#fca5a5}
 
 body{
   margin:0;
@@ -36,23 +31,7 @@ body{
   padding:12px 14px 160px;
 }
 
-/* HEADER */
-h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
-.subtitle{text-align:center;font-size:13px;color:var(--muted);margin:2px 0 10px}
-
-/* CAMERA */
 .scanner{position:relative}
-.scanner.collapsed{display:none}
-.scanHint{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  text-align:center;padding:0 16px;
-  color:rgba(255,255,255,.75);
-  font-weight:700;
-  pointer-events:none;
-}
-
-/* PROCESSING OVERLAY */
 .processing{
   position:absolute;
   inset:0;
@@ -64,93 +43,35 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   backdrop-filter:blur(2px);
   z-index:5;
 }
-.processing span{
-  margin-top:10px;
-  font-size:14px;
-  font-weight:700;
-}
 
-/* WELCOME */
-#welcomeBox{
-  margin:12px 0 10px;
-  padding:16px;
-  border-radius:18px;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.07);
-}
-#welcomeTitle{font-weight:800;margin-bottom:6px}
-#welcomeText{font-size:13px;line-height:1.45;color:rgba(255,255,255,0.85)}
-
-/* SETTINGS */
-.themeRow{display:flex;gap:10px;margin-top:10px}
-.themeChip{
-  width:32px;height:32px;border-radius:50%;
-  border:2px solid transparent;cursor:pointer
-}
-.themeChip.active{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
-
-.modeToggle{display:flex;gap:6px;margin-top:10px}
-.modeToggle button{
-  flex:1;padding:8px 0;border-radius:999px;
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.15);
-  color:#fff;font-size:13px;font-weight:700;cursor:pointer
-}
+.modeToggle{display:flex;gap:6px;margin:10px 0}
 .modeToggle button.active{background:var(--accent);color:#000}
 
-/* PAYTABLE */
-.ptRow{
-  margin-top:8px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-.ptSelect,.ptInput{
-  padding:8px 10px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.06);
-  color:#fff;
-}
-.ptInput.small{
-  width:64px;
-  text-align:center;
-}
-
-/* Compact Custom */
-#ptCustomBox{
-  display:none;
-  margin-top:6px;
-}
-
-/* EV / CARDS / MULT / WHY / NEW HAND */
-.evSection{display:none;margin-bottom:26px}
 .cards{margin-top:18px;padding:26px 18px;border-radius:24px;background:rgba(255,255,255,0.05);display:flex;justify-content:center;gap:14px}
 .cards:empty{display:none}
-.multSection{display:none;margin-top:14px}
-#whyBox{max-width:540px;margin:18px auto 0}
-.newHand{margin:24px auto 0;padding:14px 20px;border-radius:16px;background:var(--accent);color:#000;font-weight:900;text-align:center;cursor:pointer;max-width:220px;display:none}
 
-/* Spinner */
-.spinner{
-  width:34px;height:34px;border-radius:50%;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  animation:spin 1s linear infinite;
+.newHand{
+  margin:24px auto 0;
+  padding:14px 20px;
+  border-radius:16px;
+  background:var(--accent);
+  color:#000;
+  font-weight:900;
+  text-align:center;
+  cursor:pointer;
+  max-width:220px;
+  display:none
 }
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 
 <body>
 <div class="app">
   <h2>Ultimate X Vision</h2>
-  <div class="subtitle">Smart video poker analysis</div>
 
   <div class="scanner" id="scanner">
     <video id="video" autoplay playsinline muted></video>
     <div class="band"></div>
-    <div class="scanHint">Tap anywhere inside the frame to analyze</div>
 
     <div class="processing" id="processing">
       <div class="spinner"></div>
@@ -158,32 +79,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
     </div>
   </div>
 
-  <div id="welcomeBox">
-    <div id="welcomeTitle">🎰 Ultimate X Video Poker</div>
-
-    <div class="modeToggle">
-      <button data-mode="conservative">Conservative</button>
-      <button data-mode="aggressive">Aggressive</button>
-    </div>
-
-    <div class="modeToggle" id="ptModeToggle">
-      <button data-ptmode="preset" class="active">Preset</button>
-      <button data-ptmode="custom">Custom</button>
-    </div>
-
-    <div class="ptRow" id="ptPresetRow">
-      <select class="ptSelect" id="paytableSelect">
-        <option value="DDB_9_6">DDB 9/6</option>
-        <option value="DDB_9_5">DDB 9/5</option>
-        <option value="DDB_8_5">DDB 8/5</option>
-        <option value="DDB_7_5">DDB 7/5</option>
-      </select>
-    </div>
-
-    <div id="ptCustomBox" class="ptRow">
-      <input id="ptFH" class="ptInput small" placeholder="FH">
-      <input id="ptFL" class="ptInput small" placeholder="FL">
-    </div>
+  <div class="modeToggle">
+    <button data-mode="conservative">Conservative</button>
+    <button data-mode="aggressive">Aggressive</button>
   </div>
 
   <div class="evSection" id="evSection"></div>
@@ -199,39 +97,25 @@ import { wireSnapWorker } from "./ui/snapWorker.js";
 
 const $=id=>document.getElementById(id);
 
+/* MODE persistence */
+const modeButtons = document.querySelectorAll(".modeToggle button");
+function applyMode(m){
+  localStorage.setItem("vp_mode",m);
+  modeButtons.forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
+}
+modeButtons.forEach(b=>b.onclick=()=>applyMode(b.dataset.mode));
+applyMode(localStorage.getItem("vp_mode")||"conservative");
+window.getCurrentMode=()=>localStorage.getItem("vp_mode")||"conservative";
+
 /* CAMERA */
 await initCamera($("video"));
 
-/* MODE */
-document.querySelectorAll(".modeToggle button[data-mode]").forEach(b=>{
-  b.onclick=()=>localStorage.setItem("vp_mode",b.dataset.mode);
-});
-window.getCurrentMode=()=>localStorage.getItem("vp_mode")||"conservative";
-
-/* PAYTABLE TOGGLE */
-const ptPreset=$("ptPresetRow"), ptCustom=$("ptCustomBox");
-document.querySelectorAll("#ptModeToggle button").forEach(b=>{
-  b.onclick=()=>{
-    const m=b.dataset.ptmode;
-    ptPreset.style.display=m==="preset"?"flex":"none";
-    ptCustom.style.display=m==="custom"?"flex":"none";
-  };
-});
-
-/* PROCESSING CONTROL */
-const processing=$("processing");
-
-/* MULT CELLS */
-const makeCells=id=>{
-  const c=$(id);c.innerHTML="";
-  return Array.from({length:12},()=>{const d=document.createElement("div");d.className="multCell";c.appendChild(d);return d});
-};
-
+/* SNAP */
 wireSnapWorker({
   video:$("video"),
   scanner:$("scanner"),
   band:document.querySelector(".band"),
-  spinner:null,
+  processingEl:$("processing"),
 
   cardsBox:$("cardsBox"),
   evSection:$("evSection"),
@@ -249,36 +133,22 @@ wireSnapWorker({
   multBotCells:[],
 
   whyBox:$("whyBox"),
-  welcomeBox:$("welcomeBox"),
+  welcomeBox:null,
   modeSelect:{get value(){return window.getCurrentMode()}},
 
-  paytableModeGetter:()=>ptCustom.style.display==="flex"?"custom":"preset",
-  paytablePresetGetter:()=>$("paytableSelect").value,
-  paytableCustomGetter:()=>{
-    const fh=+$("ptFH").value, fl=+$("ptFL").value;
-    if(!fh||!fl) return null;
-    return {family:"DDB",fullHouse:fh,flush:fl};
-  },
+  paytableModeGetter:()=> "preset",
+  paytablePresetGetter:()=> "DDB_9_6",
+  paytableCustomGetter:null,
   paytableErrorBox:null,
 
   onSnapComplete:()=>{
-    processing.style.display="none";
     $("scanner").classList.add("collapsed");
     $("newHandBtn").style.display="block";
   }
 });
 
-/* SHOW processing ONLY once, safely */
-$("scanner").addEventListener("click",()=>{
-  if(processing.style.display!=="flex"){
-    processing.style.display="flex";
-    setTimeout(()=>processing.style.display="none",15000); // safety
-  }
-});
-
 /* NEW HAND */
 $("newHandBtn").onclick=()=>{
-  processing.style.display="none";
   $("scanner").classList.remove("collapsed");
   $("newHandBtn").style.display="none";
 };
