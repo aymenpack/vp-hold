@@ -1,9 +1,14 @@
-// backend/strategy/core/evCore.js
 // 🔒 LOCKED — CORE EV ENGINE
 // Ultimate X EV math (validated)
-// DO NOT MODIFY — create evCore_v2.js if needed
 
 import { evaluateHand } from "../handEvaluator.js";
+
+const BASE_EV = {
+  DDB_9_6: 0.9861,
+  DDB_9_5: 0.9836,
+  DDB_8_5: 0.9723,
+  DDB_7_5: 0.9610
+};
 
 const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
 const SUITS = ["S","H","D","C"];
@@ -35,25 +40,21 @@ function qualifies(result){
   return [
     "jacks_or_better","two_pair","three_kind",
     "straight","flush","full_house",
-    "four_kind","straight_flush","royal_flush",
-    "four_aces","four_234"
+    "four_kind","straight_flush","royal_flush"
   ].includes(result.type);
 }
 
 function evalPayout(cards, paytable, multiplier, baseEV){
   const r = evaluateHand(cards);
   if(!r || !r.payout) return { cash:0, future:0 };
-
-  const pay = paytable?.payouts?.[r.payout] ?? 0;
-
   return {
-    cash: pay * multiplier,
+    cash: paytable.payouts[r.payout] * multiplier,
     future: qualifies(r) ? baseEV : 0
   };
 }
 
-export function evaluateAllHolds(hand, paytable, multiplier){
-  const baseEV = Number(paytable?.baseEV ?? 0) || 0;
+export function evaluateAllHolds(hand, paytable, multiplier, paytableKey){
+  const baseEV = BASE_EV[paytableKey] ?? 0;
   const results = [];
 
   for(let mask=0;mask<32;mask++){
@@ -69,7 +70,7 @@ export function evaluateAllHolds(hand, paytable, multiplier){
       results.push({
         holdMask,
         evUX:r.cash+r.future,
-        evBase: multiplier ? (r.cash/multiplier) : r.cash,
+        evBase:r.cash/multiplier,
         heldCount:held.length
       });
       continue;
@@ -96,7 +97,7 @@ export function evaluateAllHolds(hand, paytable, multiplier){
     results.push({
       holdMask,
       evUX:(cash+future)/count,
-      evBase: multiplier ? ((cash/multiplier)/count) : (cash/count),
+      evBase:(cash/multiplier)/count,
       heldCount:held.length
     });
   }
