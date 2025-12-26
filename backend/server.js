@@ -2,11 +2,10 @@ import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 
-// ✅ FIXED IMPORT PATHS (relative to backend/)
 import { bestHoldEV } from "./strategy/ev.js";
-import { PAYTABLES } from "./strategy/paytables.js";
 import { parseVisionResponse } from "./vision/parser.js";
 import { VISION_PROMPT } from "./vision/prompt.js";
+import { resolvePaytable } from "./strategy/paytableBuilder.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
-// Log every request so we never guess again
+// Log every request
 app.use((req, res, next) => {
   console.log(`➡️ ${req.method} ${req.url}`);
   next();
@@ -40,7 +39,9 @@ app.post("/analyze", async (req, res) => {
   try {
     const {
       imageBase64,
-      paytable = "DDB_9_6",
+      paytable,        // backward compatible: preset key
+      paytableKey,     // preferred preset key
+      customPaytable,  // { family:"DDB", fullHouse, flush }
       mode = "conservative"
     } = req.body || {};
 
@@ -52,39 +53,36 @@ app.post("/analyze", async (req, res) => {
       return res.status(500).json({ error: "OPENAI_API_KEY not set" });
     }
 
-    const pt = PAYTABLES[paytable];
-    if (!pt) {
-      return res.status(400).json({ error: "Unknown paytable" });
-    }
+    const pt = resolvePaytable({
+      paytableKey: paytableKey || paytable || "DDB_9_6",
+      customPaytable
+    });
 
     /* ===============================
        OPENAI VISION (SAFE)
        =============================== */
 
-    const openaiRes = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-4.1",
-          temperature: 0,
-          messages: [
-            { role: "system", content: "Return STRICT JSON only." },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: VISION_PROMPT },
-                { type: "image_url", image_url: { url: imageBase64 } }
-              ]
-            }
-          ]
-        })
-      }
-    );
+    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1",
+        temperature: 0,
+        messages: [
+          { role: "system", content: "Return STRICT JSON only." },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: VISION_PROMPT },
+              { type: "image_url", image_url: { url: imageBase64 } }
+            ]
+          }
+        ]
+      })
+    });
 
     const rawText = await openaiRes.text();
     if (!rawText || !rawText.trim()) {
@@ -95,15 +93,12 @@ app.post("/analyze", async (req, res) => {
     try {
       openaiJson = JSON.parse(rawText);
     } catch {
-      throw new Error(
-        "OpenAI returned non-JSON:\n" + rawText.slice(0, 500)
-      );
+      throw new Error("OpenAI returned non-JSON:\n" + rawText.slice(0, 500));
     }
 
     if (!openaiRes.ok) {
       throw new Error(
-        `OpenAI error ${openaiRes.status}: ` +
-        JSON.stringify(openaiJson)
+        `OpenAI error ${openaiRes.status}: ` + JSON.stringify(openaiJson)
       );
     }
 
@@ -134,7 +129,7 @@ app.post("/analyze", async (req, res) => {
       vision.cards,
       pt,
       vision.multipliers.bottom,
-      paytable,
+      pt.key || paytableKey || paytable || "CUSTOM",
       mode
     );
 
@@ -144,8 +139,13 @@ app.post("/analyze", async (req, res) => {
 
     return res.json({
       paytable: pt.name,
+      paytable_key: pt.key || null,
+      paytable_family: pt.family || null,
+      paytable_ratios: pt.ratios || null,
+
       multipliers: vision.multipliers,
       cards: vision.cards,
+
       best_hold: strategy.best_hold,
       ev_with_multiplier: strategy.ev_with_multiplier,
       ev_without_multiplier: strategy.ev_without_multiplier,
