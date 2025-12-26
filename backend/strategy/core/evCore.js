@@ -1,13 +1,11 @@
 // 🔒 LOCKED — CORE EV ENGINE
 // Ultimate X EV math (validated)
+// DO NOT MODIFY — create evCore_v2.js if needed
 
 import { evaluateHand } from "../handEvaluator.js";
 
 const BASE_EV = {
-  DDB_9_6: 0.9861,
-  DDB_9_5: 0.9836,
-  DDB_8_5: 0.9723,
-  DDB_7_5: 0.9610
+  DDB_9_6: 0.9861
 };
 
 const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];

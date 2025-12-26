@@ -64,7 +64,7 @@ export function wireSnapWorker({
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
 
-  /* 🔒 CLICK ONLY — this is the ONLY click handler */
+  /* 🔒 CLICK ONLY — no touch / pointer listeners */
   scanner.onclick = async () => {
     if (busy) return;
     busy = true;
