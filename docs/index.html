@@ -87,10 +87,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   width:32px;height:32px;border-radius:50%;
   border:2px solid transparent;cursor:pointer
 }
-.themeChip.theme-green{background:#22c55e}
-.themeChip.theme-purple{background:#a855f7}
-.themeChip.theme-blue{background:#3b82f6}
-.themeChip.theme-red{background:#ef4444}
 .themeChip.active{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
 
 .modeToggle{display:flex;gap:6px;margin-top:10px}
@@ -102,38 +98,40 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 }
 .modeToggle button.active{background:var(--accent);color:#000}
 
-/* PAYTABLE UI */
-.ptRow{margin-top:10px;display:flex;gap:10px;align-items:center}
-.ptLabel{font-size:12px;color:rgba(255,255,255,.75);width:90px}
-.ptSelect,.ptInput{
-  flex:1;padding:10px 12px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.06);color:#fff
+/* PAYTABLE */
+.ptRow{
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+  align-items:center;
 }
-.ptInput.small{flex:0 0 90px;text-align:center}
+.ptSelect,.ptInput{
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+}
+.ptInput.small{
+  width:64px;
+  text-align:center;
+}
 
+/* Compact Custom */
 #ptCustomBox{
   display:none;
-  margin-top:10px;
-  padding:10px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(255,255,255,.03)
+  margin-top:6px;
 }
 
-/* hide helper to save vertical space */
-#ptCustomBox .helper{display:none}
+/* EV / CARDS / MULT / WHY / NEW HAND */
+.evSection{display:none;margin-bottom:26px}
+.cards{margin-top:18px;padding:26px 18px;border-radius:24px;background:rgba(255,255,255,0.05);display:flex;justify-content:center;gap:14px}
+.cards:empty{display:none}
+.multSection{display:none;margin-top:14px}
+#whyBox{max-width:540px;margin:18px auto 0}
+.newHand{margin:24px auto 0;padding:14px 20px;border-radius:16px;background:var(--accent);color:#000;font-weight:900;text-align:center;cursor:pointer;max-width:220px;display:none}
 
-#ptError{
-  display:none;
-  margin-top:10px;
-  padding:10px;
-  border-radius:12px;
-  border:1px solid rgba(239,68,68,.35);
-  background:rgba(239,68,68,.12)
-}
-
-/* SPINNER */
+/* Spinner */
 .spinner{
   width:34px;height:34px;border-radius:50%;
   border:3px solid rgba(255,255,255,.2);
@@ -141,56 +139,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   animation:spin 1s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* EV */
-.evSection{display:none;margin-bottom:26px}
-.evRow{display:flex;align-items:center;gap:10px;margin:8px 0}
-.evLabel{width:90px;font-size:12px;color:var(--muted)}
-.evTrack{flex:1;height:18px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
-.evFill{height:100%;width:0%;border-radius:999px}
-.evFill.base{background:rgba(255,255,255,.45)}
-.evFill.ux{background:var(--accent)}
-.evValue{width:90px;text-align:right;font-weight:800}
-
-/* CARDS */
-.cards{
-  margin-top:18px;
-  padding:26px 18px;
-  border-radius:24px;
-  background:rgba(255,255,255,0.05);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.06),
-    0 12px 32px rgba(0,0,0,.4);
-  display:flex;justify-content:center;gap:14px
-}
-.cards:empty{display:none}
-
-/* MULTIPLIERS */
-.multSection{display:none;margin-top:14px}
-
-/* WHY */
-#whyBox{
-  max-width:540px;
-  margin:18px auto 0;
-  padding:18px 20px;
-  border-radius:18px;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.06)
-}
-
-/* NEW HAND */
-.newHand{
-  margin:24px auto 0;
-  padding:14px 20px;
-  border-radius:16px;
-  background:var(--accent);
-  color:#000;
-  font-weight:900;
-  text-align:center;
-  cursor:pointer;
-  max-width:220px;
-  display:none
-}
 </style>
 </head>
 
@@ -212,26 +160,11 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
   <div id="welcomeBox">
     <div id="welcomeTitle">🎰 Ultimate X Video Poker</div>
-    <div id="welcomeText">
-      <b>Expected Value (EV)</b> measures long-term profitability.
-      Higher EV means better results over time. Good luck 🍀
-    </div>
-
-    <div class="themeRow">
-      <button class="themeChip theme-green" data-theme="theme-green"></button>
-      <button class="themeChip theme-purple" data-theme="theme-purple"></button>
-      <button class="themeChip theme-blue" data-theme="theme-blue"></button>
-      <button class="themeChip theme-red" data-theme="theme-red"></button>
-    </div>
 
     <div class="modeToggle">
       <button data-mode="conservative">Conservative</button>
       <button data-mode="aggressive">Aggressive</button>
     </div>
-
-    <div class="divider"></div>
-
-    <div style="font-weight:900;margin-bottom:6px">Paytable</div>
 
     <div class="modeToggle" id="ptModeToggle">
       <button data-ptmode="preset" class="active">Preset</button>
@@ -239,7 +172,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
     </div>
 
     <div class="ptRow" id="ptPresetRow">
-      <div class="ptLabel">Preset</div>
       <select class="ptSelect" id="paytableSelect">
         <option value="DDB_9_6">DDB 9/6</option>
         <option value="DDB_9_5">DDB 9/5</option>
@@ -248,33 +180,13 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
       </select>
     </div>
 
-    <div id="ptCustomBox">
-      <div class="ptRow">
-        <div class="ptLabel">Full House</div>
-        <input class="ptInput small" id="ptFH" inputmode="numeric" placeholder="9"/>
-        <div class="ptLabel" style="width:auto">Flush</div>
-        <input class="ptInput small" id="ptFL" inputmode="numeric" placeholder="6"/>
-      </div>
-    </div>
-
-    <div id="ptError"></div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="evSection" id="evSection">
-    <div class="evRow">
-      <div class="evLabel">Base EV</div>
-      <div class="evTrack"><div class="evFill base" id="evBaseBar"></div></div>
-      <div class="evValue" id="evBase">—</div>
-    </div>
-    <div class="evRow">
-      <div class="evLabel">Ultimate X EV</div>
-      <div class="evTrack"><div class="evFill ux" id="evUXBar"></div></div>
-      <div class="evValue" id="evUX">—</div>
+    <div id="ptCustomBox" class="ptRow">
+      <input id="ptFH" class="ptInput small" placeholder="FH">
+      <input id="ptFL" class="ptInput small" placeholder="FL">
     </div>
   </div>
 
+  <div class="evSection" id="evSection"></div>
   <div class="cards" id="cardsBox"></div>
   <div class="multSection" id="multSection"></div>
   <div id="whyBox"></div>
@@ -287,52 +199,33 @@ import { wireSnapWorker } from "./ui/snapWorker.js";
 
 const $=id=>document.getElementById(id);
 
-/* THEME */
-document.querySelectorAll(".themeChip").forEach(c=>{
-  c.onclick=()=>{
-    document.documentElement.className=c.dataset.theme;
-    localStorage.setItem("vp_theme",c.dataset.theme);
-    document.querySelectorAll(".themeChip").forEach(x=>x.classList.toggle("active",x===c));
-  };
-});
-document.documentElement.className=localStorage.getItem("vp_theme")||"theme-green";
+/* CAMERA */
+await initCamera($("video"));
 
 /* MODE */
-const modeButtons=document.querySelectorAll(".modeToggle button[data-mode]");
-function applyMode(m){
-  localStorage.setItem("vp_mode",m);
-  modeButtons.forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
-}
-modeButtons.forEach(b=>b.onclick=()=>applyMode(b.dataset.mode));
-applyMode(localStorage.getItem("vp_mode")||"conservative");
+document.querySelectorAll(".modeToggle button[data-mode]").forEach(b=>{
+  b.onclick=()=>localStorage.setItem("vp_mode",b.dataset.mode);
+});
 window.getCurrentMode=()=>localStorage.getItem("vp_mode")||"conservative";
 
-/* PAYTABLE MODE */
+/* PAYTABLE TOGGLE */
 const ptPreset=$("ptPresetRow"), ptCustom=$("ptCustomBox");
 document.querySelectorAll("#ptModeToggle button").forEach(b=>{
   b.onclick=()=>{
     const m=b.dataset.ptmode;
-    localStorage.setItem("vp_pt_mode",m);
     ptPreset.style.display=m==="preset"?"flex":"none";
-    ptCustom.style.display=m==="custom"?"block":"none";
+    ptCustom.style.display=m==="custom"?"flex":"none";
   };
 });
-const savedPT=localStorage.getItem("vp_pt_mode")||"preset";
-ptPreset.style.display=savedPT==="preset"?"flex":"none";
-ptCustom.style.display=savedPT==="custom"?"block":"none";
 
-/* CAMERA */
-await initCamera($("video"));
+/* PROCESSING CONTROL */
+const processing=$("processing");
 
 /* MULT CELLS */
 const makeCells=id=>{
   const c=$(id);c.innerHTML="";
   return Array.from({length:12},()=>{const d=document.createElement("div");d.className="multCell";c.appendChild(d);return d});
 };
-
-/* PROCESSING OVERLAY CONTROL */
-const processing=$("processing");
-$("scanner").addEventListener("click",()=>processing.style.display="flex");
 
 wireSnapWorker({
   video:$("video"),
@@ -342,31 +235,31 @@ wireSnapWorker({
 
   cardsBox:$("cardsBox"),
   evSection:$("evSection"),
-  evBaseValue:$("evBase"),
-  evUXValue:$("evUX"),
-  evBaseBar:$("evBaseBar"),
-  evUXBar:$("evUXBar"),
+  evBaseValue:null,
+  evUXValue:null,
+  evBaseBar:null,
+  evUXBar:null,
 
   multSection:$("multSection"),
-  multTopValue:$("multTop"),
-  multMidValue:$("multMid"),
-  multBotValue:$("multBot"),
-  multTopCells:makeCells("multTopCells"),
-  multMidCells:makeCells("multMidCells"),
-  multBotCells:makeCells("multBotCells"),
+  multTopValue:null,
+  multMidValue:null,
+  multBotValue:null,
+  multTopCells:[],
+  multMidCells:[],
+  multBotCells:[],
 
   whyBox:$("whyBox"),
   welcomeBox:$("welcomeBox"),
   modeSelect:{get value(){return window.getCurrentMode()}},
 
-  paytableModeGetter:()=>localStorage.getItem("vp_pt_mode")||"preset",
-  paytablePresetGetter:()=>localStorage.getItem("vp_paytable_key")||"DDB_9_6",
+  paytableModeGetter:()=>ptCustom.style.display==="flex"?"custom":"preset",
+  paytablePresetGetter:()=>$("paytableSelect").value,
   paytableCustomGetter:()=>{
     const fh=+$("ptFH").value, fl=+$("ptFL").value;
     if(!fh||!fl) return null;
     return {family:"DDB",fullHouse:fh,flush:fl};
   },
-  paytableErrorBox:$("ptError"),
+  paytableErrorBox:null,
 
   onSnapComplete:()=>{
     processing.style.display="none";
@@ -375,17 +268,19 @@ wireSnapWorker({
   }
 });
 
+/* SHOW processing ONLY once, safely */
+$("scanner").addEventListener("click",()=>{
+  if(processing.style.display!=="flex"){
+    processing.style.display="flex";
+    setTimeout(()=>processing.style.display="none",15000); // safety
+  }
+});
+
 /* NEW HAND */
 $("newHandBtn").onclick=()=>{
   processing.style.display="none";
   $("scanner").classList.remove("collapsed");
   $("newHandBtn").style.display="none";
-  $("welcomeBox").style.display="block";
-  $("evSection").style.display="none";
-  $("multSection").style.display="none";
-  $("cardsBox").innerHTML="";
-  $("whyBox").innerHTML="";
-  $("ptError").style.display="none";
 };
 </script>
 </body>
