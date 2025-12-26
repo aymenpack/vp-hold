@@ -84,6 +84,19 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 }
 .modeToggle button.active{background:var(--accent);color:#000}
 
+/* Paytable select */
+.paytableRow{
+  margin-top:10px;
+}
+.paytableRow select{
+  width:100%;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+}
+
 /* DIVIDER */
 .divider{
   height:1px;margin:10px 0 14px;
@@ -112,7 +125,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* CARDS */
 .cards{
-  margin-top:18px; /* ✅ increased spacing from EV */
+  margin-top:18px;
   padding:26px 18px;
   border-radius:24px;
   background:rgba(255,255,255,0.05);
@@ -122,31 +135,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   display:flex;justify-content:center;gap:14px
 }
 .cards:empty{display:none}
-
-.card{
-  width:78px;height:118px;
-  background:#fff;color:#111;
-  border-radius:14px;position:relative;
-  box-shadow:0 6px 18px rgba(0,0,0,.45);
-}
-.card.red{color:#c1121f}
-.card.held{
-  transform:translateY(-14px) scale(1.08);
-  box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
-  background:linear-gradient(#fff,#f6fff9)
-}
-.card.held::after{
-  content:"HOLD";
-  position:absolute;top:-14px;left:50%;
-  transform:translateX(-50%);
-  background:var(--accent);color:#000;
-  font-size:11px;font-weight:900;
-  letter-spacing:.08em;padding:4px 12px;border-radius:999px
-}
-.corner{position:absolute;font-weight:900;font-size:14px;line-height:1.05}
-.corner.top{top:8px;left:8px}
-.corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
-.pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px}
 
 /* MULTIPLIERS */
 .multSection{display:none;margin-top:14px}
@@ -215,6 +203,16 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
       <button data-mode="conservative">Conservative</button>
       <button data-mode="aggressive">Aggressive</button>
     </div>
+
+    <!-- ✅ PAYTABLE SELECT -->
+    <div class="paytableRow">
+      <select id="paytableSelect">
+        <option value="DDB_9_6">Double Double Bonus 9/6</option>
+        <option value="DDB_9_5">Double Double Bonus 9/5</option>
+        <option value="DDB_8_5">Double Double Bonus 8/5</option>
+        <option value="DDB_7_5">Double Double Bonus 7/5</option>
+      </select>
+    </div>
   </div>
 
   <div class="divider"></div>
@@ -249,7 +247,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 import { initCamera } from "./capture/capture.js";
 import { wireSnapWorker } from "./ui/snapWorker.js";
 
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 /* THEME */
 document.querySelectorAll(".themeChip").forEach(c=>{
@@ -259,27 +257,24 @@ document.querySelectorAll(".themeChip").forEach(c=>{
     document.querySelectorAll(".themeChip").forEach(x=>x.classList.toggle("active",x===c));
   };
 });
-document.documentElement.className=localStorage.getItem("vp_theme")||"theme-green";
+document.documentElement.className = localStorage.getItem("vp_theme") || "theme-green";
 
 /* MODE */
 const modeButtons = document.querySelectorAll(".modeToggle button");
-
 function applyMode(mode){
   localStorage.setItem("vp_mode", mode);
-  modeButtons.forEach(b =>
-    b.classList.toggle("active", b.dataset.mode === mode)
-  );
+  modeButtons.forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
 }
-
-modeButtons.forEach(b=>{
-  b.onclick = () => applyMode(b.dataset.mode);
-});
-
-// restore on load
+modeButtons.forEach(b => b.onclick = () => applyMode(b.dataset.mode));
 applyMode(localStorage.getItem("vp_mode") || "conservative");
+window.getCurrentMode = () => localStorage.getItem("vp_mode") || "conservative";
 
-window.getCurrentMode = () =>
-  localStorage.getItem("vp_mode") || "conservative";
+/* PAYTABLE persistence */
+const paytableSelect = $("paytableSelect");
+paytableSelect.value = localStorage.getItem("vp_paytable") || "DDB_9_6";
+paytableSelect.onchange = () => {
+  localStorage.setItem("vp_paytable", paytableSelect.value);
+};
 
 /* CAMERA */
 await initCamera($("video"));
@@ -287,7 +282,12 @@ await initCamera($("video"));
 /* MULT CELLS */
 const makeCells=id=>{
   const c=$(id);c.innerHTML="";
-  return Array.from({length:12},()=>{const d=document.createElement("div");d.className="multCell";c.appendChild(d);return d});
+  return Array.from({length:12},()=>{
+    const d=document.createElement("div");
+    d.className="multCell";
+    c.appendChild(d);
+    return d;
+  });
 };
 
 wireSnapWorker({
@@ -313,7 +313,8 @@ wireSnapWorker({
 
   whyBox:$("whyBox"),
   welcomeBox:$("welcomeBox"),
-  modeSelect:{get value(){return window.getCurrentMode()}},
+  modeSelect:{ get value(){ return window.getCurrentMode(); } },
+  paytableSelect:$("paytableSelect"),
 
   onSnapComplete:()=>{
     $("scanner").classList.add("collapsed");
