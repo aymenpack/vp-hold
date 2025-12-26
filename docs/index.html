@@ -84,7 +84,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 }
 .modeToggle button.active{background:var(--accent);color:#000}
 
-/* Paytable select */
+/* Paytable select — NEW, isolated */
 .paytableRow{
   margin-top:10px;
 }
@@ -123,7 +123,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 .evFill.ux{background:var(--accent)}
 .evValue{width:90px;text-align:right;font-weight:800}
 
-/* CARDS */
+/* CARDS — ⚠️ UNCHANGED FROM BASELINE */
 .cards{
   margin-top:18px;
   padding:26px 18px;
@@ -135,6 +135,31 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   display:flex;justify-content:center;gap:14px
 }
 .cards:empty{display:none}
+
+.card{
+  width:78px;height:118px;
+  background:#fff;color:#111;
+  border-radius:14px;position:relative;
+  box-shadow:0 6px 18px rgba(0,0,0,.45);
+}
+.card.red{color:#c1121f}
+.card.held{
+  transform:translateY(-14px) scale(1.08);
+  box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
+  background:linear-gradient(#fff,#f6fff9)
+}
+.card.held::after{
+  content:"HOLD";
+  position:absolute;top:-14px;left:50%;
+  transform:translateX(-50%);
+  background:var(--accent);color:#000;
+  font-size:11px;font-weight:900;
+  letter-spacing:.08em;padding:4px 12px;border-radius:999px
+}
+.corner{position:absolute;font-weight:900;font-size:14px;line-height:1.05}
+.corner.top{top:8px;left:8px}
+.corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
+.pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px}
 
 /* MULTIPLIERS */
 .multSection{display:none;margin-top:14px}
