@@ -1,29 +1,29 @@
 import { captureGreenFrame } from "../capture/capture.js";
 
-/* -------------------- helpers -------------------- */
-
+/* Small helper */
 function haptic(pattern){
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
+/* Animate EV bars */
 function animateBar(el, targetPercent, duration = 450){
-  if (!el) return;
   el.style.width = "0%";
   const start = performance.now();
+
   function step(now){
     const progress = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     el.style.width = (eased * targetPercent) + "%";
     if (progress < 1) requestAnimationFrame(step);
   }
+
   requestAnimationFrame(step);
 }
 
+/* Animate multiplier cells */
 function animateMult(cells, n){
-  if (!cells || !cells.length) return;
   cells.forEach(c => c.className = "multCell");
-  const nn = Math.max(0, Math.min(12, Number(n) || 0));
-  cells.slice(0, nn).forEach((c, i) => {
+  cells.slice(0, n).forEach((c, i) => {
     setTimeout(() => {
       c.classList.add(
         i < 3 ? "g" :
@@ -34,14 +34,11 @@ function animateMult(cells, n){
   });
 }
 
-/* -------------------- main -------------------- */
-
 export function wireSnapWorker({
   video,
   scanner,
   band,
-  processingEl,
-
+  spinner,
   cardsBox,
 
   evSection,
@@ -61,95 +58,58 @@ export function wireSnapWorker({
   whyBox,
   welcomeBox,
   modeSelect,
-
-  paytableModeGetter,
-  paytablePresetGetter,
-  paytableCustomGetter,
-  paytableErrorBox,
-
+  paytableSelect,      // 👈 NEW
   onSnapComplete
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
 
-  function showProcessing(on){
-    if (processingEl) {
-      processingEl.style.display = on ? "flex" : "none";
-    }
-  }
-
-  function showError(msg){
-    if (!paytableErrorBox) return;
-    paytableErrorBox.textContent = msg || "";
-    paytableErrorBox.style.display = msg ? "block" : "none";
-  }
-
   scanner.onclick = async () => {
     if (busy) return;
     busy = true;
 
-    showError("");
-    showProcessing(true);
     haptic(10);
+    spinner.style.display = "block";
 
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
       haptic(20);
 
-      const body = {
-        imageBase64,
-        mode: modeSelect.value
-      };
-
-      const ptMode = paytableModeGetter ? paytableModeGetter() : "preset";
-
-      if (ptMode === "custom") {
-        const custom = paytableCustomGetter ? paytableCustomGetter() : null;
-        if (!custom) throw new Error("Custom paytable incomplete");
-        body.customPaytable = custom;
-      } else {
-        body.paytableKey = paytablePresetGetter
-          ? paytablePresetGetter()
-          : "DDB_9_6";
-      }
-
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          imageBase64,
+          paytable: paytableSelect.value,   // ✅ dynamic
+          mode: modeSelect.value
+        })
       });
 
       const d = await res.json();
-      if (!res.ok) {
-        throw new Error(d?.message || d?.error || "Analyze failed");
-      }
+      if (!d || !d.cards || !d.best_hold) return;
 
-      /* ---------- reveal sections ---------- */
-      if (welcomeBox) welcomeBox.style.display = "none";
-      if (evSection) evSection.style.display = "block";
-      if (multSection) multSection.style.display = "block";
+      welcomeBox.style.display = "none";
+      evSection.style.display = "block";
+      multSection.style.display = "block";
 
-      /* ---------- EV ---------- */
-      const baseEV = Number(d.ev_without_multiplier);
-      const uxEV   = Number(d.ev_with_multiplier);
+      const baseEV = d.ev_without_multiplier;
+      const uxEV   = d.ev_with_multiplier;
       const maxEV  = Math.max(baseEV, uxEV, 0.0001);
 
-      if (evBaseValue) evBaseValue.textContent = baseEV.toFixed(4);
-      if (evUXValue)   evUXValue.textContent   = uxEV.toFixed(4);
+      evBaseValue.textContent = baseEV.toFixed(4);
+      evUXValue.textContent   = uxEV.toFixed(4);
 
       animateBar(evBaseBar, (baseEV / maxEV) * 100);
       animateBar(evUXBar,   (uxEV   / maxEV) * 100);
 
-      /* ---------- multipliers ---------- */
-      if (multTopValue) multTopValue.textContent = "×" + d.multipliers.top;
-      if (multMidValue) multMidValue.textContent = "×" + d.multipliers.middle;
-      if (multBotValue) multBotValue.textContent = "×" + d.multipliers.bottom;
+      multTopValue.textContent = "×" + d.multipliers.top;
+      multMidValue.textContent = "×" + d.multipliers.middle;
+      multBotValue.textContent = "×" + d.multipliers.bottom;
 
       animateMult(multTopCells, d.multipliers.top);
       animateMult(multMidCells, d.multipliers.middle);
       animateMult(multBotCells, d.multipliers.bottom);
 
-      /* ---------- cards ---------- */
       cardsBox.innerHTML = "";
       const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
@@ -169,28 +129,24 @@ export function wireSnapWorker({
         cardsBox.appendChild(el);
       });
 
-      /* ---------- why ---------- */
-      if (whyBox) {
-        whyBox.innerHTML = `
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="font-size:18px">💡</span>
-            <div>
-              <b>Why this hold?</b><br>
-              This play maximizes <b>expected value</b> given the hand,
-              the paytable, and the active Ultimate X multipliers.
-            </div>
+      whyBox.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:18px">💡</span>
+          <div>
+            <b>Why this hold?</b><br>
+            This play maximizes <b>expected value</b> given the current hand,
+            the selected paytable, and the active Ultimate X multipliers.
           </div>
-        `;
-      }
+        </div>
+      `;
 
       haptic([15,15,15]);
-      onSnapComplete && onSnapComplete();
+      onSnapComplete();
 
     } catch (err) {
-      console.error("❌ Analyze failed:", err);
-      showError(err.message || "Analysis failed");
+      console.error("Snap failed:", err);
     } finally {
-      showProcessing(false);
+      spinner.style.display = "none";
       busy = false;
     }
   };
