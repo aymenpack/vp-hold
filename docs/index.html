@@ -112,7 +112,7 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
 /* CARDS */
 .cards{
-  margin-top:18px; /* ✅ increased spacing from EV */
+  margin-top:18px;
   padding:26px 18px;
   border-radius:24px;
   background:rgba(255,255,255,0.05);
@@ -183,6 +183,56 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   max-width:220px;
   display:none
 }
+
+/* Paytable UI */
+.ptRow{
+  margin-top:10px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.ptLabel{
+  font-size:12px;
+  color:rgba(255,255,255,.75);
+  width:90px;
+}
+.ptSelect, .ptInput{
+  flex:1;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  outline:none;
+}
+.ptInput.small{
+  flex:0 0 90px;
+  text-align:center;
+}
+#ptCustomBox{
+  display:none;
+  margin-top:10px;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.03);
+}
+#ptError{
+  display:none;
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(239,68,68,.35);
+  background:rgba(239,68,68,.12);
+  color:#fff;
+  font-size:13px;
+}
+.helper{
+  margin-top:8px;
+  font-size:12px;
+  color:rgba(255,255,255,.70);
+  line-height:1.35;
+}
 </style>
 </head>
 
@@ -215,6 +265,52 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
       <button data-mode="conservative">Conservative</button>
       <button data-mode="aggressive">Aggressive</button>
     </div>
+
+    <div class="divider"></div>
+
+    <div style="font-weight:900;margin-bottom:6px">Paytable</div>
+
+    <div class="modeToggle" id="ptModeToggle">
+      <button data-ptmode="preset" class="active">Preset</button>
+      <button data-ptmode="custom">Custom</button>
+    </div>
+
+    <!-- Preset -->
+    <div class="ptRow" id="ptPresetRow">
+      <div class="ptLabel">Preset</div>
+      <select class="ptSelect" id="paytableSelect">
+        <optgroup label="Double Double Bonus">
+          <option value="DDB_9_6">DDB 9/6</option>
+          <option value="DDB_9_5">DDB 9/5</option>
+          <option value="DDB_8_5">DDB 8/5</option>
+          <option value="DDB_7_5">DDB 7/5</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <!-- Custom DDB -->
+    <div id="ptCustomBox">
+      <div class="ptRow">
+        <div class="ptLabel">Family</div>
+        <select class="ptSelect" id="ptFamily">
+          <option value="DDB">Double Double Bonus</option>
+        </select>
+      </div>
+
+      <div class="ptRow">
+        <div class="ptLabel">Full House</div>
+        <input class="ptInput small" id="ptFH" inputmode="numeric" placeholder="9" />
+        <div class="ptLabel" style="width:auto">Flush</div>
+        <input class="ptInput small" id="ptFL" inputmode="numeric" placeholder="6" />
+      </div>
+
+      <div class="helper">
+        Enter the paytable ratios for DDB (example: <b>9/6</b>, <b>9/5</b>, <b>8/5</b>, <b>7/5</b>).<br>
+        The rest of DDB payouts (quads) follow standard DDB rules.
+      </div>
+    </div>
+
+    <div id="ptError"></div>
   </div>
 
   <div class="divider"></div>
@@ -262,7 +358,7 @@ document.querySelectorAll(".themeChip").forEach(c=>{
 document.documentElement.className=localStorage.getItem("vp_theme")||"theme-green";
 
 /* MODE */
-const modeButtons = document.querySelectorAll(".modeToggle button");
+const modeButtons = document.querySelectorAll(".modeToggle button[data-mode]");
 
 function applyMode(mode){
   localStorage.setItem("vp_mode", mode);
@@ -280,6 +376,57 @@ applyMode(localStorage.getItem("vp_mode") || "conservative");
 
 window.getCurrentMode = () =>
   localStorage.getItem("vp_mode") || "conservative";
+
+/* PAYTABLE MODE (preset/custom) */
+const ptModeButtons = document.querySelectorAll("#ptModeToggle button");
+const ptPresetRow = $("ptPresetRow");
+const ptCustomBox = $("ptCustomBox");
+
+function applyPTMode(mode){
+  localStorage.setItem("vp_pt_mode", mode);
+  ptModeButtons.forEach(b => b.classList.toggle("active", b.dataset.ptmode === mode));
+  ptPresetRow.style.display = (mode === "preset") ? "flex" : "none";
+  ptCustomBox.style.display = (mode === "custom") ? "block" : "none";
+}
+
+ptModeButtons.forEach(b=>{
+  b.onclick = () => applyPTMode(b.dataset.ptmode);
+});
+
+applyPTMode(localStorage.getItem("vp_pt_mode") || "preset");
+
+/* Preset selection persistence */
+const paytableSelect = $("paytableSelect");
+paytableSelect.value = localStorage.getItem("vp_paytable_key") || "DDB_9_6";
+paytableSelect.onchange = () => localStorage.setItem("vp_paytable_key", paytableSelect.value);
+
+/* Custom inputs persistence */
+const ptFH = $("ptFH");
+const ptFL = $("ptFL");
+
+ptFH.value = localStorage.getItem("vp_pt_fh") || "";
+ptFL.value = localStorage.getItem("vp_pt_fl") || "";
+
+ptFH.oninput = () => localStorage.setItem("vp_pt_fh", ptFH.value);
+ptFL.oninput = () => localStorage.setItem("vp_pt_fl", ptFL.value);
+
+function getPaytableMode(){
+  return localStorage.getItem("vp_pt_mode") || "preset";
+}
+function getPaytablePresetKey(){
+  return localStorage.getItem("vp_paytable_key") || "DDB_9_6";
+}
+function getPaytableCustom(){
+  const fh = Number(ptFH.value);
+  const fl = Number(ptFL.value);
+  if (!Number.isFinite(fh) || !Number.isFinite(fl)) return null;
+  if (!fh || !fl) return null;
+  return {
+    family: "DDB",
+    fullHouse: Math.trunc(fh),
+    flush: Math.trunc(fl)
+  };
+}
 
 /* CAMERA */
 await initCamera($("video"));
@@ -315,6 +462,11 @@ wireSnapWorker({
   welcomeBox:$("welcomeBox"),
   modeSelect:{get value(){return window.getCurrentMode()}},
 
+  paytableModeGetter: getPaytableMode,
+  paytablePresetGetter: getPaytablePresetKey,
+  paytableCustomGetter: getPaytableCustom,
+  paytableErrorBox: $("ptError"),
+
   onSnapComplete:()=>{
     $("scanner").classList.add("collapsed");
     $("newHandBtn").style.display="block";
@@ -330,6 +482,8 @@ $("newHandBtn").onclick=()=>{
   $("multSection").style.display="none";
   $("cardsBox").innerHTML="";
   $("whyBox").innerHTML="";
+  $("ptError").style.display="none";
+  $("ptError").textContent="";
 };
 </script>
 </body>
