@@ -24,7 +24,8 @@ function animateBar(el, targetPercent, duration = 450){
 function animateMult(cells, n){
   cells.forEach(c => c.className = "multCell");
 
-  cells.slice(0, n).forEach((c, i) => {
+  const nn = Math.max(0, Math.min(12, Number(n) || 0));
+  cells.slice(0, nn).forEach((c, i) => {
     setTimeout(() => {
       c.classList.add(
         i < 3 ? "g" :
@@ -59,10 +60,23 @@ export function wireSnapWorker({
   whyBox,
   welcomeBox,
   modeSelect,
+
+  // NEW: paytable selectors
+  paytableModeGetter,        // () => "preset" | "custom"
+  paytablePresetGetter,      // () => string key
+  paytableCustomGetter,      // () => {family, fullHouse, flush} | null
+  paytableErrorBox,          // element to show errors
+
   onSnapComplete
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
   let busy = false;
+
+  function showPTError(msg){
+    if (!paytableErrorBox) return;
+    paytableErrorBox.textContent = msg || "";
+    paytableErrorBox.style.display = msg ? "block" : "none";
+  }
 
   /* 🔒 CLICK ONLY — no touch / pointer listeners */
   scanner.onclick = async () => {
@@ -71,22 +85,46 @@ export function wireSnapWorker({
 
     haptic(10);
     spinner.style.display = "block";
+    showPTError("");
 
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
       haptic(20);
 
+      const ptMode = paytableModeGetter ? paytableModeGetter() : "preset";
+
+      const body = {
+        imageBase64,
+        mode: modeSelect.value
+      };
+
+      if (ptMode === "custom") {
+        const custom = paytableCustomGetter ? paytableCustomGetter() : null;
+        if (!custom) {
+          showPTError("Custom paytable is incomplete.");
+          spinner.style.display = "none";
+          busy = false;
+          return;
+        }
+        body.customPaytable = custom;
+        body.paytableKey = null;
+      } else {
+        body.paytableKey = paytablePresetGetter ? paytablePresetGetter() : "DDB_9_6";
+      }
+
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64,
-          paytable: "DDB_9_6",
-          mode: modeSelect.value
-        })
+        body: JSON.stringify(body)
       });
 
       const d = await res.json();
+
+      if (!res.ok) {
+        showPTError(d?.message || d?.error || "Paytable error");
+        return;
+      }
+
       if (!d || !d.cards || !d.best_hold) return;
 
       /* Show result areas */
@@ -99,8 +137,8 @@ export function wireSnapWorker({
       const uxEV   = d.ev_with_multiplier;
       const maxEV  = Math.max(baseEV, uxEV, 0.0001);
 
-      evBaseValue.textContent = baseEV.toFixed(4);
-      evUXValue.textContent   = uxEV.toFixed(4);
+      evBaseValue.textContent = Number(baseEV).toFixed(4);
+      evUXValue.textContent   = Number(uxEV).toFixed(4);
 
       animateBar(evBaseBar, (baseEV / maxEV) * 100);
       animateBar(evUXBar,   (uxEV   / maxEV) * 100);
@@ -157,6 +195,7 @@ export function wireSnapWorker({
 
     } catch (err) {
       console.error("Snap failed:", err);
+      showPTError("Snap failed. Check console.");
     } finally {
       spinner.style.display = "none";
       busy = false;
