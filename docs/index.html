@@ -45,21 +45,18 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   position:relative;
 }
 .scanner.collapsed{display:none}
+
 .scanHint{
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  padding:0 16px;
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:0 16px;
   color:rgba(255,255,255,.75);
   font-weight:700;
   pointer-events:none;
 }
 
-/* 🔒 SPINNER OVERLAY (NEW, VISUAL ONLY) */
-.cameraSpinner{
+/* 🔒 CAMERA SPINNER OVERLAY (NEW) */
+.cameraOverlay{
   position:absolute;
   inset:0;
   display:none;
@@ -67,13 +64,17 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   justify-content:center;
   background:rgba(0,0,0,0.55);
   z-index:5;
-  pointer-events:all; /* blocks taps */
+  pointer-events:all; /* blocks extra taps */
 }
 
-.cameraSpinner .spinner{
-  display:block;
-  margin:0;
+/* SPINNER (unchanged visual) */
+.spinner{
+  width:34px;height:34px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.2);
+  border-top-color:var(--accent);
+  animation:spin 1s linear infinite;
 }
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* WELCOME */
 #welcomeBox{
@@ -92,10 +93,6 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   width:32px;height:32px;border-radius:50%;
   border:2px solid transparent;cursor:pointer
 }
-.themeChip.theme-green{background:#22c55e}
-.themeChip.theme-purple{background:#a855f7}
-.themeChip.theme-blue{background:#3b82f6}
-.themeChip.theme-red{background:#ef4444}
 .themeChip.active{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
 
 .modeToggle{display:flex;gap:6px;margin-top:10px}
@@ -124,24 +121,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
   background:linear-gradient(to right,transparent,rgba(255,255,255,.25),transparent)
 }
 
-/* SPINNER (original style preserved) */
-.spinner{
-  width:34px;height:34px;border-radius:50%;
-  border:3px solid rgba(255,255,255,.2);
-  border-top-color:var(--accent);
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
 /* EV */
 .evSection{display:none;margin-bottom:26px}
 .evRow{display:flex;align-items:center;gap:10px;margin:8px 0}
-.evLabel{width:90px;font-size:12px;color:var(--muted)}
-.evTrack{flex:1;height:18px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
-.evFill{height:100%;width:0%;border-radius:999px}
-.evFill.base{background:rgba(255,255,255,.45)}
-.evFill.ux{background:var(--accent)}
-.evValue{width:90px;text-align:right;font-weight:800}
 
 /* CARDS — UNCHANGED */
 .cards{
@@ -156,42 +138,8 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 }
 .cards:empty{display:none}
 
-.card{
-  width:78px;height:118px;
-  background:#fff;color:#111;
-  border-radius:14px;position:relative;
-  box-shadow:0 6px 18px rgba(0,0,0,.45);
-}
-.card.red{color:#c1121f}
-.card.held{
-  transform:translateY(-14px) scale(1.08);
-  box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
-  background:linear-gradient(#fff,#f6fff9)
-}
-.card.held::after{
-  content:"HOLD";
-  position:absolute;top:-14px;left:50%;
-  transform:translateX(-50%);
-  background:var(--accent);color:#000;
-  font-size:11px;font-weight:900;
-  letter-spacing:.08em;padding:4px 12px;border-radius:999px
-}
-.corner{position:absolute;font-weight:900;font-size:14px;line-height:1.05}
-.corner.top{top:8px;left:8px}
-.corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
-.pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px}
-
 /* MULTIPLIERS */
 .multSection{display:none;margin-top:14px}
-.multRow{display:flex;align-items:center;gap:10px;margin:8px 0}
-.multLabel{width:90px;font-size:12px;color:var(--muted)}
-.multCells{flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
-.multCell{height:14px;border-radius:4px;background:rgba(255,255,255,.12)}
-.multCell.g{background:#22c55e}
-.multCell.y{background:#eab308}
-.multCell.o{background:#f97316}
-.multCell.r{background:#ef4444}
-.multValue{width:70px;text-align:right;font-weight:800}
 
 /* WHY */
 #whyBox{
@@ -229,9 +177,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
     <div class="band"></div>
     <div class="scanHint">Tap anywhere inside the frame to analyze</div>
 
-    <!-- 🔒 Spinner overlay lives INSIDE camera -->
-    <div class="cameraSpinner" id="cameraSpinner">
-      <div class="spinner"></div>
+    <!-- 🔒 Spinner moved INTO camera -->
+    <div class="cameraOverlay" id="cameraOverlay">
+      <div class="spinner" id="spinner"></div>
     </div>
   </div>
 
@@ -266,27 +214,9 @@ h2{text-align:center;font-size:24px;font-weight:800;margin:2px 0 0}
 
   <div class="divider"></div>
 
-  <div class="evSection" id="evSection">
-    <div class="evRow">
-      <div class="evLabel">Base EV</div>
-      <div class="evTrack"><div class="evFill base" id="evBaseBar"></div></div>
-      <div class="evValue" id="evBase">—</div>
-    </div>
-    <div class="evRow">
-      <div class="evLabel">Ultimate X EV</div>
-      <div class="evTrack"><div class="evFill ux" id="evUXBar"></div></div>
-      <div class="evValue" id="evUX">—</div>
-    </div>
-  </div>
-
+  <div class="evSection" id="evSection"></div>
   <div class="cards" id="cardsBox"></div>
-
-  <div class="multSection" id="multSection">
-    <div class="multRow"><div class="multLabel">Top</div><div class="multCells" id="multTopCells"></div><div class="multValue" id="multTop">—</div></div>
-    <div class="multRow"><div class="multLabel">Middle</div><div class="multCells" id="multMidCells"></div><div class="multValue" id="multMid">—</div></div>
-    <div class="multRow"><div class="multLabel">Bottom</div><div class="multCells" id="multBotCells"></div><div class="multValue" id="multBot">—</div></div>
-  </div>
-
+  <div class="multSection" id="multSection"></div>
   <div id="whyBox"></div>
   <div class="newHand" id="newHandBtn">New hand</div>
 </div>
@@ -338,13 +268,13 @@ const makeCells=id=>{
   });
 };
 
-const cameraSpinner = $("cameraSpinner");
+const overlay = $("cameraOverlay");
 
 wireSnapWorker({
   video:$("video"),
   scanner:$("scanner"),
   band:document.querySelector(".band"),
-  spinner:cameraSpinner,
+  spinner:overlay,           // 👈 spinner control unchanged
   cardsBox:$("cardsBox"),
 
   evSection:$("evSection"),
@@ -367,10 +297,23 @@ wireSnapWorker({
   paytableSelect:$("paytableSelect"),
 
   onSnapComplete:()=>{
+    overlay.style.display = "none";
     $("scanner").classList.add("collapsed");
     $("newHandBtn").style.display="block";
   }
 });
+
+/* NEW HAND */
+$("newHandBtn").onclick=()=>{
+  overlay.style.display = "none";   // 🔒 unblock camera
+  $("scanner").classList.remove("collapsed");
+  $("newHandBtn").style.display="none";
+  $("welcomeBox").style.display="block";
+  $("evSection").style.display="none";
+  $("multSection").style.display="none";
+  $("cardsBox").innerHTML="";
+  $("whyBox").innerHTML="";
+};
 </script>
 </body>
 </html>
