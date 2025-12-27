@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ultimate X – Practice Mode</title>
+
+<style>
+body{
+  margin:0;
+  background:#020617;
+  color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+
+.app{
+  max-width:860px;
+  margin:auto;
+  padding:16px;
+}
+
+h2{
+  text-align:center;
+  margin:6px 0 4px;
+}
+
+.subtitle{
+  text-align:center;
+  font-size:13px;
+  color:#9ca3af;
+  margin-bottom:14px;
+}
+
+.controls{
+  display:flex;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+select{
+  flex:1;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+}
+
+.cards{
+  margin-top:16px;
+  padding:24px 16px;
+  border-radius:20px;
+  background:rgba(255,255,255,.05);
+  display:flex;
+  justify-content:center;
+  gap:14px;
+}
+
+.card{
+  width:78px;height:118px;
+  background:#fff;color:#111;
+  border-radius:14px;
+  position:relative;
+  cursor:pointer;
+}
+
+.card.red{color:#c1121f}
+
+.card.selected{
+  transform:translateY(-12px);
+  box-shadow:0 0 0 4px #22c55e;
+}
+
+.corner{
+  position:absolute;
+  font-weight:900;
+  font-size:14px;
+}
+.corner.top{top:8px;left:8px}
+.corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
+
+.pip{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:30px;
+}
+
+.actions{
+  margin-top:18px;
+  display:flex;
+  justify-content:center;
+}
+
+button{
+  padding:12px 20px;
+  border-radius:14px;
+  border:none;
+  background:#22c55e;
+  color:#000;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.result{
+  margin-top:18px;
+  padding:16px;
+  border-radius:16px;
+  background:rgba(255,255,255,.06);
+  display:none;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <h2>Practice Mode</h2>
+  <div class="subtitle">Pick the best hold</div>
+
+  <div class="controls">
+    <select id="paytable">
+      <option value="DDB_9_6">DDB 9/6</option>
+      <option value="DDB_9_5">DDB 9/5</option>
+      <option value="DDB_8_5">DDB 8/5</option>
+      <option value="DDB_7_5">DDB 7/5</option>
+    </select>
+
+    <select id="mode">
+      <option value="conservative">Conservative</option>
+      <option value="aggressive">Aggressive</option>
+    </select>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="actions">
+    <button id="checkBtn">Check my hold</button>
+  </div>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script type="module" src="./practice.js"></script>
+</body>
+</html>
