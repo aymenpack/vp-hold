@@ -4,12 +4,12 @@ export const VISION_PROMPT = `
 You are reading a casino Ultimate X video poker machine.
 
 The image contains THREE horizontal rows:
-- Top row: multiplier on the LEFT
-- Middle row: multiplier on the LEFT
-- Bottom row: multiplier on the LEFT + FIVE playing cards
+- Top row: multiplier EXCLUSIVELY on the LEFT of the row of facedown cards
+- Middle row: multiplier EXCLUSIVELY on the LEFT of the row of facedown cards
+- Bottom row: multiplier EXCLUSIVELY on the LEFT of the row of faceup cards + FIVE playing cards
 
 TASKS:
-1. Read the multiplier shown on the LEFT of each row.
+1. Read the multiplier shown on the EXCLUSIVELY on the LEFT of each row.
 2. Read the FIVE cards on the BOTTOM row, left to right.
 
 OUTPUT STRICT JSON ONLY.
