@@ -1,40 +1,43 @@
-document.addEventListener("DOMContentLoaded", () => {
+/* =====================================================
+   Ultimate X (3-hand) Practice — DDB
+   - Round start: all 3 facedown
+   - Deal: ONLY bottom flips for hold selection
+   - Check: resolve all 3 (independent draws) + award next multipliers
+   - Next: chain multipliers (current = earned next) and start new facedown round
+   - Optimal Hold: computed using EV = immediate + 1-step lookahead (baseEV × next multipliers)
+   ===================================================== */
 
-  /* ===============================
-     CONSTANTS
-     =============================== */
+document.addEventListener("DOMContentLoaded", () => {
 
   const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
   const SUITS = ["S","H","D","C"];
-  const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
+  const SUIT_SYMBOL = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
   const PAYTABLES = {
-    DDB_9_6:{full_house:9,flush:6},
-    DDB_9_5:{full_house:9,flush:5},
-    DDB_8_5:{full_house:8,flush:5},
-    DDB_7_5:{full_house:7,flush:5}
+    DDB_9_6: { full_house:9, flush:6, baseEV:0.9861 },
+    DDB_9_5: { full_house:9, flush:5, baseEV:0.9836 },
+    DDB_8_5: { full_house:8, flush:5, baseEV:0.9723 },
+    DDB_7_5: { full_house:7, flush:5, baseEV:0.9610 }
   };
 
   const AWARD = {
-    nothing:1,
-    jacks_or_better:2,
-    two_pair:2,
-    three_kind:3,
-    straight:4,
-    flush:5,
-    full_house:6,
-    four_kind:10,
-    straight_flush:12,
-    royal_flush:12
+    nothing: 1,
+    jacks_or_better: 2,
+    two_pair: 2,
+    three_kind: 3,
+    straight: 4,
+    flush: 5,
+    full_house: 6,
+    four_kind: 10,
+    straight_flush: 12,
+    royal_flush: 12
   };
 
-  /* ===============================
-     DOM
-     =============================== */
-
+  // DOM
   const topBox = document.getElementById("topBox");
   const midBox = document.getElementById("midBox");
   const botBox = document.getElementById("cardsBox");
+  const optimalBox = document.getElementById("optimalBox");
 
   const multTopEl = document.getElementById("multTop");
   const multMidEl = document.getElementById("multMid");
@@ -47,50 +50,109 @@ document.addEventListener("DOMContentLoaded", () => {
   const dealBtn  = document.getElementById("dealBtn");
   const checkBtn = document.getElementById("checkBtn");
   const nextBtn  = document.getElementById("nextBtn");
+
   const resultBox = document.getElementById("resultBox");
   const paytableEl = document.getElementById("paytable");
 
-  /* ===============================
-     STATE
-     =============================== */
-
+  // State
+  let phase = "facedown"; // facedown → choosing → resolved
   let baseHand = [];
-  let held = [false,false,false,false,false];
+  let heldMask = [false,false,false,false,false];
 
-  let currentMult = {top:1,mid:1,bot:1};
-  let earnedNext  = {top:1,mid:1,bot:1};
+  let currentMult = { top:1, mid:1, bot:1 };
+  let earnedNext  = { top:1, mid:1, bot:1 };
 
-  /* ===============================
-     HELPERS
-     =============================== */
-
-  function shuffle(a){
-    for(let i=a.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
-      [a[i],a[j]]=[a[j],a[i]];
+  // Utils
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
     }
-    return a;
+    return arr;
   }
 
-  function newDeck(){
+  function fullDeck(){
     const d=[];
     for(const r of RANKS) for(const s of SUITS) d.push({rank:r,suit:s});
-    shuffle(d);
     return d;
   }
 
   function dealBaseHand(){
-    return newDeck().slice(0,5);
+    const d = fullDeck();
+    shuffle(d);
+    return d.slice(0,5);
   }
 
-  function remainingDeck(exclude){
-    return newDeck().filter(c=>!exclude.has(c.rank+c.suit));
+  function remainingDeck(excludeSet){
+    const d = fullDeck().filter(c => !excludeSet.has(c.rank+c.suit));
+    shuffle(d);
+    return d;
   }
 
-  /* ===============================
-     RENDERING
-     =============================== */
+  function countBy(arr){
+    return arr.reduce((m,v)=>(m[v]=(m[v]||0)+1,m),{});
+  }
 
+  function rankValue(r){ return RANKS.indexOf(r); }
+
+  // Exact DDB evaluator (returns category + payout)
+  function evaluateDDB(cards, pt){
+    const ranks = cards.map(c=>c.rank);
+    const suits = cards.map(c=>c.suit);
+    const rc = countBy(ranks);
+    const sc = countBy(suits);
+
+    const counts = Object.values(rc).sort((a,b)=>b-a);
+    const unique = Object.keys(rc);
+
+    const isFlush = Object.values(sc).some(v=>v===5);
+    const vals = [...new Set(ranks.map(rankValue))].sort((a,b)=>a-b);
+    const isWheel = JSON.stringify(vals)==='[0,1,2,3,12]';
+    const isStraight = vals.length===5 && (vals[4]-vals[0]===4 || isWheel);
+
+    if(isFlush && isStraight){
+      if(ranks.includes("A") && ranks.includes("T"))
+        return { category:"royal_flush", payout:800 };
+      return { category:"straight_flush", payout:50 };
+    }
+
+    if(counts[0]===4){
+      const quad = unique.find(r=>rc[r]===4);
+      const kicker = unique.find(r=>rc[r]===1);
+
+      if(quad==="A"){
+        return ["2","3","4"].includes(kicker)
+          ? { category:"four_kind", payout:400 }
+          : { category:"four_kind", payout:160 };
+      }
+
+      if(["2","3","4"].includes(quad)){
+        return ["A","2","3","4"].includes(kicker)
+          ? { category:"four_kind", payout:160 }
+          : { category:"four_kind", payout:80 };
+      }
+
+      return { category:"four_kind", payout:50 };
+    }
+
+    if(counts[0]===3 && counts[1]===2)
+      return { category:"full_house", payout:pt.full_house };
+
+    if(isFlush) return { category:"flush", payout:pt.flush };
+    if(isStraight) return { category:"straight", payout:4 };
+    if(counts[0]===3) return { category:"three_kind", payout:3 };
+    if(counts[0]===2 && counts[1]===2) return { category:"two_pair", payout:1 };
+
+    if(counts[0]===2){
+      const pair = unique.find(r=>rc[r]===2);
+      if(["J","Q","K","A"].includes(pair))
+        return { category:"jacks_or_better", payout:1 };
+    }
+
+    return { category:"nothing", payout:0 };
+  }
+
+  // Rendering
   function renderFacedown(box){
     box.innerHTML="";
     for(let i=0;i<5;i++){
@@ -100,33 +162,48 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function renderFaceup(box, cards, clickable){
+  function renderFaceup(box, cards, mask, clickable){
     box.innerHTML="";
-    cards.forEach((c,i)=>{
+    for(let i=0;i<5;i++){
+      const c = cards[i];
       const el=document.createElement("div");
-      el.className="card";
-      if(c.suit==="H"||c.suit==="D") el.classList.add("red");
+      el.className="card" + ((c.suit==="H"||c.suit==="D")?" red":"");
 
-      if(clickable && held[i]) el.classList.add("held");
+      if(clickable && mask[i]) el.classList.add("held");
 
       el.innerHTML=`
-        <div class="corner top">${c.rank==="T"?"10":c.rank}<br>${SUIT[c.suit]}</div>
-        <div class="pip">${SUIT[c.suit]}</div>
-        <div class="corner bottom">${c.rank==="T"?"10":c.rank}<br>${SUIT[c.suit]}</div>
+        <div class="corner top">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
+        <div class="pip">${SUIT_SYMBOL[c.suit]}</div>
+        <div class="corner bottom">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
       `;
 
       if(clickable){
         el.onclick=()=>{
-          held[i]=!held[i];
-          renderFaceup(botBox, baseHand, true);
+          mask[i]=!mask[i];
+          renderDealState(); // rerender bottom only
         };
       }
 
       box.appendChild(el);
-    });
+    }
   }
 
-  function updateMultipliers(){
+  function renderOptimal(mask){
+    optimalBox.innerHTML="";
+    for(let i=0;i<5;i++){
+      const c = baseHand[i];
+      const el=document.createElement("div");
+      el.className = "card" + ((c.suit==="H"||c.suit==="D")?" red":"") + (mask[i]?" optimal":"");
+      el.innerHTML=`
+        <div class="corner top">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
+        <div class="pip">${SUIT_SYMBOL[c.suit]}</div>
+        <div class="corner bottom">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
+      `;
+      optimalBox.appendChild(el);
+    }
+  }
+
+  function updateMultUI(){
     multTopEl.textContent=currentMult.top;
     multMidEl.textContent=currentMult.mid;
     multBotEl.textContent=currentMult.bot;
@@ -136,42 +213,96 @@ document.addEventListener("DOMContentLoaded", () => {
     nextBotEl.textContent=earnedNext.bot;
   }
 
-  /* ===============================
-     GAME FLOW
-     =============================== */
-
-  function startRound(){
-    baseHand = dealBaseHand();
-    held = [false,false,false,false,false];
-    earnedNext = {top:1,mid:1,bot:1};
-    resultBox.style.display="none";
-
-    updateMultipliers();
-
-    // ALL THREE FACE DOWN
+  function renderStartState(){
     renderFacedown(topBox);
     renderFacedown(midBox);
     renderFacedown(botBox);
+  }
+
+  function renderDealState(){
+    // Only bottom face-up for decision
+    renderFacedown(topBox);
+    renderFacedown(midBox);
+    renderFaceup(botBox, baseHand, heldMask, true);
+  }
+
+  function renderResolvedState(out){
+    renderFaceup(topBox, out.topFinal, [false,false,false,false,false], false);
+    renderFaceup(midBox, out.midFinal, [false,false,false,false,false], false);
+    renderFaceup(botBox, out.botFinal, [false,false,false,false,false], false);
+  }
+
+  // Round logic
+  function startRound(){
+    phase="facedown";
+    baseHand = dealBaseHand();
+    heldMask = [false,false,false,false,false];
+    earnedNext = { top:1, mid:1, bot:1 };
+    optimalBox.innerHTML="";
+    resultBox.style.display="none";
+    updateMultUI();
+    renderStartState();
 
     dealBtn.disabled=false;
     checkBtn.disabled=true;
     nextBtn.disabled=true;
   }
 
-  dealBtn.onclick = () => {
-    // ONLY BOTTOM FLIPS
-    renderFacedown(topBox);
-    renderFacedown(midBox);
-    renderFaceup(botBox, baseHand, true);
-
-    dealBtn.disabled=true;
-    checkBtn.disabled=false;
-  };
-
-  checkBtn.onclick = () => {
+  // EV: immediate payout with current multipliers + 1-step lookahead with baseEV×(next multipliers)
+  function estimateEV(mask, samples=1000){
     const pt = PAYTABLES[paytableEl.value];
+    const heldCards = baseHand.filter((_,i)=>mask[i]);
+    const used = new Set(heldCards.map(c=>c.rank+c.suit));
+    const need = 5-heldCards.length;
 
-    const heldCards = baseHand.filter((_,i)=>held[i]);
+    let total=0;
+    for(let t=0;t<samples;t++){
+      const deck = remainingDeck(used);
+
+      shuffle(deck);
+      const topFinal = heldCards.concat(deck.slice(0,need));
+      shuffle(deck);
+      const midFinal = heldCards.concat(deck.slice(0,need));
+      shuffle(deck);
+      const botFinal = heldCards.concat(deck.slice(0,need));
+
+      const topRes = evaluateDDB(topFinal, pt);
+      const midRes = evaluateDDB(midFinal, pt);
+      const botRes = evaluateDDB(botFinal, pt);
+
+      const immediate =
+        topRes.payout * currentMult.top +
+        midRes.payout * currentMult.mid +
+        botRes.payout * currentMult.bot;
+
+      const nt = AWARD[topRes.category] ?? 1;
+      const nm = AWARD[midRes.category] ?? 1;
+      const nb = AWARD[botRes.category] ?? 1;
+
+      const lookahead = pt.baseEV * (nt+nm+nb);
+
+      total += immediate + lookahead;
+    }
+    return total/samples;
+  }
+
+  function findOptimalMask(){
+    let bestEV=-Infinity;
+    let bestMask=null;
+    for(let m=0;m<32;m++){
+      const mask=[0,1,2,3,4].map(i=>!!(m&(1<<i)));
+      const ev=estimateEV(mask, 900);
+      if(ev>bestEV){
+        bestEV=ev;
+        bestMask=mask;
+      }
+    }
+    return {bestMask, bestEV};
+  }
+
+  function resolveRound(mask){
+    const pt = PAYTABLES[paytableEl.value];
+    const heldCards = baseHand.filter((_,i)=>mask[i]);
     const used = new Set(heldCards.map(c=>c.rank+c.suit));
     const need = 5-heldCards.length;
 
@@ -184,64 +315,67 @@ document.addEventListener("DOMContentLoaded", () => {
     shuffle(deck);
     const botFinal = heldCards.concat(deck.slice(0,need));
 
-    renderFaceup(topBox, topFinal, false);
-    renderFaceup(midBox, midFinal, false);
-    renderFaceup(botBox, botFinal, false);
+    const topRes = evaluateDDB(topFinal, pt);
+    const midRes = evaluateDDB(midFinal, pt);
+    const botRes = evaluateDDB(botFinal, pt);
 
-    const evalHand = cards=>{
-      const ranks=cards.map(c=>c.rank);
-      const suits=cards.map(c=>c.suit);
-      const rc={};
-      for(const r of ranks) rc[r]=(rc[r]||0)+1;
-      const counts=Object.values(rc).sort((a,b)=>b-a);
-      const uniq=Object.keys(rc);
-      const flush=suits.every(s=>s===suits[0]);
-      const vals=[...new Set(ranks.map(r=>RANKS.indexOf(r)))].sort((a,b)=>a-b);
-      const straight=vals.length===5&&(vals[4]-vals[0]===4||JSON.stringify(vals)==='[0,1,2,3,12]');
+    const winTop = topRes.payout * currentMult.top;
+    const winMid = midRes.payout * currentMult.mid;
+    const winBot = botRes.payout * currentMult.bot;
 
-      if(flush&&straight){
-        if(ranks.includes("A")&&ranks.includes("T"))return"royal_flush";
-        return"straight_flush";
-      }
-      if(counts[0]===4)return"four_kind";
-      if(counts[0]===3&&counts[1]===2)return"full_house";
-      if(flush)return"flush";
-      if(straight)return"straight";
-      if(counts[0]===3)return"three_kind";
-      if(counts[0]===2&&counts[1]===2)return"two_pair";
-      if(counts[0]===2&&["J","Q","K","A"].includes(uniq.find(r=>rc[r]===2)))return"jacks_or_better";
-      return"nothing";
+    const nextMult = {
+      top: AWARD[topRes.category] ?? 1,
+      mid: AWARD[midRes.category] ?? 1,
+      bot: AWARD[botRes.category] ?? 1
     };
 
-    const t=evalHand(topFinal);
-    const m=evalHand(midFinal);
-    const b=evalHand(botFinal);
+    return { topFinal, midFinal, botFinal, topRes, midRes, botRes, winTop, winMid, winBot, nextMult };
+  }
 
-    earnedNext={
-      top:AWARD[t]||1,
-      mid:AWARD[m]||1,
-      bot:AWARD[b]||1
-    };
+  // Buttons
+  dealBtn.onclick = () => {
+    phase="choosing";
+    renderDealState();
+    dealBtn.disabled=true;
+    checkBtn.disabled=false;
+    nextBtn.disabled=true;
+  };
 
-    updateMultipliers();
-
-    resultBox.style.display="block";
-    resultBox.innerHTML=`
-      Top: ${t} → ×${earnedNext.top}<br>
-      Mid: ${m} → ×${earnedNext.mid}<br>
-      Bot: ${b} → ×${earnedNext.bot}
-    `;
-
+  checkBtn.onclick = () => {
+    phase="resolved";
     checkBtn.disabled=true;
     nextBtn.disabled=false;
+
+    const out = resolveRound(heldMask);
+    earnedNext = out.nextMult;
+    updateMultUI();
+
+    renderResolvedState(out);
+
+    const {bestMask, bestEV} = findOptimalMask();
+    const userEV = estimateEV(heldMask, 900);
+    const loss = (bestEV-userEV).toFixed(3);
+
+    renderOptimal(bestMask);
+
+    resultBox.style.display="block";
+    resultBox.innerHTML = `
+      <b>${loss <= 0.01 ? "✅ Great hold!" : "❌ Suboptimal hold"}</b><br><br>
+      Top: ${out.topRes.category} → win ${out.winTop.toFixed(0)} → next ×${out.nextMult.top}<br>
+      Mid: ${out.midRes.category} → win ${out.winMid.toFixed(0)} → next ×${out.nextMult.mid}<br>
+      Bot: ${out.botRes.category} → win ${out.winBot.toFixed(0)} → next ×${out.nextMult.bot}<br><br>
+      EV (optimal): ${bestEV.toFixed(3)}<br>
+      EV (yours): ${userEV.toFixed(3)}<br>
+      EV loss: ${loss}
+    `;
   };
 
   nextBtn.onclick = () => {
-    currentMult = {...earnedNext};
+    // chain multipliers forward
+    currentMult = { ...earnedNext };
     startRound();
   };
 
-  /* INIT */
+  // init
   startRound();
-
 });
