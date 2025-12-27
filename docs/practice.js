@@ -1,21 +1,18 @@
-/* =====================================================
-   PRACTICE MODE — Ultimate X (Correct Flip Order)
-   - Bottom hand flips first (hold decision)
-   - Top/Mid stay face-down until hold is locked
-   - Check resolves all three
-   ===================================================== */
-
 document.addEventListener("DOMContentLoaded", () => {
+
+  /* ===============================
+     CONSTANTS
+     =============================== */
 
   const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
   const SUITS = ["S","H","D","C"];
   const SUIT = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
   const PAYTABLES = {
-    DDB_9_6:{full_house:9,flush:6,baseEV:0.9861},
-    DDB_9_5:{full_house:9,flush:5,baseEV:0.9836},
-    DDB_8_5:{full_house:8,flush:5,baseEV:0.9723},
-    DDB_7_5:{full_house:7,flush:5,baseEV:0.9610}
+    DDB_9_6:{full_house:9,flush:6},
+    DDB_9_5:{full_house:9,flush:5},
+    DDB_8_5:{full_house:8,flush:5},
+    DDB_7_5:{full_house:7,flush:5}
   };
 
   const AWARD = {
@@ -31,11 +28,13 @@ document.addEventListener("DOMContentLoaded", () => {
     royal_flush:12
   };
 
-  /* DOM */
+  /* ===============================
+     DOM
+     =============================== */
+
   const topBox = document.getElementById("topBox");
   const midBox = document.getElementById("midBox");
   const botBox = document.getElementById("cardsBox");
-  const optimalBox = document.getElementById("optimalBox");
 
   const multTopEl = document.getElementById("multTop");
   const multMidEl = document.getElementById("multMid");
@@ -45,21 +44,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const nextMidEl = document.getElementById("nextMid");
   const nextBotEl = document.getElementById("nextBot");
 
-  const dealBtn = document.getElementById("dealBtn");
+  const dealBtn  = document.getElementById("dealBtn");
   const checkBtn = document.getElementById("checkBtn");
-  const nextBtn = document.getElementById("nextBtn");
+  const nextBtn  = document.getElementById("nextBtn");
   const resultBox = document.getElementById("resultBox");
   const paytableEl = document.getElementById("paytable");
 
-  /* State */
-  let phase = "facedown"; // facedown → choosing → resolved
+  /* ===============================
+     STATE
+     =============================== */
+
   let baseHand = [];
   let held = [false,false,false,false,false];
 
   let currentMult = {top:1,mid:1,bot:1};
   let earnedNext  = {top:1,mid:1,bot:1};
 
-  /* Utils */
+  /* ===============================
+     HELPERS
+     =============================== */
+
   function shuffle(a){
     for(let i=a.length-1;i>0;i--){
       const j=Math.floor(Math.random()*(i+1));
@@ -68,82 +72,42 @@ document.addEventListener("DOMContentLoaded", () => {
     return a;
   }
 
-  function newBaseHand(){
+  function newDeck(){
     const d=[];
-    for(const r of RANKS)for(const s of SUITS)d.push({rank:r,suit:s});
-    shuffle(d);
-    return d.slice(0,5);
-  }
-
-  function remainingDeck(exclude){
-    const d=[];
-    for(const r of RANKS)for(const s of SUITS){
-      const k=r+s;
-      if(!exclude.has(k))d.push({rank:r,suit:s});
-    }
+    for(const r of RANKS) for(const s of SUITS) d.push({rank:r,suit:s});
     shuffle(d);
     return d;
   }
 
-  function countBy(arr){
-    return arr.reduce((m,v)=>(m[v]=(m[v]||0)+1,m),{});
-  }
-  function rv(r){return RANKS.indexOf(r);}
-
-  /* DDB evaluator */
-  function evalDDB(cards, pt){
-    const ranks=cards.map(c=>c.rank);
-    const suits=cards.map(c=>c.suit);
-    const rc=countBy(ranks);
-    const sc=countBy(suits);
-    const cnt=Object.values(rc).sort((a,b)=>b-a);
-    const uniq=Object.keys(rc);
-
-    const flush=Object.values(sc).some(v=>v===5);
-    const vals=[...new Set(ranks.map(rv))].sort((a,b)=>a-b);
-    const wheel=JSON.stringify(vals)==='[0,1,2,3,12]';
-    const straight=vals.length===5&&(vals[4]-vals[0]===4||wheel);
-
-    if(flush&&straight){
-      if(ranks.includes("A")&&ranks.includes("T"))
-        return{cat:"royal_flush",pay:800};
-      return{cat:"straight_flush",pay:50};
-    }
-    if(cnt[0]===4){
-      const q=uniq.find(r=>rc[r]===4);
-      const k=uniq.find(r=>rc[r]===1);
-      if(q==="A") return ["2","3","4"].includes(k)
-        ?{cat:"four_kind",pay:400}:{cat:"four_kind",pay:160};
-      if(["2","3","4"].includes(q)) return ["A","2","3","4"].includes(k)
-        ?{cat:"four_kind",pay:160}:{cat:"four_kind",pay:80};
-      return{cat:"four_kind",pay:50};
-    }
-    if(cnt[0]===3&&cnt[1]===2) return{cat:"full_house",pay:pt.full_house};
-    if(flush) return{cat:"flush",pay:pt.flush};
-    if(straight) return{cat:"straight",pay:4};
-    if(cnt[0]===3) return{cat:"three_kind",pay:3};
-    if(cnt[0]===2&&cnt[1]===2) return{cat:"two_pair",pay:1};
-    if(cnt[0]===2&&["J","Q","K","A"].includes(uniq.find(r=>rc[r]===2)))
-      return{cat:"jacks_or_better",pay:1};
-    return{cat:"nothing",pay:0};
+  function dealBaseHand(){
+    return newDeck().slice(0,5);
   }
 
-  /* Rendering */
-  function render(box, cards, faceDown, clickable){
+  function remainingDeck(exclude){
+    return newDeck().filter(c=>!exclude.has(c.rank+c.suit));
+  }
+
+  /* ===============================
+     RENDERING
+     =============================== */
+
+  function renderFacedown(box){
     box.innerHTML="";
     for(let i=0;i<5;i++){
       const el=document.createElement("div");
+      el.className="card facedown";
+      box.appendChild(el);
+    }
+  }
+
+  function renderFaceup(box, cards, clickable){
+    box.innerHTML="";
+    cards.forEach((c,i)=>{
+      const el=document.createElement("div");
       el.className="card";
+      if(c.suit==="H"||c.suit==="D") el.classList.add("red");
 
-      if(faceDown){
-        el.classList.add("facedown");
-        box.appendChild(el);
-        continue;
-      }
-
-      const c=cards[i];
-      if(c.suit==="H"||c.suit==="D")el.classList.add("red");
-      if(clickable && held[i])el.classList.add("held");
+      if(clickable && held[i]) el.classList.add("held");
 
       el.innerHTML=`
         <div class="corner top">${c.rank==="T"?"10":c.rank}<br>${SUIT[c.suit]}</div>
@@ -154,107 +118,130 @@ document.addEventListener("DOMContentLoaded", () => {
       if(clickable){
         el.onclick=()=>{
           held[i]=!held[i];
-          drawChoosing();
+          renderFaceup(botBox, baseHand, true);
         };
       }
+
       box.appendChild(el);
-    }
+    });
   }
 
-  function drawFacedown(){
-    render(topBox, baseHand, true, false);
-    render(midBox, baseHand, true, false);
-    render(botBox, baseHand, true, false);
-  }
-
-  function drawChoosing(){
-    render(topBox, baseHand, true, false);   // stay facedown
-    render(midBox, baseHand, true, false);   // stay facedown
-    render(botBox, baseHand, false, true);   // face-up & clickable
-  }
-
-  function drawResolved(out){
-    render(topBox, out.top, false, false);
-    render(midBox, out.mid, false, false);
-    render(botBox, out.bot, false, false);
-  }
-
-  function updateMult(){
+  function updateMultipliers(){
     multTopEl.textContent=currentMult.top;
     multMidEl.textContent=currentMult.mid;
     multBotEl.textContent=currentMult.bot;
+
     nextTopEl.textContent=earnedNext.top;
     nextMidEl.textContent=earnedNext.mid;
     nextBotEl.textContent=earnedNext.bot;
   }
 
-  /* Round lifecycle */
+  /* ===============================
+     GAME FLOW
+     =============================== */
+
   function startRound(){
-    phase="facedown";
-    baseHand=newBaseHand();
-    held=[false,false,false,false,false];
-    earnedNext={top:1,mid:1,bot:1};
-    optimalBox.innerHTML="";
+    baseHand = dealBaseHand();
+    held = [false,false,false,false,false];
+    earnedNext = {top:1,mid:1,bot:1};
     resultBox.style.display="none";
-    updateMult();
-    drawFacedown();
+
+    updateMultipliers();
+
+    // ALL THREE FACE DOWN
+    renderFacedown(topBox);
+    renderFacedown(midBox);
+    renderFacedown(botBox);
+
     dealBtn.disabled=false;
     checkBtn.disabled=true;
     nextBtn.disabled=true;
   }
 
-  dealBtn.onclick=()=>{
-    phase="choosing";
-    drawChoosing();
+  dealBtn.onclick = () => {
+    // ONLY BOTTOM FLIPS
+    renderFacedown(topBox);
+    renderFacedown(midBox);
+    renderFaceup(botBox, baseHand, true);
+
     dealBtn.disabled=true;
     checkBtn.disabled=false;
   };
 
-  checkBtn.onclick=()=>{
-    phase="resolved";
-    checkBtn.disabled=true;
-    nextBtn.disabled=false;
+  checkBtn.onclick = () => {
+    const pt = PAYTABLES[paytableEl.value];
 
-    const pt=PAYTABLES[paytableEl.value];
-    const heldCards=baseHand.filter((_,i)=>held[i]);
-    const used=new Set(heldCards.map(c=>c.rank+c.suit));
-    const need=5-heldCards.length;
-    const deck=remainingDeck(used);
+    const heldCards = baseHand.filter((_,i)=>held[i]);
+    const used = new Set(heldCards.map(c=>c.rank+c.suit));
+    const need = 5-heldCards.length;
+
+    const deck = remainingDeck(used);
 
     shuffle(deck);
-    const top=heldCards.concat(deck.slice(0,need));
+    const topFinal = heldCards.concat(deck.slice(0,need));
     shuffle(deck);
-    const mid=heldCards.concat(deck.slice(0,need));
+    const midFinal = heldCards.concat(deck.slice(0,need));
     shuffle(deck);
-    const bot=heldCards.concat(deck.slice(0,need));
+    const botFinal = heldCards.concat(deck.slice(0,need));
 
-    const rTop=evalDDB(top,pt);
-    const rMid=evalDDB(mid,pt);
-    const rBot=evalDDB(bot,pt);
+    renderFaceup(topBox, topFinal, false);
+    renderFaceup(midBox, midFinal, false);
+    renderFaceup(botBox, botFinal, false);
+
+    const evalHand = cards=>{
+      const ranks=cards.map(c=>c.rank);
+      const suits=cards.map(c=>c.suit);
+      const rc={};
+      for(const r of ranks) rc[r]=(rc[r]||0)+1;
+      const counts=Object.values(rc).sort((a,b)=>b-a);
+      const uniq=Object.keys(rc);
+      const flush=suits.every(s=>s===suits[0]);
+      const vals=[...new Set(ranks.map(r=>RANKS.indexOf(r)))].sort((a,b)=>a-b);
+      const straight=vals.length===5&&(vals[4]-vals[0]===4||JSON.stringify(vals)==='[0,1,2,3,12]');
+
+      if(flush&&straight){
+        if(ranks.includes("A")&&ranks.includes("T"))return"royal_flush";
+        return"straight_flush";
+      }
+      if(counts[0]===4)return"four_kind";
+      if(counts[0]===3&&counts[1]===2)return"full_house";
+      if(flush)return"flush";
+      if(straight)return"straight";
+      if(counts[0]===3)return"three_kind";
+      if(counts[0]===2&&counts[1]===2)return"two_pair";
+      if(counts[0]===2&&["J","Q","K","A"].includes(uniq.find(r=>rc[r]===2)))return"jacks_or_better";
+      return"nothing";
+    };
+
+    const t=evalHand(topFinal);
+    const m=evalHand(midFinal);
+    const b=evalHand(botFinal);
 
     earnedNext={
-      top:AWARD[rTop.cat]||1,
-      mid:AWARD[rMid.cat]||1,
-      bot:AWARD[rBot.cat]||1
+      top:AWARD[t]||1,
+      mid:AWARD[m]||1,
+      bot:AWARD[b]||1
     };
-    updateMult();
 
-    drawResolved({top,mid,bot});
+    updateMultipliers();
 
     resultBox.style.display="block";
     resultBox.innerHTML=`
-      Top: ${rTop.cat} → earns ×${earnedNext.top}<br>
-      Mid: ${rMid.cat} → earns ×${earnedNext.mid}<br>
-      Bot: ${rBot.cat} → earns ×${earnedNext.bot}
+      Top: ${t} → ×${earnedNext.top}<br>
+      Mid: ${m} → ×${earnedNext.mid}<br>
+      Bot: ${b} → ×${earnedNext.bot}
     `;
+
+    checkBtn.disabled=true;
+    nextBtn.disabled=false;
   };
 
-  nextBtn.onclick=()=>{
-    currentMult={...earnedNext};
+  nextBtn.onclick = () => {
+    currentMult = {...earnedNext};
     startRound();
   };
 
-  /* Init */
+  /* INIT */
   startRound();
 
 });
