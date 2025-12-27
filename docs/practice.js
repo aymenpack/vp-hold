@@ -31,7 +31,7 @@ function dealHand(){
   return shuffle(deck).slice(0,5);
 }
 
-/* -------- evaluate payout (simplified) -------- */
+/* -------- evaluate payout (simplified DDB) -------- */
 
 function countBy(arr){
   return arr.reduce((m,v)=>(m[v]=(m[v]||0)+1,m),{});
@@ -66,14 +66,15 @@ function evaluateHand(cards){
 
 /* -------- EV simulation -------- */
 
-function simulateEV(holdMask, samples=2000){
+function simulateEV(mask, samples=2000){
   const deck=[];
   for(const r of RANKS) for(const s of SUITS) deck.push({rank:r,suit:s});
-  const heldCards = hand.filter((_,i)=>holdMask[i]);
+
+  const heldCards = hand.filter((_,i)=>mask[i]);
   const used = new Set(heldCards.map(c=>c.rank+c.suit));
   const remaining = deck.filter(c=>!used.has(c.rank+c.suit));
-  let total=0;
 
+  let total=0;
   for(let i=0;i<samples;i++){
     shuffle(remaining);
     const draw = remaining.slice(0,5-heldCards.length);
@@ -82,16 +83,16 @@ function simulateEV(holdMask, samples=2000){
   return total/samples;
 }
 
-/* -------- render -------- */
+/* -------- render functions -------- */
 
-function render(box, cards, mask=[], clickable=false){
-  box.innerHTML="";
-  cards.forEach((c,i)=>{
+function renderUserHand(){
+  cardsBox.innerHTML="";
+  hand.forEach((c,i)=>{
     const el=document.createElement("div");
     el.className =
       "card"+
       ((c.suit==="H"||c.suit==="D")?" red":"")+
-      (mask[i]?" held":"");
+      (held[i]?" held":"");
 
     el.innerHTML=`
       <div class="corner top">${c.rank==="T"?"10":c.rank}${SUIT[c.suit]}</div>
@@ -99,14 +100,31 @@ function render(box, cards, mask=[], clickable=false){
       <div class="corner bottom">${c.rank==="T"?"10":c.rank}${SUIT[c.suit]}</div>
     `;
 
-    if(clickable){
-      el.onclick=()=>{
-        held[i]=!held[i];
-        render(cardsBox,hand,held,true);
-      };
-    }
+    el.onclick=()=>{
+      held[i]=!held[i];
+      renderUserHand();
+    };
 
-    box.appendChild(el);
+    cardsBox.appendChild(el);
+  });
+}
+
+function renderOptimalHand(mask){
+  optimalBox.innerHTML="";
+  hand.forEach((c,i)=>{
+    const el=document.createElement("div");
+    el.className =
+      "card"+
+      ((c.suit==="H"||c.suit==="D")?" red":"")+
+      (mask[i]?" optimal":"");
+
+    el.innerHTML=`
+      <div class="corner top">${c.rank==="T"?"10":c.rank}${SUIT[c.suit]}</div>
+      <div class="pip">${SUIT[c.suit]}</div>
+      <div class="corner bottom">${c.rank==="T"?"10":c.rank}${SUIT[c.suit]}</div>
+    `;
+
+    optimalBox.appendChild(el);
   });
 }
 
@@ -115,9 +133,9 @@ function render(box, cards, mask=[], clickable=false){
 function newHand(){
   hand = dealHand();
   held = [false,false,false,false,false];
-  resultBox.style.display="none";
   optimalBox.innerHTML="";
-  render(cardsBox,hand,held,true);
+  resultBox.style.display="none";
+  renderUserHand();
 }
 
 checkBtn.onclick=()=>{
@@ -136,7 +154,7 @@ checkBtn.onclick=()=>{
   const userEV=simulateEV(held);
   const loss=(bestEV-userEV).toFixed(3);
 
-  render(optimalBox,hand,bestMask,false);
+  renderOptimalHand(bestMask);
 
   resultBox.style.display="block";
   resultBox.innerHTML=`
