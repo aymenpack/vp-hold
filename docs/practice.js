@@ -1,18 +1,16 @@
 /* =====================================================
    PRACTICE MODE — ULTIMATE X (3 HANDS)
-   Exact DDB math + Ultimate X carry
+   Step A: Earn multipliers from actual results (3 hands)
+   Step B: Optimal hold via EV = immediate + 1-step lookahead
    ===================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-
-  /* ---------- CONSTANTS ---------- */
 
   const RANKS = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"];
   const SUITS = ["S","H","D","C"];
   const SUIT_SYMBOL = { S:"♠", H:"♥", D:"♦", C:"♣" };
 
-  /* ---------- PAYTABLES (DDB) ---------- */
-
+  /* -------- Paytables + baseEV (DDB) -------- */
   const PAYTABLES = {
     DDB_9_6: { full_house:9, flush:6, baseEV:0.9861 },
     DDB_9_5: { full_house:9, flush:5, baseEV:0.9836 },
@@ -20,31 +18,47 @@ document.addEventListener("DOMContentLoaded", () => {
     DDB_7_5: { full_house:7, flush:5, baseEV:0.9610 }
   };
 
-  /* ---------- DOM ---------- */
-
-  const cardsBox   = document.getElementById("cardsBox");
-  const optimalBox = document.getElementById("optimalBox");
-  const resultBox  = document.getElementById("resultBox");
-  const checkBtn   = document.getElementById("checkBtn");
-  const nextBtn    = document.getElementById("nextBtn");
-  const paytableEl = document.getElementById("paytable");
-
-  /* ---------- MULTIPLIERS (3 HANDS) ---------- */
-
-  // Training defaults – you can randomize later
-  const MULTIPLIERS = {
-    top: 2,
-    middle: 2,
-    bottom: 4
+  /* -------- Ultimate X multiplier awards (by result category) -------- */
+  const AWARD = {
+    nothing: 1,
+    jacks_or_better: 2,
+    two_pair: 2,
+    three_kind: 3,
+    straight: 4,
+    flush: 5,
+    full_house: 6,
+    four_kind: 10,
+    straight_flush: 12,
+    royal_flush: 12
   };
 
-  /* ---------- STATE ---------- */
+  /* -------- DOM -------- */
+  const topBox = document.getElementById("topBox");
+  const midBox = document.getElementById("midBox");
+  const botBox = document.getElementById("cardsBox");
+  const optimalBox = document.getElementById("optimalBox");
 
-  let hand = [];
-  let held = [false,false,false,false,false];
+  const multTopEl = document.getElementById("multTop");
+  const multMidEl = document.getElementById("multMid");
+  const multBotEl = document.getElementById("multBot");
 
-  /* ---------- UTILS ---------- */
+  const nextTopEl = document.getElementById("nextTop");
+  const nextMidEl = document.getElementById("nextMid");
+  const nextBotEl = document.getElementById("nextBot");
 
+  const resultBox = document.getElementById("resultBox");
+  const checkBtn = document.getElementById("checkBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const paytableEl = document.getElementById("paytable");
+
+  /* -------- State -------- */
+  let baseHand = [];
+  let heldMask = [false,false,false,false,false];
+
+  let currentMult = { top:1, mid:1, bot:1 };
+  let lastEarned = { top:1, mid:1, bot:1 };
+
+  /* -------- Utils -------- */
   function shuffle(arr){
     for(let i=arr.length-1;i>0;i--){
       const j=Math.floor(Math.random()*(i+1));
@@ -53,25 +67,28 @@ document.addEventListener("DOMContentLoaded", () => {
     return arr;
   }
 
-  function dealHand(){
+  function deal5Unique(excludeSet){
     const deck=[];
-    for(const r of RANKS) for(const s of SUITS) deck.push({rank:r,suit:s});
-    return shuffle(deck).slice(0,5);
+    for(const r of RANKS) for(const s of SUITS) {
+      const k=r+s;
+      if(!excludeSet.has(k)) deck.push({rank:r,suit:s});
+    }
+    shuffle(deck);
+    return deck;
   }
 
   function countBy(arr){
     return arr.reduce((m,v)=>(m[v]=(m[v]||0)+1,m),{});
   }
-
   function rankValue(r){ return RANKS.indexOf(r); }
 
-  /* ---------- EXACT DDB EVALUATOR ---------- */
-
+  /* -------- Exact DDB evaluator that returns category + payout -------- */
   function evaluateDDB(cards, pt){
     const ranks = cards.map(c=>c.rank);
     const suits = cards.map(c=>c.suit);
     const rc = countBy(ranks);
     const sc = countBy(suits);
+
     const counts = Object.values(rc).sort((a,b)=>b-a);
     const unique = Object.keys(rc);
 
@@ -82,160 +99,268 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if(isFlush && isStraight){
       if(ranks.includes("A") && ranks.includes("T"))
-        return { payout:800, qualifies:true };
-      return { payout:50, qualifies:true };
+        return { category:"royal_flush", payout:800, qualifies:true };
+      return { category:"straight_flush", payout:50, qualifies:true };
     }
 
     if(counts[0]===4){
       const quad = unique.find(r=>rc[r]===4);
       const kicker = unique.find(r=>rc[r]===1);
 
+      // DDB quad categories all count as "four_kind" for multiplier awarding
       if(quad==="A"){
         return ["2","3","4"].includes(kicker)
-          ? { payout:400, qualifies:true }
-          : { payout:160, qualifies:true };
+          ? { category:"four_kind", payout:400, qualifies:true }
+          : { category:"four_kind", payout:160, qualifies:true };
       }
-
       if(["2","3","4"].includes(quad)){
         return ["A","2","3","4"].includes(kicker)
-          ? { payout:160, qualifies:true }
-          : { payout:80, qualifies:true };
+          ? { category:"four_kind", payout:160, qualifies:true }
+          : { category:"four_kind", payout:80, qualifies:true };
       }
-
-      return { payout:50, qualifies:true };
+      return { category:"four_kind", payout:50, qualifies:true };
     }
 
     if(counts[0]===3 && counts[1]===2)
-      return { payout:pt.full_house, qualifies:true };
+      return { category:"full_house", payout:pt.full_house, qualifies:true };
 
-    if(isFlush) return { payout:pt.flush, qualifies:true };
-    if(isStraight) return { payout:4, qualifies:true };
-    if(counts[0]===3) return { payout:3, qualifies:true };
-    if(counts[0]===2 && counts[1]===2) return { payout:1, qualifies:true };
+    if(isFlush) return { category:"flush", payout:pt.flush, qualifies:true };
+    if(isStraight) return { category:"straight", payout:4, qualifies:true };
+    if(counts[0]===3) return { category:"three_kind", payout:3, qualifies:true };
+    if(counts[0]===2 && counts[1]===2) return { category:"two_pair", payout:1, qualifies:true };
 
     if(counts[0]===2){
       const pair = unique.find(r=>rc[r]===2);
       if(["J","Q","K","A"].includes(pair))
-        return { payout:1, qualifies:true };
+        return { category:"jacks_or_better", payout:1, qualifies:true };
     }
 
-    return { payout:0, qualifies:false };
+    return { category:"nothing", payout:0, qualifies:false };
   }
 
-  /* ---------- EV SIMULATION (ULTIMATE X) ---------- */
-
-  function simulateEV(mask, samples=3000){
-    const deck=[];
-    for(const r of RANKS) for(const s of SUITS) deck.push({rank:r,suit:s});
-
-    const heldCards = hand.filter((_,i)=>mask[i]);
-    const used = new Set(heldCards.map(c=>c.rank+c.suit));
-    const remaining = deck.filter(c=>!used.has(c.rank+c.suit));
-
-    const pt = PAYTABLES[paytableEl.value];
-    let totalEV = 0;
-
-    for(let i=0;i<samples;i++){
-      shuffle(remaining);
-      const draw = remaining.slice(0,5-heldCards.length);
-      const res = evaluateDDB(heldCards.concat(draw), pt);
-
-      const immediate = res.payout * MULTIPLIERS.bottom;
-      const future = res.qualifies ? pt.baseEV : 0;
-
-      totalEV += immediate + future;
-    }
-
-    return totalEV / samples;
-  }
-
-  /* ---------- RENDER ---------- */
-
-  function renderUserHand(){
-    cardsBox.innerHTML="";
-    hand.forEach((c,i)=>{
-      const el=document.createElement("div");
+  /* -------- Rendering -------- */
+  function renderHand(box, cards, mask, clickable){
+    box.innerHTML = "";
+    cards.forEach((c,i)=>{
+      const el = document.createElement("div");
       el.className =
         "card"+
         ((c.suit==="H"||c.suit==="D")?" red":"")+
-        (held[i]?" held":"");
+        (mask[i] ? " held" : "");
 
-      el.innerHTML=`
-        <div class="corner top">${c.rank==="T"?"10":c.rank}${SUIT_SYMBOL[c.suit]}</div>
+      el.innerHTML = `
+        <div class="corner top">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
         <div class="pip">${SUIT_SYMBOL[c.suit]}</div>
-        <div class="corner bottom">${c.rank==="T"?"10":c.rank}${SUIT_SYMBOL[c.suit]}</div>
+        <div class="corner bottom">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
       `;
 
-      el.onclick=()=>{
-        held[i]=!held[i];
-        renderUserHand();
-      };
+      if(clickable){
+        el.onclick = () => {
+          heldMask[i] = !heldMask[i];
+          drawBaseHands(); // keep all 3 in sync visually
+        };
+      } else {
+        el.style.cursor = "default";
+      }
 
-      cardsBox.appendChild(el);
+      box.appendChild(el);
     });
   }
 
   function renderOptimal(mask){
-    optimalBox.innerHTML="";
-    hand.forEach((c,i)=>{
-      const el=document.createElement("div");
+    optimalBox.innerHTML = "";
+    baseHand.forEach((c,i)=>{
+      const el = document.createElement("div");
       el.className =
         "card"+
         ((c.suit==="H"||c.suit==="D")?" red":"")+
-        (mask[i]?" optimal":"");
+        (mask[i] ? " optimal" : "");
 
-      el.innerHTML=`
-        <div class="corner top">${c.rank==="T"?"10":c.rank}${SUIT_SYMBOL[c.suit]}</div>
+      el.innerHTML = `
+        <div class="corner top">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
         <div class="pip">${SUIT_SYMBOL[c.suit]}</div>
-        <div class="corner bottom">${c.rank==="T"?"10":c.rank}${SUIT_SYMBOL[c.suit]}</div>
+        <div class="corner bottom">${c.rank==="T"?"10":c.rank}<br>${SUIT_SYMBOL[c.suit]}</div>
       `;
-
       optimalBox.appendChild(el);
     });
   }
 
-  /* ---------- GAME FLOW ---------- */
+  function updateMultUI(){
+    multTopEl.textContent = currentMult.top;
+    multMidEl.textContent = currentMult.mid;
+    multBotEl.textContent = currentMult.bot;
 
-  function newHand(){
-    hand = dealHand();
-    held = [false,false,false,false,false];
-    optimalBox.innerHTML="";
-    resultBox.style.display="none";
-    renderUserHand();
+    nextTopEl.textContent = lastEarned.top;
+    nextMidEl.textContent = lastEarned.mid;
+    nextBotEl.textContent = lastEarned.bot;
   }
 
-  checkBtn.onclick=()=>{
-    let bestEV=-Infinity;
-    let bestMask=null;
+  /* -------- Deal base hand and show on all 3 (holds apply to all) -------- */
+  function drawBaseHands(){
+    renderHand(topBox, baseHand, heldMask, false);
+    renderHand(midBox, baseHand, heldMask, false);
+    renderHand(botBox, baseHand, heldMask, true);
+  }
+
+  function newRound(){
+    baseHand = (function(){
+      const deck=[];
+      for(const r of RANKS) for(const s of SUITS) deck.push({rank:r,suit:s});
+      shuffle(deck);
+      return deck.slice(0,5);
+    })();
+
+    heldMask = [false,false,false,false,false];
+    lastEarned = { top:1, mid:1, bot:1 };
+    optimalBox.innerHTML = "";
+    resultBox.style.display = "none";
+    updateMultUI();
+    drawBaseHands();
+  }
+
+  /* -------- Resolve one concrete outcome (Step A visualization) -------- */
+  function resolveOnce(mask){
+    const pt = PAYTABLES[paytableEl.value];
+
+    const heldCards = baseHand.filter((_,i)=>mask[i]);
+    const used = new Set(heldCards.map(c=>c.rank+c.suit));
+    const deck = deal5Unique(used); // remaining cards
+    // each hand draws independently:
+    shuffle(deck);
+    const topDraw = deck.slice(0, 5-heldCards.length);
+
+    shuffle(deck);
+    const midDraw = deck.slice(0, 5-heldCards.length);
+
+    shuffle(deck);
+    const botDraw = deck.slice(0, 5-heldCards.length);
+
+    const topFinal = heldCards.concat(topDraw);
+    const midFinal = heldCards.concat(midDraw);
+    const botFinal = heldCards.concat(botDraw);
+
+    const topRes = evaluateDDB(topFinal, pt);
+    const midRes = evaluateDDB(midFinal, pt);
+    const botRes = evaluateDDB(botFinal, pt);
+
+    const nextTop = AWARD[topRes.category] ?? 1;
+    const nextMid = AWARD[midRes.category] ?? 1;
+    const nextBot = AWARD[botRes.category] ?? 1;
+
+    const winTop = topRes.payout * currentMult.top;
+    const winMid = midRes.payout * currentMult.mid;
+    const winBot = botRes.payout * currentMult.bot;
+
+    return {
+      topFinal, midFinal, botFinal,
+      topRes, midRes, botRes,
+      winTop, winMid, winBot,
+      nextMult:{ top:nextTop, mid:nextMid, bot:nextBot }
+    };
+  }
+
+  /* -------- EV for a hold mask: immediate + 1-step lookahead (Step B) -------- */
+  function estimateEV(mask, samples=2000){
+    const pt = PAYTABLES[paytableEl.value];
+
+    const heldCards = baseHand.filter((_,i)=>mask[i]);
+    const used = new Set(heldCards.map(c=>c.rank+c.suit));
+    const deck = deal5Unique(used);
+
+    let total = 0;
+
+    for(let t=0;t<samples;t++){
+      // draw for each hand independently
+      shuffle(deck);
+      const topFinal = heldCards.concat(deck.slice(0, 5-heldCards.length));
+      shuffle(deck);
+      const midFinal = heldCards.concat(deck.slice(0, 5-heldCards.length));
+      shuffle(deck);
+      const botFinal = heldCards.concat(deck.slice(0, 5-heldCards.length));
+
+      const topRes = evaluateDDB(topFinal, pt);
+      const midRes = evaluateDDB(midFinal, pt);
+      const botRes = evaluateDDB(botFinal, pt);
+
+      const immediate =
+        topRes.payout * currentMult.top +
+        midRes.payout * currentMult.mid +
+        botRes.payout * currentMult.bot;
+
+      const nextTop = AWARD[topRes.category] ?? 1;
+      const nextMid = AWARD[midRes.category] ?? 1;
+      const nextBot = AWARD[botRes.category] ?? 1;
+
+      const lookahead = pt.baseEV * (nextTop + nextMid + nextBot);
+
+      total += immediate + lookahead;
+    }
+
+    return total / samples;
+  }
+
+  function findOptimalMask(){
+    let bestEV = -Infinity;
+    let bestMask = null;
 
     for(let m=0;m<32;m++){
-      const mask=[0,1,2,3,4].map(i=>!!(m&(1<<i)));
-      const ev=simulateEV(mask);
-      if(ev>bestEV){
-        bestEV=ev;
-        bestMask=mask;
+      const mask = [0,1,2,3,4].map(i=>!!(m&(1<<i)));
+      const ev = estimateEV(mask, 1400);
+      if(ev > bestEV){
+        bestEV = ev;
+        bestMask = mask;
       }
     }
 
-    const userEV=simulateEV(held);
-    const loss=(bestEV-userEV).toFixed(3);
+    return { bestMask, bestEV };
+  }
+
+  /* -------- Buttons -------- */
+  checkBtn.onclick = () => {
+    // Show a concrete resolved outcome (Step A)
+    const out = resolveOnce(heldMask);
+
+    // Update "next multipliers" display
+    lastEarned = out.nextMult;
+    updateMultUI();
+
+    // Render the actual final hands (so player sees outcome)
+    renderHand(topBox, out.topFinal, [false,false,false,false,false], false);
+    renderHand(midBox, out.midFinal, [false,false,false,false,false], false);
+    renderHand(botBox, out.botFinal, [false,false,false,false,false], false);
+
+    // Compute optimal EV + optimal mask (Step B)
+    const { bestMask, bestEV } = findOptimalMask();
+    const userEV = estimateEV(heldMask, 1400);
+    const loss = (bestEV - userEV).toFixed(3);
 
     renderOptimal(bestMask);
 
-    resultBox.style.display="block";
-    resultBox.innerHTML=`
-      <b>${loss<=0.001 ? "✅ Optimal Ultimate X play!" : "❌ Suboptimal Ultimate X play"}</b><br><br>
+    resultBox.style.display = "block";
+    resultBox.innerHTML = `
+      <b>${loss <= 0.01 ? "✅ Great hold!" : "❌ Suboptimal hold"}</b><br><br>
+
+      <b>Round outcome (one sample):</b><br>
+      Top: ${out.topRes.category} → win ${out.winTop.toFixed(0)} → next ×${out.nextMult.top}<br>
+      Mid: ${out.midRes.category} → win ${out.winMid.toFixed(0)} → next ×${out.nextMult.mid}<br>
+      Bot: ${out.botRes.category} → win ${out.winBot.toFixed(0)} → next ×${out.nextMult.bot}<br><br>
+
+      <b>EV (immediate + next-hand lookahead):</b><br>
       EV (optimal): ${bestEV.toFixed(3)}<br>
       EV (yours): ${userEV.toFixed(3)}<br>
-      EV loss: ${loss}<br><br>
-      <b>Multipliers:</b><br>
-      Top ×${MULTIPLIERS.top}, Middle ×${MULTIPLIERS.middle}, Bottom ×${MULTIPLIERS.bottom}
+      EV loss: ${loss}
     `;
+
+    // After checking, carry multipliers forward for the next hand
+    currentMult = { ...out.nextMult };
   };
 
-  nextBtn.onclick=newHand;
+  nextBtn.onclick = () => {
+    newRound(); // multipliers persist (currentMult carries)
+  };
 
-  /* ---------- INIT ---------- */
-  newHand();
+  /* -------- Init -------- */
+  updateMultUI();
+  newRound();
 
 });
