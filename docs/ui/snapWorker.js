@@ -9,18 +9,21 @@ function haptic(pattern){
 function animateBar(el, targetPercent, duration = 450){
   el.style.width = "0%";
   const start = performance.now();
+
   function step(now){
     const progress = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     el.style.width = (eased * targetPercent) + "%";
     if (progress < 1) requestAnimationFrame(step);
   }
+
   requestAnimationFrame(step);
 }
 
 /* Animate multiplier cells */
 function animateMult(cells, n){
   cells.forEach(c => c.className = "multCell");
+
   cells.slice(0, n).forEach((c, i) => {
     setTimeout(() => {
       c.classList.add(
@@ -56,7 +59,7 @@ export function wireSnapWorker({
   whyBox,
   welcomeBox,
   modeSelect,
-  paytableSelect,   // 👈 NEW
+  paytableSelect,
   onSnapComplete
 }) {
   const API_URL = "https://vp-hold-production.up.railway.app/analyze";
@@ -67,7 +70,7 @@ export function wireSnapWorker({
     busy = true;
 
     haptic(10);
-    spinner.style.display = "block";
+    spinner.style.display = "flex";   // ✅ FIX
 
     try {
       const imageBase64 = captureGreenFrame({ video, scanner, band });
@@ -113,11 +116,13 @@ export function wireSnapWorker({
 
       d.cards.forEach((c, i) => {
         const rank = c.rank === "T" ? "10" : c.rank;
+
         const el = document.createElement("div");
         el.className =
           "card" +
           (d.best_hold[i] ? " held" : "") +
           ((c.suit === "H" || c.suit === "D") ? " red" : "");
+
         el.innerHTML = `
           <div class="corner top">${rank}<br>${SUIT[c.suit]}</div>
           <div class="pip">${SUIT[c.suit]}</div>
@@ -131,8 +136,7 @@ export function wireSnapWorker({
           <span style="font-size:18px">💡</span>
           <div>
             <b>Why this hold?</b><br>
-            This play maximizes <b>expected value</b> given the selected paytable
-            and active Ultimate X multipliers.
+            This play maximizes <b>expected value</b> given the selected paytable.
           </div>
         </div>
       `;
