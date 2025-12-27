@@ -21,12 +21,12 @@ body{
 }
 
 .app{
-  max-width:920px;
+  max-width:900px;
   margin:auto;
   padding:16px 14px 140px;
 }
 
-h2{text-align:center;margin:6px 0}
+h2{text-align:center;margin:4px 0}
 .subtitle{text-align:center;font-size:13px;color:var(--muted);margin-bottom:14px}
 
 /* CONTROLS */
@@ -44,8 +44,11 @@ select{
   color:#fff;
 }
 
-/* HAND */
-.hand{margin-bottom:18px}
+/* HAND SECTIONS */
+.hand{
+  margin-bottom:18px;
+}
+
 .handHeader{
   display:flex;
   justify-content:space-between;
@@ -55,12 +58,18 @@ select{
   color:var(--muted);
 }
 
-.mult{
+.multLine{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.multiplier{
   font-weight:900;
   color:var(--accent);
 }
 
-/* CARDS */
+/* CARDS CONTAINER */
 .cards{
   padding:22px 16px;
   border-radius:22px;
@@ -73,18 +82,22 @@ select{
   gap:14px;
 }
 
+/* CARDS */
 .card{
   width:78px;height:118px;
+  background:#fff;color:#111;
   border-radius:14px;
   position:relative;
-  background:#fff;
-  color:#111;
   box-shadow:0 6px 18px rgba(0,0,0,.45);
   cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
 }
+
+.card.red{color:#c1121f}
 
 /* FACE DOWN */
 .card.facedown{
+  cursor:default;
   background:linear-gradient(135deg,#0f172a,#020617);
   color:transparent;
 }
@@ -99,12 +112,12 @@ select{
   color:#9ca3af;
 }
 
-/* HELD */
+/* USER HOLD */
 .card.held{
   transform:translateY(-14px) scale(1.05);
   box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
 }
-.card.held::before{
+.card.held::after{
   content:"HOLD";
   position:absolute;
   top:-14px;
@@ -114,17 +127,22 @@ select{
   color:#000;
   font-size:11px;
   font-weight:900;
+  letter-spacing:.08em;
   padding:4px 12px;
   border-radius:999px;
 }
 
-.card.red{color:#c1121f}
+/* OPTIMAL HOLD DISPLAY */
+.card.optimal{
+  box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
+}
 
 /* CARD DETAILS */
 .corner{
   position:absolute;
   font-weight:900;
   font-size:14px;
+  line-height:1.05;
 }
 .corner.top{top:8px;left:8px}
 .corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
@@ -146,13 +164,17 @@ select{
   gap:12px;
 }
 button{
-  padding:12px 22px;
+  padding:12px 20px;
   border-radius:16px;
   border:none;
   background:var(--accent);
   color:#000;
   font-weight:900;
   cursor:pointer;
+}
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
 }
 
 /* RESULT */
@@ -163,13 +185,21 @@ button{
   background:rgba(255,255,255,.06);
   display:none;
 }
+
+.note{
+  margin-top:10px;
+  text-align:center;
+  font-size:12px;
+  color:rgba(255,255,255,.65);
+  line-height:1.35;
+}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <h2>Practice Mode – Ultimate X</h2>
-  <div class="subtitle">Hold on the <b>Bottom hand</b> • multipliers chain forward</div>
+  <h2>Practice Mode – Ultimate X (3-hand)</h2>
+  <div class="subtitle">Cards are face-down → Deal → Hold on Bottom → Check</div>
 
   <div class="controls">
     <select id="paytable">
@@ -178,30 +208,68 @@ button{
       <option value="DDB_8_5">DDB 8/5</option>
       <option value="DDB_7_5">DDB 7/5</option>
     </select>
+
+    <select id="mode">
+      <option value="conservative">Conservative</option>
+      <option value="aggressive">Aggressive</option>
+    </select>
   </div>
 
+  <!-- TOP HAND -->
   <div class="hand">
-    <div class="handHeader">Top Hand <span class="mult">×<span id="multTop">1</span></span></div>
+    <div class="handHeader">
+      <span>Top Hand</span>
+      <span class="multLine">
+        <span>Current <span class="multiplier">×<span id="multTop">1</span></span></span>
+        <span>Next <span class="multiplier">×<span id="nextTop">1</span></span></span>
+      </span>
+    </div>
     <div class="cards" id="topBox"></div>
   </div>
 
+  <!-- MIDDLE HAND -->
   <div class="hand">
-    <div class="handHeader">Middle Hand <span class="mult">×<span id="multMid">1</span></span></div>
+    <div class="handHeader">
+      <span>Middle Hand</span>
+      <span class="multLine">
+        <span>Current <span class="multiplier">×<span id="multMid">1</span></span></span>
+        <span>Next <span class="multiplier">×<span id="nextMid">1</span></span></span>
+      </span>
+    </div>
     <div class="cards" id="midBox"></div>
   </div>
 
+  <!-- BOTTOM HAND -->
   <div class="hand">
-    <div class="handHeader">Bottom Hand (Decision) <span class="mult">×<span id="multBot">1</span></span></div>
+    <div class="handHeader">
+      <span>Bottom Hand (Your Decision)</span>
+      <span class="multLine">
+        <span>Current <span class="multiplier">×<span id="multBot">1</span></span></span>
+        <span>Next <span class="multiplier">×<span id="nextBot">1</span></span></span>
+      </span>
+    </div>
     <div class="cards" id="cardsBox"></div>
   </div>
 
   <div class="actions">
     <button id="dealBtn">Deal</button>
     <button id="checkBtn" disabled>Check my hold</button>
-    <button id="nextBtn" disabled>Next round</button>
+    <button id="nextBtn" disabled>Next hand</button>
+  </div>
+
+  <div class="hand">
+    <div class="handHeader">
+      <span>Optimal Hold</span>
+    </div>
+    <div class="cards" id="optimalBox"></div>
   </div>
 
   <div class="result" id="resultBox"></div>
+
+  <div class="note">
+    Multiplier awards: Jacks+ → ×2, Two Pair → ×2, Trips → ×3, Straight → ×4, Flush → ×5,
+    Full House → ×6, Quads → ×10, Straight/Royal Flush → ×12, Nothing → ×1.
+  </div>
 </div>
 
 <script type="module" src="./practice.js"></script>
