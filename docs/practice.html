@@ -9,20 +9,19 @@
 :root{
   --bg:#020617;
   --accent:#22c55e;
-  --bad:#ef4444;
-  --text:#ffffff;
   --muted:#9ca3af;
+  --bad:#ef4444;
 }
 
 body{
   margin:0;
   background:var(--bg);
-  color:var(--text);
+  color:#fff;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 
 .app{
-  max-width:860px;
+  max-width:900px;
   margin:auto;
   padding:16px 14px 140px;
 }
@@ -45,29 +44,35 @@ select{
   color:#fff;
 }
 
-/* CARD ZONES */
-.zoneTitle{
-  margin:16px 0 6px;
+/* HAND SECTIONS */
+.hand{
+  margin-bottom:22px;
+}
+
+.handHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:6px;
   font-size:13px;
   color:var(--muted);
-  text-align:center;
 }
 
-/* CARDS CONTAINER — FROM MAIN UI */
+.multiplier{
+  font-weight:900;
+  color:var(--accent);
+}
+
+/* CARDS */
 .cards{
-  margin-top:12px;
-  padding:26px 18px;
-  border-radius:24px;
-  background:rgba(255,255,255,0.05);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.06),
-    0 12px 32px rgba(0,0,0,.4);
+  padding:22px 16px;
+  border-radius:22px;
+  background:rgba(255,255,255,.05);
   display:flex;
   justify-content:center;
-  gap:14px
+  gap:14px;
 }
 
-/* CARD — FROM MAIN UI */
 .card{
   width:78px;height:118px;
   background:#fff;color:#111;
@@ -75,13 +80,14 @@ select{
   position:relative;
   box-shadow:0 6px 18px rgba(0,0,0,.45);
   cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
 }
 
 .card.red{color:#c1121f}
 
-/* USER HOLD */
+/* USER HOLD (bottom hand only) */
 .card.held{
-  transform:translateY(-14px) scale(1.08);
+  transform:translateY(-14px) scale(1.05);
   box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
 }
 .card.held::after{
@@ -96,12 +102,15 @@ select{
   font-weight:900;
   letter-spacing:.08em;
   padding:4px 12px;
-  border-radius:999px
+  border-radius:999px;
 }
 
-/* OPTIMAL HOLD */
+/* OPTIMAL */
 .card.optimal{
   box-shadow:0 0 0 4px var(--accent),0 20px 40px rgba(0,0,0,.6);
+}
+.card.miss{
+  box-shadow:0 0 0 4px var(--bad),0 20px 40px rgba(0,0,0,.6);
 }
 
 /* CARD DETAILS */
@@ -109,7 +118,6 @@ select{
   position:absolute;
   font-weight:900;
   font-size:14px;
-  line-height:1.05
 }
 .corner.top{top:8px;left:8px}
 .corner.bottom{bottom:10px;right:8px;transform:rotate(180deg)}
@@ -120,7 +128,7 @@ select{
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:30px
+  font-size:30px;
 }
 
 /* ACTIONS */
@@ -153,8 +161,8 @@ button{
 
 <body>
 <div class="app">
-  <h2>Practice Mode</h2>
-  <div class="subtitle">Tap cards to HOLD, then compare with optimal</div>
+  <h2>Practice Mode – Ultimate X</h2>
+  <div class="subtitle">Choose holds on the <b>Bottom hand</b></div>
 
   <div class="controls">
     <select id="paytable">
@@ -170,16 +178,44 @@ button{
     </select>
   </div>
 
-  <div class="zoneTitle">Your hand</div>
-  <div class="cards" id="cardsBox"></div>
+  <!-- TOP HAND -->
+  <div class="hand">
+    <div class="handHeader">
+      <span>Top Hand</span>
+      <span class="multiplier">×<span id="multTop">2</span></span>
+    </div>
+    <div class="cards" id="topBox"></div>
+  </div>
+
+  <!-- MIDDLE HAND -->
+  <div class="hand">
+    <div class="handHeader">
+      <span>Middle Hand</span>
+      <span class="multiplier">×<span id="multMid">2</span></span>
+    </div>
+    <div class="cards" id="midBox"></div>
+  </div>
+
+  <!-- BOTTOM HAND (DECISION HAND) -->
+  <div class="hand">
+    <div class="handHeader">
+      <span>Bottom Hand (Your Decision)</span>
+      <span class="multiplier">×<span id="multBot">4</span></span>
+    </div>
+    <div class="cards" id="cardsBox"></div>
+  </div>
 
   <div class="actions">
     <button id="checkBtn">Check my hold</button>
     <button id="nextBtn">Next hand</button>
   </div>
 
-  <div class="zoneTitle">Optimal hold</div>
-  <div class="cards" id="optimalBox"></div>
+  <div class="hand">
+    <div class="handHeader">
+      <span>Optimal Hold</span>
+    </div>
+    <div class="cards" id="optimalBox"></div>
+  </div>
 
   <div class="result" id="resultBox"></div>
 </div>
